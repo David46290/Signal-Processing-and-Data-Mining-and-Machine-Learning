@@ -62,7 +62,7 @@ if __name__ == '__main__':
     og_num_run = len(signals)
     # signals = time_series_resample(signals, dt_original=4, dt_final=60)
     progress = pick_one_signal(signals, signal_idx=0)
-    valid_run_idx = non_discontinuous_runs(progress)
+    valid_run_idx = non_discontinuous_runs(progress, 0, 306, 1)
     signals = pick_run_data(signals, valid_run_idx)
     shortest_length = min([run.shape[1] for run in signals])
     signals_resize = time_series_resize(signals, shortest_length)
