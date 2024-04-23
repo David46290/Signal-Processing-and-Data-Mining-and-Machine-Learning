@@ -11,55 +11,128 @@ from scipy import interpolate
 from scipy.ndimage import gaussian_filter1d
 
 
-def pick_run_data(quality_, target_runIdx):
-    quality_finale = []
-    for run_idx, value_list in enumerate(quality_):
-        if run_idx in target_runIdx:
-            quality_finale.append(value_list)
-    return quality_finale
-
-def non_discontinuous_runs(progress):
+def pick_run_data(run_series, target_runIdx):
     """
     INPUT:
-        progress: [run1_progress, run2_progress, ...]; length: number of run
-        run_progress: [progress1, progress2, ...]; length: length of signal
-        run_progress should go from near +0 to near +306
-    OUTPUT:
-        indexes of runs that have no problematic recording. 
-        NOT ONLY have no severe discontinuous records
-        BUT ALSO have a start/end progression near 0/306 mm
+        run_series: list containing ndarrays representing signal in different runs (samples)
+                        because the length of runs (samples) may not be same, they can not be 
+                        integrated into a 2D ndarray.
+        sample_series: [value_list 0, value_list 1, ...]; length: amount of runs (samples) 
+            value_list:  a ndarray-like 
         
-    Threshold:
-        Assume problematic records are outliers, not normal (unlikely though LOL)
-        Discontinuous:
-            get the maximum values in delta_progress from all runs
-            take the median value from those values as delta_progress threshold
-            any run having delta_progress > 2*threshold is considered as severe discontinuously recorded
+        target_runIdx: the target run (sample) index
         
-        Start/End
-            get the first/last element in progress from each run
-            as long as the first/last element deviate 0/306 (mm) over K (mm)
-            consider the run as problematic run      
+    RETURN:
+        run_series_finale: the target run_series
     """
-    K = 1
-    max_progress_delta = np.zeros(len(progress))
-    start_deviation = np.zeros(len(progress))
-    end_deviation = np.zeros(len(progress))
-    for run_idx, run_progress in enumerate(progress):
-        run_progress_diff = np.diff(run_progress)
-        max_progress_delta[run_idx] = np.amax(run_progress_diff)
-        start_deviation[run_idx] = run_progress[0]
-        end_deviation[run_idx] = 306 - run_progress[-1]
-    progress_delta_threshold = np.median(max_progress_delta) * 2
-    remaining_run_discontinuous = np.where(max_progress_delta <= progress_delta_threshold)[0]
-    remaining_run_start = np.where(start_deviation <= K)[0]
-    remaining_run_end = np.where(end_deviation <= K)[0]
+    run_series_finale = []
+    for run_idx, value_list in enumerate(run_series):
+        if run_idx in target_runIdx:
+            run_series_finale.append(value_list)
+    return run_series_finale
+
+def non_discontinuous_runs(x_lst, start_standard, end_standard, tolerance):
+    """
+    Assuming problematic records are outliers, not normal
+    Discontinuous:
+        get the maximum values in delta_x from all runs
+        take the median value from those values as delta_x threshold
+        any run (sample) having delta_x > 2*threshold is considered as discontinuously recorded
+    
+    Start/End:
+        get the first/last element in x from each run
+        as long as the first/last element deviate from start_standard/end_standard over tolerance (unit)
+        consider the run (sample) as problematic run  
+    
+    INPUT:
+        x_lst => list containing ndarrays, each one stands for time/progress of a time-series sample
+        x_lst: [run_x 1, run_x 2, ...]; length: amount of runs (samples)
+            run_x: ndarray (length of signal, )
+            run_x should go from near start_standard to near end_standard
+        
+    RETURN:
+        indexes of runs (samples) that have no problematic recording. 
+        NOT ONLY have no severe discontinuous records
+        BUT ALSO have a start/end x axis near start_standard/end_standard
+    """
+    max_x_delta = np.zeros(len(x_lst))
+    start_deviation = np.zeros(len(x_lst))
+    end_deviation = np.zeros(len(x_lst))
+    for run_idx, run_x in enumerate(x_lst):
+        run_x_diff = np.diff(run_x)
+        max_x_delta[run_idx] = np.amax(run_x_diff)
+        start_deviation[run_idx] = run_x[0] - start_standard
+        end_deviation[run_idx] = end_standard - run_x[-1]
+    progress_delta_threshold = np.median(max_x_delta) * 2
+    remaining_run_discontinuous = np.where(max_x_delta <= progress_delta_threshold)[0]
+    remaining_run_start = np.where(start_deviation <= tolerance)[0]
+    remaining_run_end = np.where(end_deviation <= tolerance)[0]
     remaining_run = np.intersect1d(remaining_run_start, remaining_run_end)
     remaining_run = np.intersect1d(remaining_run, remaining_run_discontinuous)
     
     return remaining_run
 
-def signals_from_dataset(join_path, runIdxes, isDifferentParamSets_, param_idx_lst):
+def get_signals(join_path, param_idx_lst):
+    """
+    get signal data from a dataset (.csv)
+        dataset:
+            each row represents a certain channel of recording signals
+
+    Parameters
+    ----------
+    join_path : str
+        location (name not included) of .csv files
+    param_idx_lst : list
+        indexs of channels of recorded signals in each run (sample)
+
+    Returns
+    -------
+    signals_all : list
+        [run_data 1, run_data 2, ...]
+        run_data: ndarray
+            (num_channel, signal_length); signal_length may be different among runs (samples)
+
+    """
+    signals_all = []
+    for data in glob.glob(os.path.join(join_path, '*.csv')):
+        with open(data, 'r') as file:
+            signal = np.genfromtxt(file, delimiter=',')
+            signalTrimmed = signal[param_idx_lst, :]
+            signalTrimmed[0, :] = signalTrimmed[0, :] * -1 # this one is optional, I do this for my case specificly
+            signals_all.append(signalTrimmed)
+        file.close()  
+
+    return signals_all
+
+def get_parameter_set(signals_lst):
+    """
+    Parameters
+    ----------
+    signals_lst : list
+        [run_data 1, run_data 2, ...]
+        run_data: ndarray
+            (num_channel, signal_length)
+            (signal_length may be different among runs (samples))
+    Returns
+    -------
+    ndarray
+        (num_run,)
+        labels for each run (sample)
+
+    """
+    param_lst = []
+    # feed_lst = []
+    min_feed_lst = []
+    for run_data in signals_lst:
+        feed_rate = run_data[1]
+        feed_for_inspection = feed_rate[np.where(feed_rate > -0.5)[0]]
+        # feed_lst.append(feed_for_inspection)
+        min_feed_lst.append(np.min(feed_for_inspection))
+        param_set = 1 if np.min(feed_for_inspection) > -0.4 else 2
+        param_lst.append(param_set)
+    return np.array(param_lst).astype(int)
+
+def signals_from_dataset(join_path, runIdxes, isDifferentParamSets_, param_idx_lst): # for dataset C
     signals_all = []
     for data in glob.glob(os.path.join(join_path, '*.csv')):
         with open(data, 'r') as file:
@@ -85,43 +158,28 @@ def signals_from_dataset(join_path, runIdxes, isDifferentParamSets_, param_idx_l
 
     return signals_all
 
-def get_signals(join_path, param_idx_lst):
-    signals_all = []
-    for data in glob.glob(os.path.join(join_path, '*.csv')):
-        with open(data, 'r') as file:
-            # runIdx = data[-7:-4]
-            signal = np.genfromtxt(file, delimiter=',')
-            """
-            index of parameters:
-            0: cutting progress
-            1: feed_rate
-            """
-            signalTrimmed = signal[param_idx_lst, :]
-            # signalTrimmed = time_series_downsampling(signalTrimmed, 6)
-            # outLet_temp = low_pass_butterworth(signalTrimmed[1, :], 1, 116*(10)**-3)
-            signalTrimmed[0, :] = signalTrimmed[0, :] * -1 # make values of progression positive
-            signals_all.append(signalTrimmed)
-        file.close()  
-
-    return signals_all
-
-def get_parameter_set(signals_lst):
-    """
-    based on feed_rate
-    """
-    param_lst = []
-    # feed_lst = []
-    min_feed_lst = []
-    for run_data in signals_lst:
-        feed_rate = run_data[1]
-        feed_for_inspection = feed_rate[np.where(feed_rate > -0.5)[0]]
-        # feed_lst.append(feed_for_inspection)
-        min_feed_lst.append(np.min(feed_for_inspection))
-        param_set = 1 if np.min(feed_for_inspection) > -0.4 else 2
-        param_lst.append(param_set)
-    return np.array(param_lst).astype(int)
-
 def pick_specific_signals(seriesLst, signal_idx_lst):
+    """
+    get signal of specific channels from each run (sample)
+    (signal_length may be different among runs (samples))
+    Parameters
+    ----------
+    seriesLst : list
+        [run_data 1, run_data 2, ...]; lenth: amount of runs (samples)
+        run_data: ndarray
+            (num_channel, signal_length)
+    signal_idx_lst : list
+        the indexs of specified channels (row indexs in original file/run_data)
+
+    Returns
+    -------
+    signal_lst_new : list
+        [run_data 1, run_data 2, ...]
+        run_data: ndarray
+            (num_channel, signal_length)
+            (trimmed data)
+
+    """
     signal_lst_new = []
     for run_data in seriesLst:
         run_data_new = []
@@ -132,6 +190,28 @@ def pick_specific_signals(seriesLst, signal_idx_lst):
     return signal_lst_new
 
 def pick_one_signal(seriesLst, signal_idx):
+    """
+    get signal of ONE specific channel from each run (sample)
+    (signal_length may be different among runs (samples))
+    Parameters
+    ----------
+    seriesLst : list
+        [run_data 1, run_data 2, ...]; lenth: amount of runs (samples)
+        run_data: ndarray
+            (num_channel, signal_length)
+            
+    signal_idx : int
+        the index of specified channel (row index in original file/run_data)
+
+    Returns
+    -------
+    signal_lst_new : list
+        [run_data 1, run_data 2, ...]
+        run_data: ndarray
+            (signal_length, )
+            (trimmed data)
+
+    """
     signal_lst_new = []
     for run_data in seriesLst:
         signal_lst_new.append(run_data[signal_idx])
@@ -139,11 +219,24 @@ def pick_one_signal(seriesLst, signal_idx):
     return signal_lst_new
 
 def curve_fitting(signal_, window_size, order):
+    """
+    Savitzky-Golay filter 
+    signal_: ndarray(signal_length,)
+    """
     curve = scisig.savgol_filter(signal_, window_size, order)
 
     return curve
 
 def interpolation(target_sig, target_x, result_x):
+    """
+    Interpolation 
+    target_sig: ndarray(signal_length,)
+        signal needs interpolating
+    target_x: ndarray(signal_length,)
+        x axis (time/progress) of the target signal
+    result_x: ndarray(signal_length,)
+        the ideal x axis (time/progress)
+    """
     f = interpolate.interp1d(target_x, target_sig)
     interpolated_sig = f(result_x)
     # cs = interpolate.CubicSpline(target_x, target_sig)
