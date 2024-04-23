@@ -52,7 +52,7 @@ if __name__ == '__main__':
     og_num_run = len(signals)
     # signals_new = time_series_resize(signals, 890)
     progress = pick_one_signal(signals, signal_idx=0)
-    valid_run_idx = non_discontinuous_runs(progress)
+    valid_run_idx = non_discontinuous_runs(progress, 0, 306, 1)
     signals = pick_run_data(signals, valid_run_idx)
     signals_resize = time_series_resize(signals, shortest_length)
 
