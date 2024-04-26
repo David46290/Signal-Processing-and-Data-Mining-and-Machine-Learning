@@ -2,7 +2,7 @@ import numpy as np
 import os, glob
 from matplotlib import pyplot as plt
 from featureExtraction import features_of_signal
-from signal_processing import time_series_resize, non_discontinuous_runs, get_signals, time_series_resample, pick_specific_signals, signals_after_diff_erase
+from signal_processing import time_series_resize, non_discontinuous_runs, get_signals, time_series_downsample, pick_specific_signals
 from signal_processing import pick_run_data, get_parameter_set, signals_to_images, images_resize_lst, pick_one_signal
 from signal_processing import get_envelope_lst, subtraction_2signals, variation_erase, subtract_initial_value, addition_2signals
 from qualityExtractionLoc import get_mean_each_run, quality_labeling, high_similarity_runs, pick_one_lot, get_lot, get_ingot_length, qualities_from_dataset, qualities_from_dataset_edge, get_worst_value_each_run
@@ -14,15 +14,14 @@ from classPSO_XGB import psoXGB
 from correlation_analysis import corr_features_vs_quality, corr_filter
 from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split
-from cross_validation import cross_validate, cross_validate_signal, cross_validate_image, show_train_history_NN_onlyTrain
+from cross_validation import cross_validate, cross_validate_signal, cross_validate_image
 from classPSO_kNN import psokNN
 
 from PIL import Image 
-from plot_signals import multiple_signals_overlap_comparison, signal_progress_comparison_interval
+from plot_signals import plot_2d_array
 from class_importance_analysis import resultOfRandomForest, result_cosine_similarity, result_pearson
 from correlation_analysis import plot_corr, get_corr_value_2variables
-from autoencoder import build_AE
-from keras.callbacks import EarlyStopping
+
 # def importanceEachLabel(position_, features, label, category):
 #     importance = importanceAnalysis(position_, label)
 #     criteria = ['squared_error', 'absolute_error']
@@ -61,8 +60,14 @@ if __name__ == '__main__':
     valid_run_idx = non_discontinuous_runs(progress, 0, 306, 1)
     signals = pick_run_data(signals, valid_run_idx)
     shortest_length = min([run.shape[1] for run in signals])
-    signals_resize = time_series_resize(signals, shortest_length)
-
+    # if paramSet_num == 1:
+    #     signals_resize = np.moveaxis(time_series_resize(signals, 6100), [0, 1, 2], [0, -1, -2])
+    # else: 
+    #     signals_resize = np.moveaxis(time_series_resize(signals, 5000), [0, 1, 2], [0, -1, -2])
+    if paramSet_num == 1:
+        signals_resize = time_series_resize(signals, shortest_length)
+    else: 
+        signals_resize = time_series_resize(signals, shortest_length)
     """
     Quality
     """
@@ -91,7 +96,7 @@ if __name__ == '__main__':
     """
     Signal preprocessing
     """
-    signals = signals_resize
+    # signals = signals_resize
     signals = pick_run_data(signals, general_run_idx)
     progress = pick_one_signal(signals, signal_idx=0)
     # progress_resize = pick_one_signal(signals_resize, signal_idx=0)
@@ -105,39 +110,9 @@ if __name__ == '__main__':
     outlet_diff = subtract_initial_value(outlet)
     
     """
-    AE
-    """
-    target = np.array(outlet_diff)
-    progress = np.array(progress)
-    ae = build_AE(target, loss='mean_absolute_error', metric="cosine_similarity")
-    # ae.load_weights('./modelWeights/AE_best.h5')
-    callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
-    history = ae.fit(target, target,
-                epochs=1000, batch_size=5,
-                shuffle=True, verbose=0,
-                callbacks=[callback])
-    show_train_history_NN_onlyTrain(history, 'mean_absolute_error', "cosine_similarity", 0)
-    x_decoded = ae.encoder(target).numpy()
-    # target_decoded = ae.decoder(x_decoded).numpy()
-    # similarity = np.zeros(target.shape[0])
-    # for idx, sample_signal in enumerate(target):
-    #     run_similarity = np.dot(sample_signal, target_decoded[idx])/(np.linalg.norm(sample_signal)*np.linalg.norm(target_decoded[idx]))
-    #     mae = np.abs(sample_signal - target_decoded[idx]).mean()
-    #     similarity[idx] = run_similarity
-    #     if idx in [0, 1, 7, 8]:
-    #         time_lst = [progress[idx], progress[idx]]
-    #         signal_lst = [sample_signal, target_decoded[idx]]
-    #         multiple_signals_overlap_comparison(time_lst, signal_lst,
-    #                                             ['Original', f'Reconstructed (MAE: {mae:.2f}; Cos: {run_similarity:.2f})'],
-    #                                             ['seagreen', 'crimson'])
-    #         signal_progress_comparison_interval(time_lst, signal_lst, [280, 290],
-    #                                             ['Original', f'Reconstructed'],
-    #                                             'Temperature', ['seagreen', 'crimson'])
-    # print(f'Mean similarity in Validation: {similarity.mean()}')
-    """
     Feature
     """
-    # f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=2, gau_rad=4, w_size=3)
+    f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=2, gau_rad=4, w_size=3)
     # f_torque = features_of_signal(progress_t, torque_cleaned, isEnveCombined_=False)
     # f_torque = features_of_signal(progress, torque, isEnveCombined, gau_sig=2, gau_rad=4, w_size=3)
     # f_bear = features_of_signal(progress, bear_diff, isEnveCombined, gau_sig=2, gau_rad=4, w_size=3)
@@ -148,10 +123,9 @@ if __name__ == '__main__':
     ingot_len = pick_run_data(ingot_len, valid_run_idx)
     ingot_len = pick_run_data(ingot_len, general_run_idx)
     # f_combine = np.concatenate((f_outlet, f_torque, f_bear, f_driver, ingot_len), axis=1)
-    # f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
-    f_combine = np.concatenate((x_decoded, ingot_len), axis=1)
-    # enve_outlet_up, enve_outlet_low = get_envelope_lst(outlet_diff, progress,
-    #                                                    gau_sig=2, gau_rad=4, w_size=3, isDifferenced=True)
+    f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
+    enve_outlet_up, enve_outlet_low = get_envelope_lst(outlet_diff, progress,
+                                                       gau_sig=2, gau_rad=4, w_size=3, isDifferenced=True)
     # enve_outlet_up, enve_outlet_low = np.expand_dims(enve_outlet_up, 2), np.expand_dims(enve_outlet_low, 2)
     # enve_combine = np.concatenate((enve_outlet_up, enve_outlet_low), axis=2)
     # signal_combine = np.concatenate((np.array(progress), np.array(outlet_diff)))
@@ -192,13 +166,13 @@ if __name__ == '__main__':
     """
     run indices v.s. quality mean
     """
-    # mean_wavi = get_mean_each_run(waviness)
-    # run_idices = np.arange(0, og_num_run, 1)
-    # run_idices = run_idices[methodIdx_lst[paramSet_num-1]]
-    # run_idices = run_idices[valid_run_idx]
-    # run_idices = run_idices[general_run_idx]
-    # run_spection_wavi = np.concatenate((run_idices.reshape(-1, 1), mean_wavi.reshape(-1, 1)), axis=1)
-    # run_spection_wavi = run_spection_wavi[run_spection_wavi[:, 1].argsort()] # sorted by wavi. value
+    mean_wavi = get_mean_each_run(waviness)
+    run_idices = np.arange(0, og_num_run, 1)
+    run_idices = run_idices[methodIdx_lst[paramSet_num-1]]
+    run_idices = run_idices[valid_run_idx]
+    run_idices = run_idices[general_run_idx]
+    run_spection_wavi = np.concatenate((run_idices.reshape(-1, 1), mean_wavi.reshape(-1, 1)), axis=1)
+    run_spection_wavi = run_spection_wavi[run_spection_wavi[:, 1].argsort()] # sorted by wavi. value
     # bModelTTV = []
     # bModelWarp = []
     # bModelWavi = []
