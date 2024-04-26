@@ -1,21 +1,19 @@
 import numpy as np
-import os, glob
-from matplotlib import pyplot as plt
 from featureExtraction import features_of_signal
-from signal_processing import time_series_resize, non_discontinuous_runs, time_series_resize, get_signals, time_series_resample, pick_specific_signals, signals_after_diff_erase
+from signal_processing import non_discontinuous_runs, time_series_resize, get_signals, time_series_downsample, pick_specific_signals
 from signal_processing import pick_run_data, get_parameter_set, signals_to_images, images_resize_lst, pick_one_signal
 from signal_processing import get_envelope_lst, subtraction_2signals, variation_erase, subtract_initial_value, addition_2signals
 from qualityExtractionLoc import get_mean_each_run, quality_labeling, high_similarity_runs, pick_one_lot, get_lot, get_ingot_length, qualities_from_dataset, qualities_from_dataset_edge, get_worst_value_each_run
 # from classImportance_single_output import importanceAnalysis
 
-from locIntegration import locIntegrate, locIntegrate_edge
+from locIntegration import locIntegrate
 from classPSO_XGB import psoXGB
 from classPSO_RF import psoRF
 # import pandas as pd
 from correlation_analysis import corr_features_vs_quality, corr_filter
 from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split
-from cross_validation import cross_validate, cross_validate_signal, cross_validate_image, show_train_history_NN_onlyTrain
+from cross_validation import cross_validate, cross_validate_signal, cross_validate_image
 # from cross_validation_classification import cross_validate, cross_validate_signal, cross_validate_image
 from classPSO_kNN import psokNN 
 from plot_signals import plot_2d_array
@@ -23,8 +21,6 @@ from PIL import Image
 from class_importance_analysis import resultOfRandomForest, result_cosine_similarity, result_pearson
 from correlation_analysis import plot_corr, get_corr_value_2variables
 from plot_histogram import draw_histo
-from autoencoder import build_AE
-from keras.callbacks import EarlyStopping
 
 if __name__ == '__main__':
     isDifferentParamSets = True
@@ -52,10 +48,12 @@ if __name__ == '__main__':
     og_num_run = len(signals)
     # signals_new = time_series_resize(signals, 890)
     progress = pick_one_signal(signals, signal_idx=0)
-    valid_run_idx = non_discontinuous_runs(progress)
+    valid_run_idx = non_discontinuous_runs(progress, 0, 306, 1)
     signals = pick_run_data(signals, valid_run_idx)
-    signals_resize = time_series_resize(signals, shortest_length)
-
+    if paramSet_num == 1:
+        signals_resize = time_series_resize(signals, shortest_length)
+    else: 
+        signals_resize = time_series_resize(signals, shortest_length)
     
     """
     Quality
@@ -93,14 +91,14 @@ if __name__ == '__main__':
     """
     Signal preprocessing
     """
-    signals = signals_resize
+    # signals = signals_resize
     signals = pick_run_data(signals, general_run_idx)
     progress = pick_one_signal(signals, signal_idx=0)
     outlet = pick_one_signal(signals, signal_idx=2)
     torque = pick_one_signal(signals, signal_idx=3)
     bear_diff = subtraction_2signals(list(zip(addition_2signals(pick_specific_signals(signals, signal_idx_lst=[4, 5])),
                                               addition_2signals(pick_specific_signals(signals, signal_idx_lst=[6, 7])))))
-    # progress_t, torque_cleaned = variation_erase(progress, torque)
+    progress_t, torque_cleaned = variation_erase(progress, torque)
     outlet_diff = subtract_initial_value(outlet)
     driver_current = pick_one_signal(signals, signal_idx=8)
     clamp_pressure = pick_one_signal(signals, signal_idx=9)
@@ -110,26 +108,10 @@ if __name__ == '__main__':
     ingot_len = pick_run_data(ingot_len, valid_run_idx)
     ingot_len = pick_run_data(ingot_len, general_run_idx)
     
-    
-    """
-    AE
-    """
-    target = np.array(outlet_diff)
-    progress = np.array(progress)
-    ae = build_AE(target, loss='mean_absolute_error', metric="cosine_similarity")
-    # ae.load_weights('./modelWeights/AE_best.h5')
-    callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
-    history = ae.fit(target, target,
-                epochs=1000, batch_size=5,
-                shuffle=True, verbose=0,
-                callbacks=[callback])
-    show_train_history_NN_onlyTrain(history, 'mean_absolute_error', "cosine_similarity", 0)
-    x_decoded = ae.encoder(target).numpy()
-    
     """
     Feature
     """  
-    # f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined)
+    f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined)
     # f_torque = features_of_signal(progress_t, torque_cleaned, isEnveCombined_=False)
     # f_torque = features_of_signal(progress, torque, isEnveCombined)
     # f_bear = features_of_signal(progress, bear_diff, isEnveCombined)
@@ -138,15 +120,15 @@ if __name__ == '__main__':
 
     
     # f_combine = np.concatenate((f_outlet, f_torque, f_bear, f_driver, ingot_len), axis=1)
-    # f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
-    f_combine = np.concatenate((x_decoded, ingot_len), axis=1)
+    f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
+
     # enve_outlet_up, enve_outlet_low = get_envelope_lst(outlet_diff, progress, isInterpolated=False, isDifferenced=True)
     # enve_combine = np.concatenate((enve_outlet_up, enve_outlet_low), axis=1)
     """
     Feature Analysis 
     """
-    y_lot1, run_idx_lot1 = pick_one_lot(waviness, lot, target_lot=1)
-    x_lot1 = f_combine[run_idx_lot1]
+    # y_lot1, run_idx_lot1 = pick_one_lot(waviness, lot, target_lot=1)
+    # x_lot1 = f_combine[run_idx_lot1]
     # importance = resultOfRandomForest(x_lot1, y_lot1, 'squared_error')
     # importance_threshold = 1 / importance.shape[0]
     # important_feature_idx = np.where(importance >= importance_threshold)[0]
@@ -199,13 +181,13 @@ if __name__ == '__main__':
     """
     # psoModelTTV = psokNN(x, y[:, 0], 'TTV (datasetA)', normalized='')
     # psoModelWarp = psokNN(x, y[:, 1], 'Warp (datasetA)', normalized='')
-    psoModelWavi = psokNN(x, y[:, 2], 'Waviness (datasetA)', normalized='')
+    # psoModelWavi = psokNN(x, y[:, 2], 'Waviness (datasetA)', normalized='')
     # psoModelBOW = psokNN(x, y[:, 3], 'BOW (datasetA)', normalized='')
     # psoModelWavi = psokNN(x_lot1, y_lot1, 'Waviness (datasetA)', normalized='')
 
     # psoModelTTV.pso(particleAmount=20, maxIterTime=10)
     # psoModelWarp.pso(particleAmount=20, maxIterTime=10)
-    model, history = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
+    # psoModelWavi.pso(particleAmount=20, maxIterTime=10)
     # psoModelBOW.pso(particleAmount=20, maxIterTime=10)
 
 
