@@ -2,7 +2,7 @@ import numpy as np
 import os, glob
 from matplotlib import pyplot as plt
 from featureExtraction import features_from_signal, features_of_signal
-from signal_processing import non_discontinuous_runs, signals_from_dataset, time_series_resample, pick_specific_signals, signals_after_diff_erase
+from signal_processing import non_discontinuous_runs, signals_from_dataset, time_series_downsample, pick_specific_signals
 from signal_processing import signals_to_images, images_resize_lst, pick_one_signal, pick_run_data
 from signal_processing import time_series_resize, get_envelope_lst, subtraction_2signals, variation_erase, subtract_initial_value, addition_2signals
 from qualityExtractionLoc import get_mean_each_run, quality_labeling, high_similarity_runs, pick_one_lot, get_lot, get_ingot_length, qualities_from_dataset, qualities_from_dataset_edge, get_worst_value_each_run
@@ -13,7 +13,7 @@ from classPSO_XGB import psoXGB
 from correlation_analysis import corr_features_vs_quality, corr_filter
 from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split
-from cross_validation import cross_validate, cross_validate_signal, cross_validate_image, show_train_history_NN_onlyTrain
+from cross_validation import cross_validate, cross_validate_signal, cross_validate_image
 from classPSO_kNN import psokNN
 
 from PIL import Image 
@@ -23,8 +23,7 @@ from processing_2023_07_12 import get_parameter_set
 
 from class_importance_analysis import resultOfRandomForest, result_cosine_similarity, result_pearson
 from correlation_analysis import plot_corr, get_corr_value_2variables
-from autoencoder import build_AE
-from keras.callbacks import EarlyStopping
+
 # def importanceEachLabel(position_, features, label, category):
 #     importance = importanceAnalysis(position_, label)
 #     criteria = ['squared_error', 'absolute_error']
@@ -42,7 +41,7 @@ def quick_check_extremes(signal_lst, alarm_values):
 
 if __name__ == '__main__':
     isDifferentParamSets = True
-    paramSet_num = 2
+    paramSet_num = 1
     isLoc = True
     # differencing = False
     differencing = True
@@ -62,11 +61,13 @@ if __name__ == '__main__':
     og_num_run = len(signals)
     # signals = time_series_resample(signals, dt_original=4, dt_final=60)
     progress = pick_one_signal(signals, signal_idx=0)
-    valid_run_idx = non_discontinuous_runs(progress)
+    valid_run_idx = non_discontinuous_runs(progress, 0, 306, 1)
     signals = pick_run_data(signals, valid_run_idx)
     shortest_length = min([run.shape[1] for run in signals])
-    signals_resize = time_series_resize(signals, shortest_length)
-    
+    if paramSet_num == 1:
+        signals_resize = time_series_resize(signals, shortest_length)
+    else: 
+        signals_resize = time_series_resize(signals, shortest_length)
     
     """
     Quality
@@ -99,7 +100,7 @@ if __name__ == '__main__':
     """
     Signal preprocessing
     """
-    signals = signals_resize
+    # signals = signals_resize
     signals = pick_run_data(signals, general_run_idx)
     ingot_len = get_ingot_length(".//data2023_7_12//quality_2023_07_12.csv", methodIdx_lst[paramSet_num-1], isDifferentParamSets)
     ingot_len = np.array(ingot_len).reshape(-1, 1)
@@ -110,30 +111,14 @@ if __name__ == '__main__':
     outlet_diff = subtract_initial_value(outlet)
     
     """
-    AE
-    """
-    target = np.array(outlet_diff)
-    progress = np.array(progress)
-    ae = build_AE(target, loss='mean_absolute_error', metric="cosine_similarity")
-    # ae.load_weights('./modelWeights/AE_best.h5')
-    callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
-    history = ae.fit(target, target,
-                epochs=1000, batch_size=5,
-                shuffle=True, verbose=0,
-                callbacks=[callback])
-    show_train_history_NN_onlyTrain(history, 'mean_absolute_error', "cosine_similarity", 0)
-    x_decoded = ae.encoder(target).numpy()
-    
-    """
     Feature
     """ 
-    # f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
+    f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
     # features = features_from_signal(signals, target_signal_idx=1, isDifferencing=differencing, isEnveCombined_=isEnveCombined)
-    # f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
-    f_combine = np.concatenate((x_decoded, ingot_len), axis=1)
-    # enve_outlet_up, enve_outlet_low = get_envelope_lst(outlet_diff, progress,
-    #                                                    gau_sig=4.5, gau_rad=10, w_size=7, isInterpolated=False, isDifferenced=True)
-    # enve_combine = np.concatenate((enve_outlet_up, enve_outlet_low), axis=1)
+    f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
+    enve_outlet_up, enve_outlet_low = get_envelope_lst(outlet_diff, progress,
+                                                       gau_sig=4.5, gau_rad=10, w_size=7, isInterpolated=False, isDifferenced=True)
+    enve_combine = np.concatenate((enve_outlet_up, enve_outlet_low), axis=1)
     """
     Feature Analysis 
     """
