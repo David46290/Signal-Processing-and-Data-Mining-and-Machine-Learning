@@ -2,11 +2,12 @@ import numpy as np
 import os, glob
 from matplotlib import pyplot as plt
 from featureExtraction import features_from_signal, features_of_signal
-from signal_processing import non_discontinuous_runs, signals_from_dataset, time_series_downsample, pick_specific_signals
-from signal_processing import signals_to_images, images_resize_lst, pick_one_signal, pick_run_data
-from signal_processing import time_series_resize, get_envelope_lst, subtraction_2signals, variation_erase, subtract_initial_value, addition_2signals
-from qualityExtractionLoc import get_mean_each_run, quality_labeling, high_similarity_runs, pick_one_lot, get_lot, get_ingot_length, qualities_from_dataset, qualities_from_dataset_edge, get_worst_value_each_run
-
+# from signal_processing import non_discontinuous_runs, signals_from_dataset, time_series_downsample, pick_specific_signals
+# from signal_processing import signals_to_images, images_resize_lst, pick_one_signal, pick_run_data
+# from signal_processing import time_series_resize, get_envelope_lst, subtraction_2signals, variation_erase, subtract_initial_value, addition_2signals
+# from qualityExtractionLoc import get_mean_each_run, quality_labeling, high_similarity_runs, pick_one_lot, get_lot, get_ingot_length, qualities_from_dataset, qualities_from_dataset_edge, get_worst_value_each_run
+import signal_processing as sigpro
+import qualityExtractionLoc as QEL
 from locIntegration import locIntegrate, locIntegrate_edge
 from classPSO_XGB import psoXGB
 # import pandas as pd
@@ -57,58 +58,56 @@ if __name__ == '__main__':
     """
     Signal
     """ 
-    signals = signals_from_dataset('.\\datasetC', methodIdx_lst[paramSet_num-1], isDifferentParamSets, param_idx_lst=[0, 1])
+    signals = sigpro.signals_from_dataset('.\\datasetC', methodIdx_lst[paramSet_num-1], isDifferentParamSets, param_idx_lst=[0, 1])
     og_num_run = len(signals)
     # signals = time_series_resample(signals, dt_original=4, dt_final=60)
-    progress = pick_one_signal(signals, signal_idx=0)
-    valid_run_idx = non_discontinuous_runs(progress, 0, 306, 1)
-    signals = pick_run_data(signals, valid_run_idx)
+    progress = sigpro.pick_one_signal(signals, signal_idx=0)
+    valid_run_idx = sigpro.non_discontinuous_runs(progress, 0, 306, 1)
+    signals = sigpro.pick_run_data(signals, valid_run_idx)
     shortest_length = min([run.shape[1] for run in signals])
-    if paramSet_num == 1:
-        signals_resize = time_series_resize(signals, shortest_length)
-    else: 
-        signals_resize = time_series_resize(signals, shortest_length)
+    signals_resize = sigpro.time_series_resize(signals, shortest_length)
+
     
     """
     Quality
     """
-    ttv, warp, waviness, bow, position = qualities_from_dataset(".//data2023_7_12//quality_2023_07_12.csv", quality_run_idx, isDifferentParamSets_=True)
-    lot = get_lot(".//data2023_7_12//quality_2023_07_12.csv", quality_run_idx, isDifferentParamSets)
-    ttv = pick_run_data(ttv, methodIdx_lst[paramSet_num-1])
-    warp = pick_run_data(warp, methodIdx_lst[paramSet_num-1])
-    waviness = pick_run_data(waviness, methodIdx_lst[paramSet_num-1])
-    bow = pick_run_data(bow, methodIdx_lst[paramSet_num-1])
-    position = pick_run_data(position, methodIdx_lst[paramSet_num-1])
-    lot = pick_run_data(lot, methodIdx_lst[paramSet_num-1])
+    ttv, warp, waviness, bow, position = QEL.qualities_from_dataset(".//data2023_7_12//quality_2023_07_12.csv", quality_run_idx, isDifferentParamSets_=True)
+    lot = QEL.get_lot(".//data2023_7_12//quality_2023_07_12.csv", quality_run_idx, isDifferentParamSets)
+    ttv = sigpro.pick_run_data(ttv, methodIdx_lst[paramSet_num-1])
+    warp = sigpro.pick_run_data(warp, methodIdx_lst[paramSet_num-1])
+    waviness = sigpro.pick_run_data(waviness, methodIdx_lst[paramSet_num-1])
+    bow = sigpro.pick_run_data(bow, methodIdx_lst[paramSet_num-1])
+    position = sigpro.pick_run_data(position, methodIdx_lst[paramSet_num-1])
+    lot = sigpro.pick_run_data(lot, methodIdx_lst[paramSet_num-1])
     
-    ttv = pick_run_data(ttv, valid_run_idx)
-    warp = pick_run_data(warp, valid_run_idx)
-    waviness = pick_run_data(waviness, valid_run_idx)
-    bow = pick_run_data(bow, valid_run_idx)
-    position = pick_run_data(position, valid_run_idx)
-    lot = pick_run_data(lot, valid_run_idx)
+    ttv = sigpro.pick_run_data(ttv, valid_run_idx)
+    warp = sigpro.pick_run_data(warp, valid_run_idx)
+    waviness = sigpro.pick_run_data(waviness, valid_run_idx)
+    bow = sigpro.pick_run_data(bow, valid_run_idx)
+    position = sigpro.pick_run_data(position, valid_run_idx)
+    lot = sigpro.pick_run_data(lot, valid_run_idx)
     
-    general_run_idx = high_similarity_runs(waviness, lot)
-    ttv = pick_run_data(ttv, general_run_idx)
-    warp = pick_run_data(warp, general_run_idx)
-    waviness = pick_run_data(waviness, general_run_idx)
-    bow = pick_run_data(bow, general_run_idx)
-    position = pick_run_data(position, general_run_idx)
-    lot = pick_run_data(lot, general_run_idx)
-    waviness_label = quality_labeling(waviness, [1, 1.2, 1.5, 2])
+    general_run_idx = QEL.high_similarity_runs(waviness, lot)
+    ttv = sigpro.pick_run_data(ttv, general_run_idx)
+    warp = sigpro.pick_run_data(warp, general_run_idx)
+    waviness = sigpro.pick_run_data(waviness, general_run_idx)
+    bow = sigpro.pick_run_data(bow, general_run_idx)
+    position = sigpro.pick_run_data(position, general_run_idx)
+    lot = sigpro.pick_run_data(lot, general_run_idx)
+    waviness_label = QEL.quality_labeling(waviness, [1, 1.2, 1.5, 2])
     
     """
     Signal preprocessing
     """
     # signals = signals_resize
-    signals = pick_run_data(signals, general_run_idx)
-    ingot_len = get_ingot_length(".//data2023_7_12//quality_2023_07_12.csv", methodIdx_lst[paramSet_num-1], isDifferentParamSets)
+    signals = sigpro.pick_run_data(signals, general_run_idx)
+    ingot_len = QEL.get_ingot_length(".//data2023_7_12//quality_2023_07_12.csv", methodIdx_lst[paramSet_num-1], isDifferentParamSets)
     ingot_len = np.array(ingot_len).reshape(-1, 1)
-    ingot_len = pick_run_data(ingot_len, valid_run_idx)
-    ingot_len = pick_run_data(ingot_len, general_run_idx)
-    progress = pick_one_signal(signals, signal_idx=0)
-    outlet = pick_one_signal(signals, signal_idx=1)
-    outlet_diff = subtract_initial_value(outlet)
+    ingot_len = sigpro.pick_run_data(ingot_len, valid_run_idx)
+    ingot_len = sigpro.pick_run_data(ingot_len, general_run_idx)
+    progress = sigpro.pick_one_signal(signals, signal_idx=0)
+    outlet = sigpro.pick_one_signal(signals, signal_idx=1)
+    outlet_diff = sigpro.subtract_initial_value(outlet)
     
     """
     Feature
@@ -116,13 +115,13 @@ if __name__ == '__main__':
     f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
     # features = features_from_signal(signals, target_signal_idx=1, isDifferencing=differencing, isEnveCombined_=isEnveCombined)
     f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
-    enve_outlet_up, enve_outlet_low = get_envelope_lst(outlet_diff, progress,
+    enve_outlet_up, enve_outlet_low = sigpro.get_envelope_lst(outlet_diff, progress,
                                                        gau_sig=4.5, gau_rad=10, w_size=7, isInterpolated=False, isDifferenced=True)
     enve_combine = np.concatenate((enve_outlet_up, enve_outlet_low), axis=1)
     """
     Feature Analysis 
     """
-    y_lot1, run_idx_lot1 = pick_one_lot(waviness, lot, target_lot=1)
+    y_lot1, run_idx_lot1 = QEL.pick_one_lot(waviness, lot, target_lot=1)
     x_lot1 = f_combine[run_idx_lot1]
     # importance = resultOfRandomForest(x_lot1, y_lot1, 'squared_error')
     # importance_threshold = 1 / importance.shape[0]
