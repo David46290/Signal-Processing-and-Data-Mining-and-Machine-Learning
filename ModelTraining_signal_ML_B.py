@@ -63,9 +63,6 @@ if __name__ == '__main__':
     """
     Quality
     """
-    # ttv, warp, waviness, bow, position = QEL.qualities_from_dataset(".\\quality_2022_B.csv", methodIdx_lst[paramSet_num-1], isDifferentParamSets)
-    # lot = QEL.get_lot(".\\quality_2022_B.csv", methodIdx_lst[paramSet_num-1], isDifferentParamSets)
-    
     ttv = QEL.pick_certain_qualities(".\\quality_2022_B.csv", ['TTV'], methodIdx_lst[paramSet_num-1], isDifferentParamSets)
     warp = QEL.pick_certain_qualities(".\\quality_2022_B.csv", ['Warp'], methodIdx_lst[paramSet_num-1], isDifferentParamSets)
     waviness = QEL.pick_certain_qualities(".\\quality_2022_B.csv", ['Wav ind'], methodIdx_lst[paramSet_num-1], isDifferentParamSets)
