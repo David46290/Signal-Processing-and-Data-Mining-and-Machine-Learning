@@ -2,10 +2,6 @@ import numpy as np
 import os, glob
 from matplotlib import pyplot as plt
 from featureExtraction import features_of_signal
-# from signal_processing import time_series_resize, non_discontinuous_runs, get_signals, time_series_downsample, pick_specific_signals
-# from signal_processing import pick_run_data, get_parameter_set, signals_to_images, images_resize_lst, pick_one_signal
-# from signal_processing import get_envelope_lst, subtraction_2signals, variation_erase, subtract_initial_value, addition_2signals
-# from qualityExtractionLoc import get_mean_each_run, quality_labeling, high_similarity_runs, pick_one_lot, get_lot, get_ingot_length, qualities_from_dataset, qualities_from_dataset_edge, get_worst_value_each_run
 import signal_processing as sigpro
 import qualityExtractionLoc as QEL
 # from classImportance_single_output import importanceAnalysis
