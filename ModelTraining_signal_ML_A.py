@@ -1,9 +1,7 @@
 import numpy as np
 from featureExtraction import features_of_signal
-from signal_processing import non_discontinuous_runs, time_series_resize, get_signals, time_series_downsample, pick_specific_signals
-from signal_processing import pick_run_data, get_parameter_set, signals_to_images, images_resize_lst, pick_one_signal
-from signal_processing import get_envelope_lst, subtraction_2signals, variation_erase, subtract_initial_value, addition_2signals
-from qualityExtractionLoc import get_mean_each_run, quality_labeling, high_similarity_runs, pick_one_lot, get_lot, get_ingot_length, qualities_from_dataset, qualities_from_dataset_edge, get_worst_value_each_run
+import signal_processing as sigpro
+import qualityExtractionLoc as QEL
 # from classImportance_single_output import importanceAnalysis
 
 from locIntegration import locIntegrate
@@ -35,55 +33,53 @@ if __name__ == '__main__':
     Signal
     """
     all_signal_idx = np.arange(0, 56, 1)
-    signals_23 = get_signals('.\\datasetA', param_idx_lst=[0, 1, 10, 2, 3, 4, 5, 6, 36, 22])
-    signals_22 = get_signals('.\\datasetA_2022', param_idx_lst=[0, 1, 10, 2, 3, 4, 5, 6, 36, 22])
-    param_set_23 = get_parameter_set(signals_23)
-    param_set_22 = get_parameter_set(signals_22)
+    signals_23 = sigpro.get_signals('.\\datasetA', param_idx_lst=[0, 1, 10, 2, 3, 4, 5, 6, 36, 22])
+    signals_22 = sigpro.get_signals('.\\datasetA_2022', param_idx_lst=[0, 1, 10, 2, 3, 4, 5, 6, 36, 22])
+    param_set_23 = sigpro.get_parameter_set(signals_23)
+    param_set_22 = sigpro.get_parameter_set(signals_22)
     methodIdx_lst_23 = [np.where(param_set_23 == 1)[0], np.where(param_set_23 == 2)[0]]
     methodIdx_lst_22 = [np.where(param_set_22 == 1)[0], np.where(param_set_22 == 2)[0]]
-    signals_23 = pick_run_data(signals_23, methodIdx_lst_23[paramSet_num-1])
-    signals_22 = pick_run_data(signals_22, methodIdx_lst_22[paramSet_num-1])
+    signals_23 = sigpro.pick_run_data(signals_23, methodIdx_lst_23[paramSet_num-1])
+    signals_22 = sigpro.pick_run_data(signals_22, methodIdx_lst_22[paramSet_num-1])
     signals = signals_23 + signals_22
     shortest_length = min([run.shape[1] for run in signals])
     og_num_run = len(signals)
     # signals_new = time_series_resize(signals, 890)
-    progress = pick_one_signal(signals, signal_idx=0)
-    valid_run_idx = non_discontinuous_runs(progress, 0, 306, 1)
-    signals = pick_run_data(signals, valid_run_idx)
-    if paramSet_num == 1:
-        signals_resize = time_series_resize(signals, shortest_length)
-    else: 
-        signals_resize = time_series_resize(signals, shortest_length)
+    progress = sigpro.pick_one_signal(signals, signal_idx=0)
+    valid_run_idx = sigpro.non_discontinuous_runs(progress, 0, 306, 1)
+    signals = sigpro.pick_run_data(signals, valid_run_idx)
+    signals_resize = sigpro.time_series_resize(signals, shortest_length)
+
     
     """
     Quality
     """
-    ttv_23, warp_23, waviness_23, bow_23, position_23 = qualities_from_dataset(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets)
-    ttv_22, warp_22, waviness_22, bow_22, position_22 = qualities_from_dataset(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
+    ttv_23, warp_23, waviness_23, bow_23, position_23 = QEL.qualities_from_dataset(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets)
+    ttv_22, warp_22, waviness_22, bow_22, position_22 = QEL.qualities_from_dataset(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
     ttv = ttv_23 + ttv_22
     warp = warp_23 + warp_22
     waviness = waviness_23 + waviness_22
     bow = bow_23 + bow_22 
     position = position_23 + position_22   
     
-    lot_23 = get_lot(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets)
-    lot_22 = get_lot(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
+    lot_23 = QEL.get_lot(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets)
+    lot_22 = QEL.get_lot(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
     lot = lot_23 + lot_22
     
-    ttv = pick_run_data(ttv, valid_run_idx)
-    warp = pick_run_data(warp, valid_run_idx)
-    waviness = pick_run_data(waviness, valid_run_idx)
-    bow = pick_run_data(bow, valid_run_idx)
-    position = pick_run_data(position, valid_run_idx)
-    lot = pick_run_data(lot, valid_run_idx)
+    ttv = sigpro.pick_run_data(ttv, valid_run_idx)
+    warp = sigpro.pick_run_data(warp, valid_run_idx)
+    waviness = sigpro.pick_run_data(waviness, valid_run_idx)
+    bow = sigpro.pick_run_data(bow, valid_run_idx)
+    position = sigpro.pick_run_data(position, valid_run_idx)
+    lot = sigpro.pick_run_data(lot, valid_run_idx)
     
-    general_run_idx = high_similarity_runs(waviness, lot)
-    ttv = pick_run_data(ttv, general_run_idx)
-    warp = pick_run_data(warp, general_run_idx)
-    waviness = pick_run_data(waviness, general_run_idx)
-    bow = pick_run_data(bow, general_run_idx)
-    position = pick_run_data(position, general_run_idx)
-    lot = pick_run_data(lot, general_run_idx)
+    general_run_idx = QEL.high_similarity_runs(waviness, lot)
+    ttv = sigpro.pick_run_data(ttv, general_run_idx)
+    warp = sigpro.pick_run_data(warp, general_run_idx)
+    waviness = sigpro.pick_run_data(waviness, general_run_idx)
+    bow = sigpro.pick_run_data(bow, general_run_idx)
+    position = sigpro.pick_run_data(position, general_run_idx)
+    lot = sigpro.pick_run_data(lot, general_run_idx)
     
     # waviness_label = quality_labeling(waviness, [1, 1.2, 1.5, 2])
 
@@ -92,21 +88,21 @@ if __name__ == '__main__':
     Signal preprocessing
     """
     # signals = signals_resize
-    signals = pick_run_data(signals, general_run_idx)
-    progress = pick_one_signal(signals, signal_idx=0)
-    outlet = pick_one_signal(signals, signal_idx=2)
-    torque = pick_one_signal(signals, signal_idx=3)
-    bear_diff = subtraction_2signals(list(zip(addition_2signals(pick_specific_signals(signals, signal_idx_lst=[4, 5])),
-                                              addition_2signals(pick_specific_signals(signals, signal_idx_lst=[6, 7])))))
-    progress_t, torque_cleaned = variation_erase(progress, torque)
-    outlet_diff = subtract_initial_value(outlet)
-    driver_current = pick_one_signal(signals, signal_idx=8)
-    clamp_pressure = pick_one_signal(signals, signal_idx=9)
-    ingot_len_23 = get_ingot_length(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets)
-    ingot_len_22 = get_ingot_length(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
+    signals = sigpro.pick_run_data(signals, general_run_idx)
+    progress = sigpro.pick_one_signal(signals, signal_idx=0)
+    outlet = sigpro.pick_one_signal(signals, signal_idx=2)
+    torque = sigpro.pick_one_signal(signals, signal_idx=3)
+    bear_diff = sigpro.subtraction_2signals(list(zip(sigpro.addition_2signals(sigpro.pick_specific_signals(signals, signal_idx_lst=[4, 5])),
+                                              sigpro.addition_2signals(sigpro.pick_specific_signals(signals, signal_idx_lst=[6, 7])))))
+    progress_t, torque_cleaned = sigpro.variation_erase(progress, torque)
+    outlet_diff = sigpro.subtract_initial_value(outlet)
+    driver_current = sigpro.pick_one_signal(signals, signal_idx=8)
+    clamp_pressure = sigpro.pick_one_signal(signals, signal_idx=9)
+    ingot_len_23 = QEL.get_ingot_length(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets)
+    ingot_len_22 = QEL.get_ingot_length(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
     ingot_len = np.array(ingot_len_23 + ingot_len_22).reshape(-1, 1)
-    ingot_len = pick_run_data(ingot_len, valid_run_idx)
-    ingot_len = pick_run_data(ingot_len, general_run_idx)
+    ingot_len = sigpro.pick_run_data(ingot_len, valid_run_idx)
+    ingot_len = sigpro.pick_run_data(ingot_len, general_run_idx)
     
     """
     Feature
@@ -181,13 +177,13 @@ if __name__ == '__main__':
     """
     # psoModelTTV = psokNN(x, y[:, 0], 'TTV (datasetA)', normalized='')
     # psoModelWarp = psokNN(x, y[:, 1], 'Warp (datasetA)', normalized='')
-    # psoModelWavi = psokNN(x, y[:, 2], 'Waviness (datasetA)', normalized='')
+    psoModelWavi = psokNN(x, y[:, 2], 'Waviness (datasetA)', normalized='')
     # psoModelBOW = psokNN(x, y[:, 3], 'BOW (datasetA)', normalized='')
     # psoModelWavi = psokNN(x_lot1, y_lot1, 'Waviness (datasetA)', normalized='')
 
     # psoModelTTV.pso(particleAmount=20, maxIterTime=10)
     # psoModelWarp.pso(particleAmount=20, maxIterTime=10)
-    # psoModelWavi.pso(particleAmount=20, maxIterTime=10)
+    psoModelWavi.pso(particleAmount=20, maxIterTime=10)
     # psoModelBOW.pso(particleAmount=20, maxIterTime=10)
 
 
