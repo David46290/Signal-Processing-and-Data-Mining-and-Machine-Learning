@@ -6,9 +6,9 @@ import statistics
 from scipy import stats
 import math
 from plot_signals import time_series_downsampling
-from signal_processing import diff_erase, envelope_extract
 from scipy.ndimage import gaussian_filter1d
 from scipy import signal as scisig
+import signal_processing as sigpro
 
 class FreqFeatures():
     def __init__(self, signal_list, sample_rate):
@@ -177,12 +177,8 @@ class TimeFeatures():
             features_local_signal.append(statistics.variance(signal)) # variance
             # features_local_signal.append(np.std(signal)) # STD
             # features_local_signal.append(np.max(signal) / math.sqrt(sum(x**2 for x in signal)/len(signal))) # crest factor
-            p2p_setting = 0
-            if p2p_setting == 0:
-                features_local_signal.append(self.get_max_p2p(signal)) # max. P2P
-            else:
-                features_local_signal.append(np.max(np.abs(np.diff(signal, 1))))
-  
+            features_local_signal.append(self.get_max_p2p(signal)) # max. P2P
+            
             features_all_signal.append(np.array(features_local_signal))
               
         return np.array(features_all_signal)
@@ -345,7 +341,7 @@ def features_from_signal(signals_lst, target_signal_idx, isDifferencing, isEnveC
             # Savitzky-Golay smoothing
             # w_size_sig, order_sig = 10, 2 
             # sig_for_enve = curve_fitting(signals[1, :], window_size=w_size_sig, order=order_sig)
-            up, low = envelope_extract(target_sig=sig_for_enve, target_x=progress)
+            up, low = sigpro.envelope_extract(target_sig=sig_for_enve, target_x=progress)
         
         """
         Slicing based on the shape of signal
@@ -391,7 +387,8 @@ def features_from_signal(signals_lst, target_signal_idx, isDifferencing, isEnveC
         features_lowEnve = get3Dfeatures(signal_all_lowEnve)
         features_upEnve = getFlattenFeature(features_upEnve)
         features_lowEnve = getFlattenFeature(features_lowEnve)
-        feature_total = np.concatenate((features, features_upEnve, features_lowEnve), axis=1)
+        # feature_total = np.concatenate((features, features_upEnve, features_lowEnve), axis=1)
+        feature_total = np.concatenate((features, features_upEnve), axis=1)
         return feature_total
     else:
         return features
@@ -414,7 +411,7 @@ def features_of_signal(progress_lst, signals_lst, isEnveCombined_, gau_sig=0.01,
             # Savitzky-Golay smoothing
             # w_size_sig, order_sig = 10, 2 
             # sig_for_enve = curve_fitting(signals[1, :], window_size=w_size_sig, order=order_sig)
-            up, low = envelope_extract(target, progress, gau_sig, gau_rad, w_size)
+            up, low = sigpro.envelope_extract(target, progress, gau_sig, gau_rad, w_size)
 
         
         """
@@ -464,6 +461,7 @@ def features_of_signal(progress_lst, signals_lst, isEnveCombined_, gau_sig=0.01,
         features_upEnve = getFlattenFeature(features_upEnve)
         features_lowEnve = getFlattenFeature(features_lowEnve)
         feature_total = np.concatenate((features, features_upEnve, features_lowEnve), axis=1)
+        # feature_total = np.concatenate((features, features_upEnve), axis=1)
         return feature_total
     else:
         return features
