@@ -39,7 +39,7 @@ class locIntegrate:
             qualitiesOfTheRun: A quality value of THE SPECIFIC LOCATION from THE SPECIFIC RUN
         """
         
-        qualitiesOfTheRun = quality[run_idx][loc_idx][1] 
+        qualitiesOfTheRun = quality[run_idx][loc_idx][1:] 
         return qualitiesOfTheRun
     
     def allRunQuality(self, position, quality):
@@ -58,9 +58,12 @@ class locIntegrate:
         for run_idx, run_positions in enumerate(position):
             # get data in EACH run (process)
             for location_idx, location_content in enumerate(run_positions):
+                wafer_content = [run_idx, location_content[1]]
+                for value in self.getQualityOfRun(quality, run_idx, location_idx):
+                    wafer_content.append(value)
                 # get data in EVERY location
-                # append: [run_idx, location, quality_value]
-                total.append([run_idx, location_content[1], self.getQualityOfRun(quality, run_idx, location_idx)])        
+                # append: [run_idx, location, quality_values]
+                total.append(wafer_content)        
         # sort by run index  
         total = np.array(sorted(total, key=lambda tLst: tLst[0])).astype(float)  
         
@@ -76,14 +79,14 @@ class locIntegrate:
         INPUTS:
             allQuality: [quality1, quality2, ....]; length: amount of qualities predicted
             quality: [sample1, sample2, ....]; length: amount of wafers (samples) inspected in ALL runs (processes)
-            sample: [run_idx, location, quality_value]
+            sample: [run_idx, location, quality_value1, quality_value2, ...]
             sampleIdx: index of the SPECIFIED wafer (sample)
         OUTPUTS:
-            sample_qualities: [quality_value1, quality_value2, ....]; length: amount of qualities predicted
+            sample_qualities: [[quality_values]1, [quality_values]2, ....]; length: amount of qualities predicted
         """
         sample_qualities = []
         for quality in allQuality: 
-            sample_qualities.append(quality[sampleIdx][2])
+            sample_qualities.append(quality[sampleIdx][2:])
         return sample_qualities
     
     def features_of_sample(self, all_features, runIdx, location):
@@ -128,7 +131,11 @@ class locIntegrate:
         # make y
         for sampleIdx in range(0, self.allQuality[0].shape[0]):
             # get quality values (different kind) for EACH wafer (sample)
-            y.append(self.qualities_of_sample(self.allQuality, sampleIdx))
+            sample_quality_content = []
+            for quality_kind in self.qualities_of_sample(self.allQuality, sampleIdx):
+                for value in quality_kind:
+                    sample_quality_content.append(value)
+            y.append(sample_quality_content)
         y = np.array(y)
         
         # make x
@@ -190,7 +197,11 @@ class locIntegrate:
         # make y
         for sampleIdx in range(0, self.allQuality[0].shape[0]):
             # get quality values (different kind) for EACH wafer (sample)
-            y.append(self.qualities_of_sample(self.allQuality, sampleIdx))
+            sample_quality_content = []
+            for quality_kind in self.qualities_of_sample(self.allQuality, sampleIdx):
+                for value in quality_kind:
+                    sample_quality_content.append(value)
+            y.append(sample_quality_content)
         y = np.array(y)
         
         # make x
@@ -204,104 +215,4 @@ class locIntegrate:
          
         return  x, y
 
-class locIntegrate_edge:
-    def __init__(self, warp_entry_10, warp_entry_20, warp_entry_30, warp_exit_10, warp_exit_20, warp_exit_30, wavi_entry, wavi_exit, position):
-        self.warp_entry_10 = self.allRunQuality(position, warp_entry_10)
-        self.warp_entry_20 = self.allRunQuality(position, warp_entry_20)
-        self.warp_entry_30 = self.allRunQuality(position, warp_entry_30)
-        
-        self.warp_exit_10 = self.allRunQuality(position, warp_exit_10)
-        self.warp_exit_20 = self.allRunQuality(position, warp_exit_20)
-        self.warp_exit_30 = self.allRunQuality(position, warp_exit_30)
-        
-        self.wavi_entry = self.allRunQuality(position, wavi_entry)
-        self.wavi_exit = self.allRunQuality(position, wavi_exit)
-              
-        self.position = self.allRunQuality(position, position)
-        
-        self.allQuality = [self.warp_entry_10, self.warp_entry_20, self.warp_entry_30, self.warp_exit_10, self.warp_exit_20, self.warp_exit_30, self.wavi_entry, self.wavi_exit]
-        self.totalRun = len(self.position)
-        
-    
-    """
-    Input data
-    """
-    def featureInSample_(self, allFeature, runIdx):
-        currentFeature = []
-        for param in allFeature[runIdx]:
-            for feature in param:
-                currentFeature.append(feature)
-        return currentFeature 
-    
-    def getFlattenFeature(self, feature): # (sample amount, param. amount, step amount) => (sample amount, param. amount * step amount)
-        x = []    
-        for sampleIdx in range(0, len(feature)):
-            x.append(self.featureInSample_(feature, sampleIdx))
-        x = np.array(x).T
-        xN = []
-        for feature in x:
-            xN.append(feature)
-        xN = np.array(xN)
-        return xN.T
-    
-    """
-    
-    """
-    def getQualityOfRun(self, quality, run, locIdx): # 
-        qualitiesOfTheRun = quality[run][locIdx]
-        return qualitiesOfTheRun[1]
-    
-    def folding(self, totalList):
-        folded = []
-        for run in range(min(totalList[:, 0].astype(int)), max(totalList[:, 0].astype(int))+1):
-            runContent = []
-            for content in totalList:
-                if content[0] == run:
-                    runContent.append(content)
-            folded.append(runContent)
-        
-        return folded
-    
-    def allRunQuality(self, position, quality):
-        total = []
-        for run in range(0, len(position)):
-            for locationIdx in range(0, len(position[run])):
-                total.append([run, position[run][locationIdx][1], self.getQualityOfRun(quality, run, locationIdx)]) # 將run, 位置和品質數值作為一元素放到序列內          
-        total = np.array(sorted(total, key=lambda tLst: tLst[0])).astype(float)   
-        return total
-    
-    """
-    
-    """
-    def qualityInSample(self, allQuality, sampleIdx):
-        currentQuality = []
-        for quality in allQuality: 
-            currentQuality.append(quality[sampleIdx][2])
-        return currentQuality
-    
-    def featureInSample(self, allFeature, runIdx, lot_):
-        currentFeature = []
-        for values in allFeature[runIdx]:
-            currentFeature.append(values)
-        currentFeature.append(lot_)
-        
-        return currentFeature 
-    
-    
-    def mixFeatureAndQuality(self, allFeatures, allQuality, location, totalRun):
-        x = []
-        y = []
-        
-
-        for sampleIdx in range(0, len(allQuality[0])):
-            y.append(self.qualityInSample(allQuality, sampleIdx))
-        
-
-        for sampleIdx in range(0, len(y)):
-            runIdx = int(location[sampleIdx][0])
-            lot = location[sampleIdx][2]
-            x.append(self.featureInSample(allFeatures, runIdx, lot))
-        x = np.array(x)
-        
-        return  x, np.array(y)
 
