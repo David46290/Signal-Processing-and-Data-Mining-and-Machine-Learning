@@ -71,7 +71,11 @@ if __name__ == '__main__':
     """
     Quality
     """
-    ttv, warp, waviness, bow, position = QEL.qualities_from_dataset(".//data2023_7_12//quality_2023_07_12.csv", quality_run_idx, isDifferentParamSets_=True)
+    ttv = QEL.pick_certain_qualities(".//data2023_7_12//quality_2023_07_12.csv", ['TTV'], quality_run_idx, isDifferentParamSets)
+    warp = QEL.pick_certain_qualities(".//data2023_7_12//quality_2023_07_12.csv", ['Warp'], quality_run_idx, isDifferentParamSets)
+    waviness = QEL.pick_certain_qualities(".//data2023_7_12//quality_2023_07_12.csv", ['Wav ind'], quality_run_idx, isDifferentParamSets)
+    bow = QEL.pick_certain_qualities(".//data2023_7_12//quality_2023_07_12.csv", ['Bow'], quality_run_idx, isDifferentParamSets) 
+    position = QEL.get_wafer_position(".//data2023_7_12//quality_2023_07_12.csv", quality_run_idx, isDifferentParamSets)
     lot = QEL.get_lot(".//data2023_7_12//quality_2023_07_12.csv", quality_run_idx, isDifferentParamSets)
     ttv = sigpro.pick_run_data(ttv, methodIdx_lst[paramSet_num-1])
     warp = sigpro.pick_run_data(warp, methodIdx_lst[paramSet_num-1])
