@@ -54,17 +54,13 @@ if __name__ == '__main__':
     """
     Quality
     """
-    ttv_23, warp_23, waviness_23, bow_23, position_23 = QEL.qualities_from_dataset(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets)
-    ttv_22, warp_22, waviness_22, bow_22, position_22 = QEL.qualities_from_dataset(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
-    ttv = ttv_23 + ttv_22
-    warp = warp_23 + warp_22
-    waviness = waviness_23 + waviness_22
-    bow = bow_23 + bow_22 
-    position = position_23 + position_22   
+    ttv = QEL.pick_certain_qualities(".\\quality_A.csv", ['TTV'], methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.pick_certain_qualities(".\\quality_2022_A.csv", ['TTV'], methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
+    warp = QEL.pick_certain_qualities(".\\quality_A.csv", ['Warp'], methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.pick_certain_qualities(".\\quality_2022_A.csv", ['Warp'], methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
+    waviness = QEL.pick_certain_qualities(".\\quality_A.csv", ['Wav ind'], methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.pick_certain_qualities(".\\quality_2022_A.csv", ['Wav ind'], methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
+    bow = QEL.pick_certain_qualities(".\\quality_A.csv", ['Bow'], methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.pick_certain_qualities(".\\quality_2022_A.csv", ['Bow'], methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
+    position = QEL.get_wafer_position(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.get_wafer_position(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)  
     
-    lot_23 = QEL.get_lot(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets)
-    lot_22 = QEL.get_lot(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
-    lot = lot_23 + lot_22
+    lot = QEL.get_lot(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.get_lot(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
     
     ttv = sigpro.pick_run_data(ttv, valid_run_idx)
     warp = sigpro.pick_run_data(warp, valid_run_idx)
