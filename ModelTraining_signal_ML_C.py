@@ -8,7 +8,7 @@ from featureExtraction import features_from_signal, features_of_signal
 # from qualityExtractionLoc import get_mean_each_run, quality_labeling, high_similarity_runs, pick_one_lot, get_lot, get_ingot_length, qualities_from_dataset, qualities_from_dataset_edge, get_worst_value_each_run
 import signal_processing as sigpro
 import qualityExtractionLoc as QEL
-from locIntegration import locIntegrate, locIntegrate_edge
+from locIntegration import locIntegrate
 from classPSO_XGB import psoXGB
 # import pandas as pd
 from correlation_analysis import corr_features_vs_quality, corr_filter
