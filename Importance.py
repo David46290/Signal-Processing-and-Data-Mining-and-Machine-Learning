@@ -123,30 +123,9 @@ if __name__ == '__main__':
     importance_threshold = 1 / importance.shape[0]
     important_feature_idx = np.where(importance >= importance_threshold)[0]
     important_features = feature_importance[important_feature_idx]
-    important_features = np.sort(important_features, axis=0)[::-1]
+    important_features = important_features[np.argsort(important_features[:, 0])[::-1]]
     np.savetxt('.\\importance_analysis\\important_features.csv', important_features, delimiter=',', fmt=['%s', '%s', '%s'], encoding="utf-8")
-    # x_lot1 = f_combine[:, important_feature_idx]
-    # f_combine = f_combine[:, important_feature_idx] # important features
-    
-    # locPrepare = locIntegrate([waviness_3], position)
-    # x, y = locPrepare.mixFeatureAndQuality(f_combine)
-    # y = np.array([max(values) for values in y])
 
-    
-    """
-    PSO
-    """
-    # psoModelTTV = psokNN(x, y[:, 0], 'TTV (datasetB)', normalized='')
-    # psoModelWarp = psokNN(x, y[:, 1], 'Warp (datasetB)', normalized='')
-    # psoModelWavi = psokNN(x, y, 'Waviness (datasetB)', normalized='')
-    # psoModelBOW = psokNN(x, y[:, 3], 'BOW (datasetB)', normalized='')
-    # psoModelWavi = psokNN(x_lot1, y_lot1, 'Waviness (datasetB)', normalized='')
-
-    # psoModelTTV.pso(particleAmount=20, maxIterTime=10)
-    # psoModelWarp.pso(particleAmount=20, maxIterTime=10)
-    # model, fitnessHistory = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
-    # print('K =', model.n_neighbors)
-    # psoModelBOW.pso(particleAmount=20, maxIterTime=10)
 
     
 
