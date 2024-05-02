@@ -16,6 +16,7 @@ from cross_validation import cross_validate, cross_validate_signal, cross_valida
 from classPSO_kNN import psokNN
 from classPSO_RF_importance_detection import psoRF
 
+
 def quick_check_extremes(signal_lst, alarm_values):
     for signal in signal_lst:
         if signal.min() < alarm_values[0]:
@@ -81,8 +82,19 @@ if __name__ == '__main__':
     """
     Feature extraction
     """
+    feature_file_completed = False
+    file_location = '.\\features_for_importance_analysis'
     features_total = []
     for run_idx, run_signals in enumerate(signals):
-        features_run = feaext.TimeFeatures(run_signals, gau_sig=2, gau_rad=4, w_size=3).features_all_signals
+        if not feature_file_completed:
+            features_run = feaext.TimeFeatures(run_signals, gau_sig=2, gau_rad=4, w_size=3).features_all_signals
+            for signal_idx, signal_features in enumerate(features_run):
+                for feature_idx, value in enumerate(signal_features):
+                    if np.isnan(value):
+                        features_run[signal_idx, feature_idx] = 0
+            np.savetxt(f'{file_location}\\{run_idx}.csv', features_run, delimiter=",")
+            features_run = np.hstack(features_run)
+        else:
+            features_run = np.hstack(np.genfromtxt(f'{file_location}\\{run_idx}.csv', delimiter=','))
         features_total.append(features_run)
     features_total = np.array(features_total)
