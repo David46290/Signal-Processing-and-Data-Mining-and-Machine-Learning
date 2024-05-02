@@ -1,6 +1,7 @@
 import numpy as np
 import os, glob
 from matplotlib import pyplot as plt
+import pandas as pd
 import signal_processing as sigpro
 import qualityExtractionLoc as QEL
 # from classImportance_single_output import importanceAnalysis
@@ -110,8 +111,20 @@ if __name__ == '__main__':
         np.savetxt('.\\importance_analysis\\signal_feature_importance.csv', importance, delimiter=",")
     else:
         importance = np.genfromtxt('.\\importance_analysis\\signal_feature_importance.csv', delimiter=",")
-    # importance_threshold = 1 / importance.shape[0]
-    # important_feature_idx = np.where(importance >= importance_threshold)[0]
+    signal_names = pd.read_csv('.\\signal_names.csv', delimiter=",", encoding="utf-8")['name_en'].to_numpy()
+    feature_lst = ['Mean', 'Kurtosis', 'Skewness', 'Variance', 'P2P']
+    # integrating signal name, feature, and importance
+    signal_feature_names = []
+    for signal in signal_names:
+        for feature in feature_lst:
+            signal_feature_names.append([signal, feature])
+    signal_feature_names = np.array(signal_feature_names)   
+    feature_importance = np.concatenate((importance.reshape(-1, 1), signal_feature_names), axis=1)
+    importance_threshold = 1 / importance.shape[0]
+    important_feature_idx = np.where(importance >= importance_threshold)[0]
+    important_features = feature_importance[important_feature_idx]
+    important_features = np.sort(important_features, axis=0)[::-1]
+    np.savetxt('.\\importance_analysis\\important_features.csv', important_features, delimiter=',', fmt=['%s', '%s', '%s'], encoding="utf-8")
     # x_lot1 = f_combine[:, important_feature_idx]
     # f_combine = f_combine[:, important_feature_idx] # important features
     
