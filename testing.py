@@ -79,11 +79,17 @@ if __name__ == '__main__':
     lot = sigpro.pick_run_data(lot, general_run_idx)
     waviness_3 = sigpro.pick_run_data(waviness_3, general_run_idx)
     
+    ingot_len = QEL.get_ingot_length(".\\quality_2022_B.csv", methodIdx_lst[paramSet_num-1], isDifferentParamSets)
+    ingot_len = np.array(ingot_len).reshape(-1, 1)
+    ingot_len = sigpro.pick_run_data(ingot_len, valid_run_idx)
+    ingot_len = sigpro.pick_run_data(ingot_len, general_run_idx)
+    
     """
     Feature extraction
     """
+    signals = sigpro.pick_run_data(signals, general_run_idx)
     feature_file_completed = False
-    file_location = '.\\features_for_importance_analysis'
+    file_location = '.\\signal_features_for_importance_analysis'
     features_total = []
     for run_idx, run_signals in enumerate(signals):
         if not feature_file_completed:
@@ -98,3 +104,4 @@ if __name__ == '__main__':
             features_run = np.hstack(np.genfromtxt(f'{file_location}\\{run_idx}.csv', delimiter=','))
         features_total.append(features_run)
     features_total = np.array(features_total)
+
