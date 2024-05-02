@@ -5,10 +5,10 @@ class locIntegrate:
         """
         INPUTS:
             qualities_lst: [quality_lst1, quality_lst2, ....]; length: amount of qualities predicted
-            quality_lst: [run_content1, run_content2, ....]; length: amount of runs (process) conducted
-            run_content: [[location1, quality_value1], [location2, quality_value2], ....]; length: amount of wafers (samples) inspected in THAT run (process)
+                quality_lst: [run_content1, run_content2, ....]; length: amount of runs (process) conducted
+                    run_content: [[location, quality_value1, quality_value2, ...], [location, quality_value1, quality_value2, ...], ....]; length: amount of wafers (samples) inspected in THAT run (process)
             position: [run_positions1, run_positions2, ....]; length: amount of runs (process) conducted
-            run_positions: [[wafer_idx1, location1], [wafer_idx2, location2], ....]; length: amount of wafers (samples) inspected in THAT run (process)
+                run_positions: [[wafer_idx1, location1], [wafer_idx2, location2], ....]; length: amount of wafers (samples) inspected in THAT run (process)
         """
         self.allQuality = []
         """
@@ -34,7 +34,7 @@ class locIntegrate:
         """
         INPUTS:
             quality: [run_content1, run_content2, ....]; length: amount of runs (process) conducted
-            run_content: [[location1, quality_value1], [location2, quality_value2], ....]; length: amount of wafers (samples) inspected in THAT run (process)
+                run_content: [[location, quality_value1, quality_value2, ...], [location, quality_value1, quality_value2, ...], ....]; length: amount of wafers (samples) inspected in THAT run (process)
         OUTPUTS:
             qualitiesOfTheRun: A quality value of THE SPECIFIC LOCATION from THE SPECIFIC RUN
         """
@@ -48,7 +48,7 @@ class locIntegrate:
             position: [run_positions1, run_positions2, ....]; length: amount of runs (process) conducted
             run_positions: [[wafer_idx1, location1], [wafer_idx2, location2], ....]; length: amount of wafers (samples) inspected in THAT run (process)
             quality: [run_content1, run_content2, ....]; length: amount of runs (process) conducted
-            run_content: [[location1, quality_value1], [location2, quality_value2], ....]; length: amount of wafers (samples) inspected in THAT run (process)
+                run_content: [[location, quality_value1, quality_value2, ...], [location, quality_value1, quality_value2, ...], ....]; length: amount of wafers (samples) inspected in THAT run (process)
         OUTPUTS:
             total: [sample1, sample2, ....]; length: amount of wafers (samples) inspected in ALL runs (processes)
             sample: [run_idx, location, quality_value]
@@ -78,8 +78,8 @@ class locIntegrate:
         """
         INPUTS:
             allQuality: [quality1, quality2, ....]; length: amount of qualities predicted
-            quality: [sample1, sample2, ....]; length: amount of wafers (samples) inspected in ALL runs (processes)
-            sample: [run_idx, location, quality_value1, quality_value2, ...]
+                quality: [sample1, sample2, ....]; length: amount of wafers (samples) inspected in ALL runs (processes)
+                sample: [run_idx, location, quality_value1, quality_value2, ...]
             sampleIdx: index of the SPECIFIED wafer (sample)
         OUTPUTS:
             sample_qualities: [[quality_values]1, [quality_values]2, ....]; length: amount of qualities predicted
@@ -94,7 +94,7 @@ class locIntegrate:
         INPUTS:
             all_features: ndarray[num_run, num_feature]
             all_features: [run1, run2, ....]; length: amount of runs (process) conducted
-            run: [feature1, feature2, ....]; length: amount of features extracted from THE run (process)
+                run: [feature1, feature2, ....]; length: amount of features extracted from THE run (process)
             
             runIdx: index of the specified run
             location: location of the specified wafer (sample)
@@ -114,16 +114,15 @@ class locIntegrate:
         INPUTS:
             all_features: ndarray[num_run, num_feature]
             all_features: [run1, run2, ....]; length: amount of runs (process) conducted
-            run: [feature1, feature2, ....]; length: amount of features extracted from THE run (process)
+                run: [feature1, feature2, ....]; length: amount of features extracted from THE run (process)
             
         OUTPUTS:
             x: ndarray[num_sample, num_feature]
             x: [sample1, sample2, ....]; length: amount of wafers (samples) inspected in ALL runs (processes)
-            sample: [feature1, feature2, ..., location]; length: amount of features extracted from THE run (process) + 1 (wafer's (sample's) location in the run (process))
+                sample: [feature1, feature2, ..., location]; length: amount of features extracted from THE run (process) + 1 (wafer's (sample's) location in the run (process))
         
-            y: ndarray[num_sample, num_quality]
             y: [sample_1, sample_2, ....]; length: amount of wafers (samples) inspected in ALL runs (processes)
-            sample_: [quality1, quality2, ....]; length: amount of qualities predicted
+                sample_: [quality1 value1, quality1 value2, ....]; length: amount of qualities values predicted
         """
         x = []
         y = []
@@ -183,13 +182,12 @@ class locIntegrate:
         OUTPUTS:
             x: ndarray[num_sample, signal_length, num_channel]
             x: [sample1, sample2, ....]; length: amount of wafers (samples) inspected in ALL runs (processes)
-            sample: [tick1, tick2, ..., location(constant series)]; length: amount of recorded points in the signals
-            tick: [channel1(tn), channel2(tn), ...., location]; length: amount of kinds of recorded signals a.k.a. amount of channels + 1 (wafer's (sample's) location in the run (process))
-                (signal values IN A INSTANT MOMENT (TICK) from different channels)
+                sample: [tick1, tick2, ..., location(constant series)]; length: amount of recorded points in the signals
+                    tick: [channel1(tn), channel2(tn), ...., location]; length: amount of kinds of recorded signals a.k.a. amount of channels + 1 (wafer's (sample's) location in the run (process))
+                        (signal values IN A INSTANT MOMENT (TICK) from different channels)
     
             y: ndarray[num_sample, num_quality]
-            y: [sample_1, sample_2, ....]; length: amount of wafers (samples) inspected in ALL runs (processes)
-            sample_: [quality1, quality2, ....]; length: amount of qualities predicted
+                sample_: [quality1 value1, quality1 value2, ....]; length: amount of qualities values predicted
         """
         x = []
         y = []
