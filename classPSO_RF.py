@@ -16,11 +16,11 @@ from sklearn.utils import shuffle
 
 # edit the part below when model is changed
 class psoRF:
-    def __init__(self, x, y, qualityKind, normalized):
+    def __init__(self, x, y, qualityKind, normalized=False):
         self.qualityKind = qualityKind
         self.isMultiStacking = True
         self.normalized = normalized
-        self.dna_amount = 5
+        self.dna_amount = 6
         self.x = x
         self.y = y
         self.x, self.y = self.cleanOutlier(x, y)
@@ -108,42 +108,45 @@ class psoRF:
         xTrain, xTest, yTrain, yTest = train_test_split(x_, y_, test_size=0.1, random_state=75)
         return xTrain, yTrain, xTest, yTest
                 
-    def plotTrueAndPredicted(self, x, YT, YP, category, isLoc):
+    def plotTrueAndPredicted(self, x, YT, YP, category, plot = True):
         if self.normalized == 'xy':
             YT = (self.yMax - self.yMin) * YT + self.yMin
             YP = (self.yMax - self.yMin) * YP + self.yMin
-        plt.figure(figsize=(12, 9))
-        plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
-        if isLoc:
-            plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
-            # plt.plot(xAxis, YT, '-', color='peru', lw=3)
-            # plt.plot(xAxis, YP, '-', color='forestgreen', lw=3)
-
-        else:
-            plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
-            # plt.plot(xAxis, YT, '-', color='peru', lw=5)
-            # plt.plot(xAxis, YP, '-', color='forestgreen', lw=5)
         rmse = np.sqrt(mean_squared_error(YT, YP))
         r2 = r2_score(YT, YP)
         mape = mean_absolute_percentage_error(YT, YP) * 100
         mae = mean_absolute_error(YT, YP)
-        topValue = (max(YT) if max(YT) > max(YP) else max(YP))
-        topValue = topValue * 1.1 if topValue > 0 else topValue * 0.9
-        bottomValue = (min(YT) if min(YT) < min(YP) else min(YP))
-        bottomValue = bottomValue * 0.9 if topValue > 0 else topValue * 1.1
-        # plt.legend(["true", 'predicted'], fontsize=24)
-        plt.ylabel("Predicted Value", fontsize=24)
-        plt.xlabel("True Value", fontsize=24)
-        plt.ylim([bottomValue, topValue])
-        plt.xlim([bottomValue, topValue])
-        plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
-        plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
-        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | ,MAE={mae:.2f}"
-                  , fontsize=26)
-        # plt.xticks([])
-        # plt.yticks([])
-        plt.grid()
-        print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {rmse:.2f}")
+        
+        if plot:
+            color1 = ['slateblue', 'orange', 'firebrick', 'steelblue', 'purple', 'green']
+            plt.figure(figsize=(12, 9))
+            plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
+            plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
+            topValue = (max(YT) if max(YT) > max(YP) else max(YP))
+            topValue = topValue * 1.1 if topValue > 0 else topValue * 0.9
+            bottomValue = (min(YT) if min(YT) < min(YP) else min(YP))
+            bottomValue = bottomValue * 0.9 if topValue > 0 else topValue * 1.1
+            plt.ylabel("Predicted Value", fontsize=24)
+            plt.xlabel("True Value", fontsize=24)
+            bottomValue = 0
+            topValue = 2.7
+            plt.ylim([bottomValue, topValue])
+            plt.xlim([bottomValue, topValue])
+            plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
+            plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
+            plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
+                      , fontsize=26)
+            plt.axhline(y=1, color=color1[0])
+            plt.axhline(y=1.2, color=color1[1])
+            plt.axhline(y=1.5, color=color1[2])
+            plt.axhline(y=2, color=color1[3])
+            plt.axvline(x=1, color=color1[0])
+            plt.axvline(x=1.2, color=color1[1])
+            plt.axvline(x=1.5, color=color1[2])
+            plt.axvline(x=2, color=color1[3])
+            plt.grid()
+            plt.show()
+        print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
         
     def show_train_history(self, history_, train_, category):
         plt.figure(figsize=(12, 9))
@@ -158,45 +161,78 @@ class psoRF:
         plt.yticks(fontsize=22)
         plt.legend(['train'], fontsize=20)
         plt.grid(True)  
+    
+    def plot_metrics_folds(self, train_lst, val_lst):
+        train_lst, val_lst = train_lst.T, val_lst.T
+        x = np.arange(1, self.kfold_num+1, 1)
+        plt.figure(figsize=(16, 6))
+        ax1 = plt.subplot(121)
+        ax1.plot(x, train_lst[0], '-o', label='train', lw=5, color='seagreen')
+        ax1.plot(x, val_lst[0], '-o', label='val', lw=5, color='brown')
+        ax1.set_ylabel('MAPE (%)', fontsize=24)
+        ax1.set_xlabel('Fold', fontsize=24)
+        ax1.tick_params(axis='both', which='major', labelsize=20)
+        # ax1.set_xticks(np.arange(1, self.kfold_num+1, 1), fontsize=22)
+        # ax1.set_title(f'Iter. time: {iter_idx} of Particle {particle_idx}', fontsize=26)
+        ax1.legend(loc='best', fontsize=20)
+        ax1.grid(True)
+        ax1.set_ylim((0, 40))
         
+        ax2 = plt.subplot(122)
+        ax2.plot(x, train_lst[1], '-o', label='train', lw=5, color='seagreen')
+        ax2.plot(x, val_lst[1], '-o', label='val', lw=5, color='brown')
+        ax2.set_ylabel('R2', fontsize=24)
+        ax2.set_xlabel('Fold', fontsize=24)
+        ax2.tick_params(axis='both', which='major', labelsize=20)
+        # ax2.set_xticks(np.arange(1, self.kfold_num+1, 1), fontsize=22)
+        # ax2.set_title(f'Iter. time: {iter_idx} of Particle {particle_idx}', fontsize=26)
+        ax2.grid(True)
+        ax2.legend(loc='best', fontsize=20)
+        ax2.set_ylim((0, 1.1))
+        # ax2.set_ylim((0, 1.1))
+        plt.suptitle('best particle', fontsize=26)
+        plt.tight_layout()
+        plt.subplots_adjust(top=0.88)
+        plt.show()
+        plt.close()
+    
     # edit the part below when model is changed
-    def modelTraining(self, n_esti_, leaf_, split_, depth_, RSN, metricHistory):
+    def modelTraining(self, n_esti_, split_, leaf_, depth_, features_, RSN, metricHistory):
         # model building
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=RSN)
         kf = KFold(n_splits=self.kfold_num)
         fitness_lst = []
+        train_metric_lst = np.zeros((self.kfold_num, 2))
+        val_metric_lst = np.zeros((self.kfold_num, 2))
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             model = RandomForestRegressor(n_estimators=n_esti_,
-                                            min_samples_leaf=leaf_,
                                             min_samples_split=split_,
+                                            min_samples_leaf=leaf_,
                                             max_depth=depth_,
-                                            random_state=RSN)
-            x_ = xTrain[train_idx]
-            y_ = yTrain[train_idx]
-            model.fit(x_, y_)
-            yTestPredicted = model.predict(self.xTest)
-            r2_test = r2_score(self.yTest, yTestPredicted)
-            mape_test = mean_absolute_percentage_error(self.yTest, yTestPredicted)
-            # fitness_lst.append(1 - r2_test)
-            fitness_lst.append(mape_test)
+                                            max_features=features_,
+                                            random_state=79,
+                                            oob_score=True,# default out-of-bag score: r2
+                                            n_jobs=5) 
+            x_train = xTrain[train_idx]
+            y_train = yTrain[train_idx]
+            x_val = xTrain[val_idx]
+            y_val = yTrain[val_idx]
+            model.fit(x_train, y_train)
+            yValPredicted = model.predict(x_val)
+            
+            r2_train = r2_score(y_train, model.predict(x_train))
+            mape_train = mean_absolute_percentage_error(y_train, model.predict(x_train)) * 100
+            train_metric_lst[idx] = (np.array([mape_train, r2_train]))
+    
+            r2_val = r2_score(y_val, yValPredicted)
+            mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
+            val_metric_lst[idx] = np.array([mape_val, r2_val])
+            fitness_lst.append(mape_val)
             
         fitness = np.array(fitness_lst).mean()
-        # dataset creating
-        # xTrain, xVal, yTrain, yVal = train_test_split(self.xTrain, self.yTrain, test_size=0.2, random_state=RSN)
-        # model.fit(xTrain, yTrain)
-        # # fitness caculation
-        # yValPredicted = model.predict(xVal)
-        # yTestPredicted = model.predict(self.xTest)
-        # r2_val = r2_score(yVal, yValPredicted)
-        # r2_test = r2_score(self.yTest, yTestPredicted)
-        # fitness = ((1 - r2_test) + (1 - r2_val)) / 2
         
         if fitness < min(metricHistory):
             metricHistory.append(fitness)
-            # modelJson = model.to_json()
-            # with open(f".\modelWeights\preTrain_{fitness}.json", "w") as jsonFile:
-            #     jsonFile.write(modelJson)
-            #     model.save_weights(f".\modelWeights\preTrain_{fitness}.h5")
                 
         return fitness, metricHistory
     
@@ -209,22 +245,22 @@ class psoRF:
     # def roundUpRSN(self, x, prec=2, base=0.01):
     #     return round(base * round(float(x)/base), prec)   
 
-    def particlePopulationInitialize(self, particleAmount):
+    def population_curentInitialize(self, particleAmount):
         initialPosition = np.zeros((particleAmount, self.dna_amount)) # +1 for Random Seed Number
         n_esti_min = 100
         n_esti_max = 1000
-        leaf_min = 1
-        leaf_max = 10
-        split_min = 2
+        split_min = 4
         split_max = 10
-        depth_min = 10
-        depth_max = 100
+        leaf_min = 2
+        leaf_max = 10
+        depth_min = 5
+        depth_max = 15
+        max_features_min = np.sqrt(self.x.shape[1]).astype(int)
+        max_features_max = self.x.shape[1]
         RSN_min = 0
-        RSN_max = 100
-        param_min_lst = [n_esti_min, leaf_min, split_min, depth_min, RSN_min]
-        param_max_lst = [n_esti_max, leaf_max, split_max, depth_max, RSN_max]
-        # DO_min = 0
-        # DO_max = 0.5
+        RSN_max = 10
+        param_min_lst = [n_esti_min, split_min, leaf_min, depth_min, max_features_min , RSN_min]
+        param_max_lst = [n_esti_max, split_max, leaf_max, depth_max, max_features_max, RSN_max]
         # edit the part below when model is changed
         for particleIdx in range(particleAmount):
             for dnaIdx in range(self.dna_amount):
@@ -232,86 +268,95 @@ class psoRF:
 
         return initialPosition.astype(int)
     
-    def particleBoundary(self, particlePopulation):
-        # particleAmount = len(particlePopulation)
+    def particleBoundary(self, population_curent):
+        # edit the part below when model is changed
         n_esti_min = 100
         n_esti_max = 1000
-        leaf_min = 1
+        leaf_min = 2
         leaf_max = 10
-        split_min = 2
+        split_min = 4
         split_max = 10
-        depth_min = 10
-        depth_max = 100
+        depth_min = 5
+        depth_max = 15
+        max_features_min = np.sqrt(self.x.shape[1]).astype(int)
+        max_features_max = self.x.shape[1]
         RSN_min = 0
-        RSN_max = 100
-        param_min_lst = [n_esti_min, leaf_min, split_min, depth_min, RSN_min]
-        param_max_lst = [n_esti_max, leaf_max, split_max, depth_max, RSN_max]
-        # test = particlePopulation
-        for particleIdx, particle in enumerate(particlePopulation):
+        RSN_max = 10
+        param_min_lst = [n_esti_min, split_min, leaf_min, depth_min, max_features_min , RSN_min]
+        param_max_lst = [n_esti_max, split_max, leaf_max, depth_max, max_features_max, RSN_max]
+        for particleIdx, particle in enumerate(population_curent):
             for dnaIdx, dnaData in enumerate(particle):
-                if particlePopulation[particleIdx, dnaIdx] < param_min_lst[dnaIdx]:
-                    particlePopulation[particleIdx, dnaIdx] = self.roundUpInt(param_min_lst[dnaIdx] + random.uniform(0, 1)*(param_max_lst[dnaIdx] - param_min_lst[dnaIdx]))
-                elif particlePopulation[particleIdx, dnaIdx] > param_max_lst[dnaIdx]:
-                    particlePopulation[particleIdx, dnaIdx] = self.roundUpInt(param_min_lst[dnaIdx] + random.uniform(0, 1)*(param_max_lst[dnaIdx] - param_min_lst[dnaIdx]))
+                if population_curent[particleIdx, dnaIdx] < param_min_lst[dnaIdx]:
+                    population_curent[particleIdx, dnaIdx] = self.roundUpInt(param_min_lst[dnaIdx] + random.uniform(0, 1)*(param_max_lst[dnaIdx] - param_min_lst[dnaIdx]))
+                elif population_curent[particleIdx, dnaIdx] > param_max_lst[dnaIdx]:
+                    population_curent[particleIdx, dnaIdx] = self.roundUpInt(param_min_lst[dnaIdx] + random.uniform(0, 1)*(param_max_lst[dnaIdx] - param_min_lst[dnaIdx]))
 
         
-        return particlePopulation.astype(int)
+        return population_curent.astype(int)
     
     """
     find best fitness
     """
-    def findIdxOfBestParticle(self, bestPopulationFitness):
-        bestParticleIdx = 0
-        while bestParticleIdx < len(bestPopulationFitness):
-            if bestPopulationFitness[bestParticleIdx] == min(bestPopulationFitness):
+    def findIdxOfBestParticle(self, fitness_best_population):
+        for idx, best_particle_fitness in enumerate(fitness_best_population):
+            if best_particle_fitness == min(fitness_best_population):
                 break
-                bestParticleIdx = bestParticleIdx
-            else:
-                bestParticleIdx += 1
-        return bestParticleIdx
+        return idx
   
-    def bestModel(self, metricHistory, Gbest):    # To see the performance of the best model
-        for i in range(len(metricHistory)):
-            if metricHistory[i] == min(metricHistory):
-                RSN = Gbest[-1]
-                xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=RSN)
-                kf = KFold(n_splits=self.kfold_num)
-                y_test_lst = []
-                r2_lst = []
-                mape_lst = []
-                model_lst = []
-                for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
-                    model = RandomForestRegressor(n_estimators=Gbest[0],
-                                                    min_samples_leaf=Gbest[1],
-                                                    min_samples_split=Gbest[2],
-                                                    max_depth=Gbest[3],
-                                                    random_state=RSN)
-                    model_lst.append(model)
-                    x_ = xTrain[train_idx]
-                    y_ = yTrain[train_idx]
-                    model.fit(x_, y_)
-                    yTestPredicted = model.predict(self.xTest)
-                    y_test_lst.append(yTestPredicted)
-                    r2_test = r2_score(self.yTest, yTestPredicted)
-                    r2_lst.append(r2_test)
-                    mape_test = mean_absolute_percentage_error(self.yTest, yTestPredicted)
-                    mape_lst.append(mape_test)
-                    
-                    
-        best_split_idx = np.where(mape_lst==np.min(mape_lst))[0][0]
-        # best_split_idx = np.where(r2_lst==np.max(r2_lst))[0][0]
-        yTestPredicted = y_test_lst[best_split_idx]
-        best_model = model_lst[best_split_idx]
-        
+    def bestModel(self, metricHistory, Gbest):
         # edit the part below when model is changed
-        # self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, "(RF_PSO) [Test]", self.isLoc)
-        test_performance = r2_score(self.yTest, yTestPredicted)
-        Model_performance = []
-        # Model_performance.append(train_performance)
-        # Model_performance.append(mapeVal)
-        Model_performance.append(test_performance)
+        RSN = Gbest[-1]
+        # RSN = 79
+        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=RSN)
+        kf = KFold(n_splits=self.kfold_num)
+        fitness_lst = []
+        train_metric_lst = np.zeros((self.kfold_num, 2))
+        val_metric_lst = np.zeros((self.kfold_num, 2))
+        model_lst = []
+        for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
+            model = RandomForestRegressor(n_estimators=Gbest[0],
+                                            min_samples_split=Gbest[1],
+                                            min_samples_leaf=Gbest[2],
+                                            max_depth=Gbest[3],
+                                            random_state=79,
+                                            oob_score=True,
+                                            n_jobs=5) # default out-of-bag score: r2
+            model_lst.append(model)
+            x_train = xTrain[train_idx]
+            y_train = yTrain[train_idx]
+            x_val = xTrain[val_idx]
+            y_val = yTrain[val_idx]
+            model.fit(x_train, y_train)
+            yValPredicted = model.predict(x_val)
+            
+            r2_train = r2_score(y_train, model.predict(x_train))
+            mape_train = mean_absolute_percentage_error(y_train, model.predict(x_train)) * 100
+            train_metric_lst[idx] = (np.array([mape_train, r2_train]))
+    
+            r2_val = r2_score(y_val, yValPredicted)
+            mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
+            val_metric_lst[idx] = np.array([mape_val, r2_val])
+            
+        highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        best_model = model_lst[highest_valR2_idx]
+        best_model.fit(xTrain, yTrain )
+        yTestPredicted = best_model.predict(self.xTest)
+        self.plot_metrics_folds(train_metric_lst, val_metric_lst)
+        self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, "(RF_PSO) [Test]")
         
         return best_model
+    
+    def plot_fitness(self, fit_history):
+        plt.figure(figsize=(10, 7), dpi=300)
+        x_axis = np.arange(1, fit_history.shape[0]+1, 1)
+        plt.plot(x_axis, fit_history[:, 0], '-o', lw=2)
+        plt.plot(x_axis, fit_history[:, 1], '-o', lw=2)
+        plt.grid()
+        plt.xlabel('Iteration', fontsize=24)
+        plt.ylabel('Fitness', fontsize=24)
+        plt.xticks(x_axis, fontsize=22)
+        plt.yticks(fontsize=22)
+        plt.legend(['Min. fitness', 'Average fitness'], fontsize=20)
     
     """
     pso
@@ -326,59 +371,57 @@ class psoRF:
         fitnessHistory1 = []
         
         # set up initial particle population
-        particlePopulation = self.particlePopulationInitialize(particleAmount)   # Initial population
-        newPopulation = np.zeros((particleAmount, DNA_amount))          
-        velocity = 0.1 * particlePopulation # Initial velocity
+        population_curent = self.population_curentInitialize(particleAmount)   # Initial population
+        population_new = np.zeros((particleAmount, DNA_amount))          
+        velocity = 0 * population_curent # Initial velocity
         newVelocity = np.zeros((particleAmount, DNA_amount))
-        
-        c1 = 2
-        c2 = 2
         IterTime = 0
-        dna_kind = ['n_esti', 'split', 'leaf', 'depth', 'RandomSeedNum']
+        dna_kind = ['n_esti', 'split', 'leaf', 'depth', 'max_features', 'RandomSeedNum']
         # iteration for best particle
         while IterTime < maxIterTime:
-            # print('iteration: ', IterTime)
+            print(f'Iteration {IterTime + 1}')
             # edit the part below when model is changed
-            newFitness = np.zeros(len(particlePopulation))
-            for particleIdx in range(len(particlePopulation)):
+            fitness_current = np.zeros(len(population_curent))
+            for particleIdx in range(len(population_curent)):
                 for dnaIdx, dna in enumerate(dna_kind):
-                    locals()[dna] = particlePopulation[particleIdx, dnaIdx]
+                    locals()[dna] = population_curent[particleIdx, dnaIdx]
 
                 # training result of current particle
                 # edit the part below when model is changed
-                newFitness[particleIdx], metricHistory = self.modelTraining(locals()[dna_kind[0]], locals()[dna_kind[1]], locals()[dna_kind[2]], locals()[dna_kind[3]], locals()[dna_kind[4]], metricHistory)
+                fitness_current[particleIdx], metricHistory = self.modelTraining(locals()[dna_kind[0]], locals()[dna_kind[1]], locals()[dna_kind[2]], locals()[dna_kind[3]], locals()[dna_kind[4]], locals()[dna_kind[5]], metricHistory)
             
             # first iteration
             if IterTime == 0:
-                particlePopulation = particlePopulation
+                population_curent = population_curent
                 velocity = velocity
-                bestPopulation = copy.deepcopy(particlePopulation)
-                bestPopulationFitness = copy.deepcopy(newFitness)
-                bestParticleIdx = self.findIdxOfBestParticle(bestPopulationFitness)
-                bestParticle = bestPopulation[bestParticleIdx,:]
+                population_best = copy.deepcopy(population_curent)
+                fitness_best_population = copy.deepcopy(fitness_current)
+                idx_best_particle = self.findIdxOfBestParticle(fitness_best_population)
+                bestParticle = population_best[idx_best_particle,:]
             
             # rest iteration
             else:
                 for particleIdx in range(particleAmount):   # memory saving
-                    if newFitness[particleIdx] < bestPopulationFitness[particleIdx]:
-                        bestPopulation[particleIdx,:] = copy.deepcopy(particlePopulation[particleIdx,:])
-                        bestPopulationFitness[particleIdx] = copy.deepcopy(newFitness[particleIdx])
+                    if fitness_current[particleIdx] < fitness_best_population[particleIdx]:
+                        population_best[particleIdx,:] = copy.deepcopy(population_curent[particleIdx,:])
+                        fitness_best_population[particleIdx] = copy.deepcopy(fitness_current[particleIdx])
                     else:
-                        bestPopulation[particleIdx,:] = copy.deepcopy(bestPopulation[particleIdx,:])
-                        bestPopulationFitness[particleIdx] = copy.deepcopy(bestPopulationFitness[particleIdx])
+                        population_best[particleIdx,:] = copy.deepcopy(population_best[particleIdx,:])
+                        fitness_best_population[particleIdx] = copy.deepcopy(fitness_best_population[particleIdx])
             
-            bestParticleIdx = self.findIdxOfBestParticle(bestPopulationFitness)   
-            bestParticle = bestPopulation[bestParticleIdx,:]
+            idx_best_particle = self.findIdxOfBestParticle(fitness_best_population)   
+            bestParticle = population_best[idx_best_particle,:]
             
-            fitnessHistory0.append(min(bestPopulationFitness))
-            fitnessHistory1.append(np.mean(bestPopulationFitness))
-            # print(f'Iteration {IterTime + 1}:')
-            # print(f'minimum fitness: {min(bestPopulationFitness)}')
-            # print(f'average fitness: {np.mean(bestPopulationFitness)}\n')
+            fitnessHistory0.append(min(fitness_best_population))
+            fitnessHistory1.append(np.mean(fitness_best_population))
     
-            if abs(np.mean(bestPopulationFitness)-min(bestPopulationFitness)) < 0.01: #convergent criterion
+            if abs(np.mean(fitness_best_population)-min(fitness_best_population)) < 0.01 and IterTime >= 5: #convergent criterion
                 break
-    
+            
+            # https://towardsdatascience.com/particle-swarm-optimization-visually-explained-46289eeb2e14
+            w = 0.4*(IterTime-particleAmount)/particleAmount**2 + 0.4
+            c1 = 3.5 - 3*(IterTime/particleAmount)
+            c2 = 3.5 + 3*(IterTime/particleAmount)
             r1 = np.zeros((particleAmount, DNA_amount))
             r2 = np.zeros((particleAmount, DNA_amount))
             for particleIdx in range(particleAmount):
@@ -391,51 +434,45 @@ class psoRF:
             # making new population
             for particleIdx in range(particleAmount):
                 for dnaIdx in range(DNA_amount):
-                    w_max = 0.9
-                    w_min = 0.4
-                    w = (w_max - w_min)*(maxIterTime - IterTime) / maxIterTime + w_min
-                    newVelocity[particleIdx, dnaIdx] = w * velocity[particleIdx, dnaIdx] + c1 * r1[particleIdx, dnaIdx] * (bestPopulation[particleIdx, dnaIdx] - particlePopulation[particleIdx, dnaIdx]) + c2*r2[particleIdx, dnaIdx] * (bestParticle[0, dnaIdx] - particlePopulation[particleIdx, dnaIdx])
-                    newPopulation[particleIdx, dnaIdx] = particlePopulation[particleIdx, dnaIdx] + newVelocity[particleIdx, dnaIdx]
+                    newVelocity[particleIdx, dnaIdx] = w * velocity[particleIdx, dnaIdx] + c1 * r1[particleIdx, dnaIdx] * (population_best[particleIdx, dnaIdx] - population_curent[particleIdx, dnaIdx]) + c2*r2[particleIdx, dnaIdx] * (bestParticle[0, dnaIdx] - population_curent[particleIdx, dnaIdx])
+                    population_new[particleIdx, dnaIdx] = population_curent[particleIdx, dnaIdx] + newVelocity[particleIdx, dnaIdx]
             
-            particlePopulation = copy.deepcopy(newPopulation)
+            population_curent = copy.deepcopy(population_new)
             velocity = copy.deepcopy(newVelocity)
             
-            particlePopulation = self.particleBoundary(particlePopulation)
+            population_curent = self.particleBoundary(population_curent)
 
             for particleIdx in range(particleAmount):
                 for dnaIdx in range(DNA_amount):
-                    particlePopulation[particleIdx, dnaIdx] = self.roundUpInt(particlePopulation[particleIdx, dnaIdx])
-
-
-                
+                    population_curent[particleIdx, dnaIdx] = self.roundUpInt(population_curent[particleIdx, dnaIdx])         
             IterTime += 1
             
         # final iteration
         # edit the part below when model is changed
-        newFitness = np.zeros(len(particlePopulation))
-        for particleIdx in range(len(particlePopulation)):
+        fitness_current = np.zeros(len(population_curent))
+        for particleIdx in range(len(population_curent)):
             for dnaIdx, dna in enumerate(dna_kind):
-                locals()[dna] = particlePopulation[particleIdx, dnaIdx]
-                newFitness[particleIdx], metricHistory = self.modelTraining(locals()[dna_kind[0]], locals()[dna_kind[1]], locals()[dna_kind[2]], locals()[dna_kind[3]], locals()[dna_kind[4]], metricHistory)
+                locals()[dna] = population_curent[particleIdx, dnaIdx]
+                fitness_current[particleIdx], metricHistory = self.modelTraining(locals()[dna_kind[0]], locals()[dna_kind[1]], locals()[dna_kind[2]], locals()[dna_kind[3]], locals()[dna_kind[4]], locals()[dna_kind[5]], metricHistory)
                 
         for particleIdx in range(particleAmount):
-            if newFitness[particleIdx] < bestPopulationFitness[particleIdx]:
-                bestPopulation[particleIdx, :] = copy.deepcopy(particlePopulation[particleIdx, :])
-                bestPopulationFitness[particleIdx] = copy.deepcopy(newFitness[particleIdx])
+            if fitness_current[particleIdx] < fitness_best_population[particleIdx]:
+                population_best[particleIdx, :] = copy.deepcopy(population_curent[particleIdx, :])
+                fitness_best_population[particleIdx] = copy.deepcopy(fitness_current[particleIdx])
             else:
-                bestPopulation[particleIdx,:] = copy.deepcopy(bestPopulation[particleIdx,:])
-                bestPopulationFitness[particleIdx] = copy.deepcopy(bestPopulationFitness[particleIdx])
+                population_best[particleIdx,:] = copy.deepcopy(population_best[particleIdx,:])
+                fitness_best_population[particleIdx] = copy.deepcopy(fitness_best_population[particleIdx])
                 
-        bestParticleIdx = self.findIdxOfBestParticle(bestPopulationFitness)                
-        bestParticle = bestPopulation[bestParticleIdx,:]
+        idx_best_particle = self.findIdxOfBestParticle(fitness_best_population)                
+        bestParticle = population_best[idx_best_particle,:]
                 
-        fitnessHistory0.append(min(bestPopulationFitness))
-        fitnessHistory1.append(np.mean(bestPopulationFitness))
+        fitnessHistory0.append(min(fitness_best_population))
+        fitnessHistory1.append(np.mean(fitness_best_population))
         fitnessHistory0 = np.array(fitnessHistory0)
         fitnessHistory1 = np.array(fitnessHistory1)
         fitnestHistory = np.hstack((fitnessHistory0, fitnessHistory1))
         ll = float(len(fitnestHistory))/2
-        fitnestHistory = fitnestHistory.reshape(int(ll), 2, order='F')
+        fitnessHistory = fitnestHistory.reshape(int(ll), 2, order='F')
         
         history1 = []
         
@@ -443,10 +480,7 @@ class psoRF:
             if metricHistory[i] < 1000 and metricHistory[i] > min(metricHistory):
                 history1.append(metricHistory[i])
     
-        # for i in range(len(history1)):
-        #     os.remove(f".\modelWeights\preTrain_{history1[i]}.h5")
-        #     os.remove(f".\modelWeights\preTrain_{history1[i]}.json")
         
         optimal_model = self.bestModel(metricHistory, bestParticle)
-        
+        self.plot_fitness(fitnessHistory)
         return optimal_model, fitnestHistory
