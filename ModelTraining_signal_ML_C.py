@@ -2,10 +2,6 @@ import numpy as np
 import os, glob
 from matplotlib import pyplot as plt
 from featureExtraction import features_from_signal, features_of_signal
-# from signal_processing import non_discontinuous_runs, signals_from_dataset, time_series_downsample, pick_specific_signals
-# from signal_processing import signals_to_images, images_resize_lst, pick_one_signal, pick_run_data
-# from signal_processing import time_series_resize, get_envelope_lst, subtraction_2signals, variation_erase, subtract_initial_value, addition_2signals
-# from qualityExtractionLoc import get_mean_each_run, quality_labeling, high_similarity_runs, pick_one_lot, get_lot, get_ingot_length, qualities_from_dataset, qualities_from_dataset_edge, get_worst_value_each_run
 import signal_processing as sigpro
 import qualityExtractionLoc as QEL
 from locIntegration import locIntegrate
@@ -22,16 +18,6 @@ from plot_signals import plot_2d_array
 
 from processing_2023_07_12 import get_parameter_set
 
-from class_importance_analysis import resultOfRandomForest, result_cosine_similarity, result_pearson
-from correlation_analysis import plot_corr, get_corr_value_2variables
-
-# def importanceEachLabel(position_, features, label, category):
-#     importance = importanceAnalysis(position_, label)
-#     criteria = ['squared_error', 'absolute_error']
-#     importantF = importance.important_RandomForest(features, f'.\ImportanceSingleObject\im_{category}.csv', criteria[0], category)
-#     importantFeatureIdx = np.array(importantF[:, 0], dtype=int)
-#     ImFeature = features[:, importantFeatureIdx]
-#     return ImFeature
 
 def quick_check_extremes(signal_lst, alarm_values):
     for signal in signal_lst:
@@ -50,7 +36,7 @@ if __name__ == '__main__':
     isEnveCombined = True
     # resample_size = 10
     
-    with open('.//data2023_7_12//used_run_idx_for_quality_data.csv', 'r') as file:
+    with open('.//data2023_7_12//dataset_C_indexes.csv', 'r') as file:
         quality_run_idx = np.genfromtxt(file, delimiter=',').astype(int)
         
     param_lst = get_parameter_set()[quality_run_idx]
@@ -71,18 +57,22 @@ if __name__ == '__main__':
     """
     Quality
     """
-    ttv = QEL.pick_certain_qualities(".//data2023_7_12//quality_2023_07_12.csv", ['TTV'], quality_run_idx, isDifferentParamSets)
-    warp = QEL.pick_certain_qualities(".//data2023_7_12//quality_2023_07_12.csv", ['Warp'], quality_run_idx, isDifferentParamSets)
-    waviness = QEL.pick_certain_qualities(".//data2023_7_12//quality_2023_07_12.csv", ['Wav ind'], quality_run_idx, isDifferentParamSets)
-    bow = QEL.pick_certain_qualities(".//data2023_7_12//quality_2023_07_12.csv", ['Bow'], quality_run_idx, isDifferentParamSets) 
-    position = QEL.get_wafer_position(".//data2023_7_12//quality_2023_07_12.csv", quality_run_idx, isDifferentParamSets)
-    lot = QEL.get_lot(".//data2023_7_12//quality_2023_07_12.csv", quality_run_idx, isDifferentParamSets)
+    ttv = QEL.pick_certain_qualities(".//data2023_7_12//quality.csv", ['TTV'], quality_run_idx, isDifferentParamSets)
+    warp = QEL.pick_certain_qualities(".//data2023_7_12//quality.csv", ['Warp'], quality_run_idx, isDifferentParamSets)
+    waviness = QEL.pick_certain_qualities(".//data2023_7_12//quality.csv", ['Wav ind'], quality_run_idx, isDifferentParamSets)
+    bow = QEL.pick_certain_qualities(".//data2023_7_12//quality.csv", ['Bow'], quality_run_idx, isDifferentParamSets) 
+    position = QEL.get_wafer_position(".//data2023_7_12//quality.csv", quality_run_idx, isDifferentParamSets)
+    lot = QEL.get_lot(".//data2023_7_12//quality.csv", quality_run_idx, isDifferentParamSets)
+    waviness_3 = QEL.pick_certain_qualities(".//data2023_7_12//quality.csv", ['Wav ind', 'Entry wav', 'Exit wav'], quality_run_idx, isDifferentParamSets)
+    
     ttv = sigpro.pick_run_data(ttv, methodIdx_lst[paramSet_num-1])
     warp = sigpro.pick_run_data(warp, methodIdx_lst[paramSet_num-1])
     waviness = sigpro.pick_run_data(waviness, methodIdx_lst[paramSet_num-1])
     bow = sigpro.pick_run_data(bow, methodIdx_lst[paramSet_num-1])
     position = sigpro.pick_run_data(position, methodIdx_lst[paramSet_num-1])
     lot = sigpro.pick_run_data(lot, methodIdx_lst[paramSet_num-1])
+    waviness_3 = sigpro.pick_run_data(waviness_3, methodIdx_lst[paramSet_num-1])
+    
     
     ttv = sigpro.pick_run_data(ttv, valid_run_idx)
     warp = sigpro.pick_run_data(warp, valid_run_idx)
@@ -90,6 +80,7 @@ if __name__ == '__main__':
     bow = sigpro.pick_run_data(bow, valid_run_idx)
     position = sigpro.pick_run_data(position, valid_run_idx)
     lot = sigpro.pick_run_data(lot, valid_run_idx)
+    waviness_3 = sigpro.pick_run_data(waviness_3, valid_run_idx)
     
     general_run_idx = QEL.high_similarity_runs(waviness, lot)
     ttv = sigpro.pick_run_data(ttv, general_run_idx)
@@ -98,14 +89,14 @@ if __name__ == '__main__':
     bow = sigpro.pick_run_data(bow, general_run_idx)
     position = sigpro.pick_run_data(position, general_run_idx)
     lot = sigpro.pick_run_data(lot, general_run_idx)
-    waviness_label = QEL.quality_labeling(waviness, [1, 1.2, 1.5, 2])
+    waviness_3 = sigpro.pick_run_data(waviness_3, general_run_idx)
     
     """
     Signal preprocessing
     """
     # signals = signals_resize
     signals = sigpro.pick_run_data(signals, general_run_idx)
-    ingot_len = QEL.get_ingot_length(".//data2023_7_12//quality_2023_07_12.csv", methodIdx_lst[paramSet_num-1], isDifferentParamSets)
+    ingot_len = QEL.get_ingot_length(".//data2023_7_12//quality.csv", methodIdx_lst[paramSet_num-1], isDifferentParamSets)
     ingot_len = np.array(ingot_len).reshape(-1, 1)
     ingot_len = sigpro.pick_run_data(ingot_len, valid_run_idx)
     ingot_len = sigpro.pick_run_data(ingot_len, general_run_idx)
@@ -133,55 +124,24 @@ if __name__ == '__main__':
     # x_lot1 = x_lot1[:, important_feature_idx]
     # f_combine = f_combine[:, important_feature_idx] # important features
     
-    locPrepare = locIntegrate([ttv, warp, waviness, bow], position)
+    locPrepare = locIntegrate([waviness], position)
     x, y = locPrepare.mixFeatureAndQuality(f_combine)
-    # locPrepare_class = locIntegrate([waviness_label], position)
-    # x, y_label = locPrepare_class.mixFeatureAndQuality(f_combine)
-    # label_unique, label_count = np.unique(y_label, return_counts=True)
-    # label_total = np.concatenate((label_unique.reshape(-1, 1), label_count.reshape(-1, 1)), axis=1)
-
-    # importance = resultOfRandomForest(x, y[:, 0], 'squared_error')
-    # importance_threshold = 1 / importance.shape[0]
-    # important_feature_idx = np.where(importance >= importance_threshold)[0]
-    
-    # similarity1 = result_cosine_similarity(x, y[:, 0])
-    # similarity2 = result_cosine_similarity(x_lot1, y_lot1)
-    
-    # pearson1 = result_pearson(x, y[:, 0])
-    # pearson2 = result_pearson(x_lot1, y_lot1)
-    
-    # get_corr_value_2variables(x[:, 37], y[:, 0], isPlot=True, title_='Correlation',
-    #                           content_=['Wafer Location', 'Waviness'])
-    # get_corr_value_2variables(x_lot1[:, 19], y_lot1, isPlot=True, title_='Correlation',
-    #                           content_=['Seg. 3 | Uper Enve. | Variance', 'Waviness'])
-    # get_corr_value_2variables(x_lot1[:, 35], y_lot1, isPlot=True, title_='Correlation',
-    #                           content_=['Seg. 4 | Lower Enve. | Max. Peak 2 Peak', 'Waviness'])
-    """
-    run indices v.s. quality mean
-    """
-    # mean_wavi = get_mean_each_run(waviness)
-    # run_idices = np.arange(0, og_num_run, 1)
-    # run_idices = run_idices[valid_run_idx]
-    # run_idices = run_idices[general_run_idx]
-    # run_spection_wavi = np.concatenate((run_idices.reshape(-1, 1), mean_wavi.reshape(-1, 1)), axis=1)
-    # run_spection_wavi = run_spection_wavi[run_spection_wavi[:, 1].argsort()] # sorted by wavi. value
-    # bModelTTV = []
-    # bModelWarp = []
-    # bModelWavi = []
-    # bModelBOW = []
+    # x_signal, y = locPrepare.mixFeatureAndQuality_signal(signals_resize)  
+    # y = np.array([max(values) for values in y])
     
     """
     PSO
     """
     # psoModelTTV = psokNN(x, y[:, 0], 'TTV (datasetC)', normalized='')
     # psoModelWarp = psokNN(x, y[:, 1], 'Warp (datasetC)', normalized='')
-    psoModelWavi = psokNN(x, y[:, 2], 'Waviness (datasetC)', normalized='')
+    psoModelWavi = psokNN(x, y, 'Waviness (datasetC)', normalized='')
     # psoModelBOW = psokNN(x, y[:, 3], 'BOW (datasetC)', normalized='')
     # psoModelWavi = psokNN(x_lot1, y_lot1, 'Waviness (datasetC)', normalized='')
 
     # psoModelTTV.pso(particleAmount=20, maxIterTime=10)
     # psoModelWarp.pso(particleAmount=20, maxIterTime=10)
-    psoModelWavi.pso(particleAmount=20, maxIterTime=10)
+    model, fitnessHistory = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
+    print('K =', model.n_neighbors)
     # psoModelBOW.pso(particleAmount=20, maxIterTime=10)
 
 
