@@ -90,15 +90,18 @@ if __name__ == '__main__':
     outlet = sigpro.pick_one_signal(signals, signal_idx=1)
     outlet_diff = sigpro.subtract_initial_value(outlet)
     
+    # inspect progress
+    for run_idx, run_pro in enumerate(progress):
+        if np.where(np.diff(run_pro)<0)[0].shape[0] > 0:
+            print(f'Run {valid_run_idx[general_run_idx[run_idx]]} got fucked up progress')
+    
     """
     Feature
     """ 
     f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
     # features = features_from_signal(signals, target_signal_idx=1, isDifferencing=differencing, isEnveCombined_=isEnveCombined)
     f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
-    enve_outlet_up, enve_outlet_low = sigpro.get_envelope_lst(outlet_diff, progress,
-                                                       gau_sig=4.5, gau_rad=10, w_size=7, isInterpolated=False, isDifferenced=True)
-    enve_combine = np.concatenate((enve_outlet_up, enve_outlet_low), axis=1)
+
     """
     Feature Analysis 
     """
@@ -110,7 +113,7 @@ if __name__ == '__main__':
     # x_lot1 = x_lot1[:, important_feature_idx]
     # f_combine = f_combine[:, important_feature_idx] # important features
     
-    locPrepare = locIntegrate([ttv, warp, bow, waviness], position)
+    locPrepare = locIntegrate([waviness], position)
     x, y = locPrepare.mixFeatureAndQuality(f_combine)
     # x_signal, y = locPrepare.mixFeatureAndQuality_signal(signals_resize)  
     # y = np.array([max(values) for values in y])
@@ -120,14 +123,14 @@ if __name__ == '__main__':
     """
     # psoModelTTV = psokNN(x, y[:, 0], 'TTV (datasetC)', normalized='')
     # psoModelWarp = psokNN(x, y[:, 1], 'Warp (datasetC)', normalized='')
-    # psoModelWavi = psokNN(x, y, 'Waviness (datasetC)', normalized='')
+    psoModelWavi = psokNN(x, y, 'Waviness (datasetC)', normalized='')
     # psoModelBOW = psokNN(x, y[:, 3], 'BOW (datasetC)', normalized='')
     # psoModelWavi = psokNN(x_lot1, y_lot1, 'Waviness (datasetC)', normalized='')
 
     # psoModelTTV.pso(particleAmount=20, maxIterTime=10)
     # psoModelWarp.pso(particleAmount=20, maxIterTime=10)
-    # model, fitnessHistory = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
-    # print('K =', model.n_neighbors)
+    model, fitnessHistory = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
+    print('K =', model.n_neighbors)
     # psoModelBOW.pso(particleAmount=20, maxIterTime=10)
 
 
