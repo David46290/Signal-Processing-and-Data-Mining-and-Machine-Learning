@@ -12,9 +12,9 @@ from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squar
 from sklearn.model_selection import train_test_split
 from cross_validation import cross_validate, cross_validate_signal, cross_validate_image
 from classPSO_kNN import psokNN
-
+import autoencoder as AE
 from PIL import Image 
-
+from keras.callbacks import EarlyStopping
 
 
 
@@ -26,7 +26,7 @@ def quick_check_extremes(signal_lst, alarm_values):
             print(f'max: {signal.max()}')
 
 if __name__ == '__main__':
-    dataset_idx = 0 # 0(60s/sample), 1(10s/sample), 2(4s/sample)
+    dataset_idx = 2 # 0(60s/sample), 1(10s/sample), 2(4s/sample)
     dataset_dict = {0:'A', 1:'B', 2:'C'}
 
     isEnveCombined = True
@@ -80,7 +80,7 @@ if __name__ == '__main__':
     """
     Signal preprocessing
     """
-    # signals = signals_resize
+    signals = signals_resize
     signals = sigpro.pick_run_data(signals, general_run_idx)
     ingot_len = QEL.get_ingot_length(".//5th_eqp//quality_determined.csv")
     ingot_len = np.array(ingot_len).reshape(-1, 1)
@@ -94,13 +94,26 @@ if __name__ == '__main__':
     for run_idx, run_pro in enumerate(progress):
         if np.where(np.diff(run_pro)<0)[0].shape[0] > 0:
             print(f'Run {valid_run_idx[general_run_idx[run_idx]]} got fucked up progress\nplease try to fix it manually')
+            
+    """
+    AE
+    """
+    loss = 'mean_absolute_error'
+    metric = "cosine_similarity"
+    callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
+    ae_model = AE.build_AE(np.array(outlet_diff), loss, metric)
+    history = ae_model.fit(np.array(outlet_diff), np.array(outlet_diff),
+                epochs=1000, batch_size=10,
+                shuffle=True, verbose=0, callbacks=[callback])
+    encoded_outlet_diff = ae_model.encoder(np.array(outlet_diff)).numpy()
     
     """
     Feature
     """ 
-    f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
+    # f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
     # features = features_from_signal(signals, target_signal_idx=1, isDifferencing=differencing, isEnveCombined_=isEnveCombined)
-    f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
+    # f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
+    f_combine = np.concatenate((encoded_outlet_diff, ingot_len), axis=1)
 
     """
     Feature Analysis 
@@ -123,13 +136,13 @@ if __name__ == '__main__':
     """
     # psoModelTTV = psokNN(x, y[:, 0], 'TTV (datasetC)', normalized='')
     # psoModelWarp = psokNN(x, y[:, 1], 'Warp (datasetC)', normalized='')
-    psoModelWavi = psokNN(x, y, 'Waviness (datasetC)', normalized='')
+    psoModelWavi = psokNN(x, y, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='')
     # psoModelBOW = psokNN(x, y[:, 3], 'BOW (datasetC)', normalized='')
     # psoModelWavi = psokNN(x_lot1, y_lot1, 'Waviness (datasetC)', normalized='')
 
     # psoModelTTV.pso(particleAmount=20, maxIterTime=10)
     # psoModelWarp.pso(particleAmount=20, maxIterTime=10)
-    model, fitnessHistory = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
+    model, fitnessHistory = psoModelWavi.pso(particleAmount=30, maxIterTime=20)
     print('K =', model.n_neighbors)
     # psoModelBOW.pso(particleAmount=20, maxIterTime=10)
 
@@ -140,7 +153,7 @@ if __name__ == '__main__':
     # cvWarp = cross_validate(x, y[:, 1], 'Warp (datasetC)', normalized='')
     # cvWavi_signal = cross_validate_signal(torque_resize, waviness2, 'Waviness (datasetC)', normalized='')
     # cvWavi_image = cross_validate_image(np.expand_dims(torque_imgs_resize, axis=3), waviness2, 'Waviness (datasetC)', normalized='')
-    # cvWavi = cross_validate(x, y, 'Waviness (datasetC)', normalized='')
+    # cvWavi = cross_validate(x, y, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='')
 
     
     # model_C_warp = cvWarp.cross_validate_kNN()
