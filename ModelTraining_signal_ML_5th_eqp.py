@@ -93,7 +93,7 @@ if __name__ == '__main__':
     # inspect progress
     for run_idx, run_pro in enumerate(progress):
         if np.where(np.diff(run_pro)<0)[0].shape[0] > 0:
-            print(f'Run {valid_run_idx[general_run_idx[run_idx]]} got fucked up progress')
+            print(f'Run {valid_run_idx[general_run_idx[run_idx]]} got fucked up progress\nplease try to fix it manually')
     
     """
     Feature
