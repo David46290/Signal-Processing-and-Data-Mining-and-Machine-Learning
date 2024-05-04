@@ -125,7 +125,7 @@ def get_parameter_set(signals_lst):
         param_lst.append(param_set)
     return np.array(param_lst).astype(int)
 
-def signals_from_dataset(join_path, runIdxes, isDifferentParamSets_, param_idx_lst): 
+def signals_from_dataset(join_path, runIdxes=[], isDifferentParamSets_=False, param_idx_lst=[0]): 
     """
     get signal data from a dataset (.csv)
     
@@ -786,4 +786,3 @@ def signals_to_images(run_lst, value_limit):
     for signal in run_lst:
         image_lst.append(bresebham_modified(signal, value_limit))
     return image_lst
-
