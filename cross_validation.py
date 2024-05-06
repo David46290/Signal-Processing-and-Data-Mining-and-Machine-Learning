@@ -6,6 +6,7 @@ from sklearn.ensemble import RandomForestRegressor, StackingRegressor, AdaBoostR
 from sklearn.linear_model import BayesianRidge, ElasticNet, Lasso, TheilSenRegressor
 from sklearn.svm import SVR
 from sklearn.model_selection import RandomizedSearchCV
+import xgboost as xgb
 from xgboost import XGBRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.utils import shuffle
@@ -189,37 +190,60 @@ class cross_validate:
         
         self.kfold_num = 5
     
-    def show_train_history(self, history_, category, fold_idx):
+    def show_train_history(self, history_, category, fold_idx=0, isValidated=True):
         ylim = [-0.03, 0.32]
         plt.figure(figsize=(16, 6))
-        ax1 = plt.subplot(121)
-        # category[0]=mape
-        ax1.plot(history_['validation_0'][category[0]], lw=4, label='train')
-        ax1.plot(history_['validation_1'][category[0]], lw=4, label='val')
-        ax1.set_ylabel(f'{category[0]}', fontsize=24)
-        ax1.set_xlabel('Epoch', fontsize=24)
-        ax1.tick_params(axis='both', which='major', labelsize=20)
-        ax1.legend(loc='best', fontsize=20)
-        ax1.grid(True)
-        # ax1.set_ylim(-0.03, 0.32)
+        if isValidated:
+            ax1 = plt.subplot(121)
+            # category[0]=mape
+            ax1.plot(history_['validation_0'][category[0]], lw=4, label='train')
+            ax1.plot(history_['validation_1'][category[0]], lw=4, label='val')
+            ax1.set_ylabel(f'{category[0]}', fontsize=24)
+            ax1.set_xlabel('Epoch', fontsize=24)
+            ax1.tick_params(axis='both', which='major', labelsize=20)
+            ax1.legend(loc='best', fontsize=20)
+            ax1.grid(True)
+            # ax1.set_ylim(-0.03, 0.32)
+    
+            
+            ax2 = plt.subplot(122)
+            ax2.plot(history_['validation_0'][category[1]], lw=4, label='train')
+            ax2.plot(history_['validation_1'][category[1]], lw=4, label='val')
+            ax2.set_ylabel(f'{category[1]}', fontsize=24)
+            ax2.set_xlabel('Epoch', fontsize=24)
+            ax2.tick_params(axis='both', which='major', labelsize=20)
+            ax2.legend(loc='best', fontsize=20)
+            ax2.grid(True)
+            # ax2.set_ylim(-0.03, 0.52)
+            plt.suptitle(f'Fold {fold_idx+1} Train History', fontsize=26)
 
         
-        ax2 = plt.subplot(122)
-        ax2.plot(history_['validation_0'][category[1]], lw=4, label='train')
-        ax2.plot(history_['validation_1'][category[1]], lw=4, label='val')
-        ax2.set_ylabel(f'{category[1]}', fontsize=24)
-        ax2.set_xlabel('Epoch', fontsize=24)
-        ax2.tick_params(axis='both', which='major', labelsize=20)
-        ax2.legend(loc='best', fontsize=20)
-        ax2.grid(True)
-        # ax2.set_ylim(-0.03, 0.52)
-
-        plt.suptitle(f'fold {fold_idx+1} Train History', fontsize=26)
+        else: # result of fine tune
+            ax1 = plt.subplot(121)
+            # category[0]=mape
+            ax1.plot(history_['validation_0'][category[0]], lw=4, label='train')
+            ax1.set_ylabel(f'{category[0]}', fontsize=24)
+            ax1.set_xlabel('Epoch', fontsize=24)
+            ax1.tick_params(axis='both', which='major', labelsize=20)
+            ax1.legend(loc='best', fontsize=20)
+            ax1.grid(True)
+            # ax1.set_ylim(-0.03, 0.32)
+    
+            
+            ax2 = plt.subplot(122)
+            ax2.plot(history_['validation_0'][category[1]], lw=4, label='train')
+            ax2.set_ylabel(f'{category[1]}', fontsize=24)
+            ax2.set_xlabel('Epoch', fontsize=24)
+            ax2.tick_params(axis='both', which='major', labelsize=20)
+            ax2.legend(loc='best', fontsize=20)
+            ax2.grid(True)
+            plt.suptitle(f'Fining Tuning Train History', fontsize=26)
+            
         plt.tight_layout()
         plt.subplots_adjust(top=0.88)
         plt.show()
         plt.close()
-    
+        
     def plot_metrics_folds(self, train_lst, val_lst):
         x = np.arange(1, self.kfold_num+1, 1)
         train_lst, val_lst = train_lst.T, val_lst.T
@@ -256,20 +280,23 @@ class cross_validate:
         fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
-        model_lst = []
+        # model_lst = []
+        model_state = []
+        metric = 'mape'
+        metrics = ['mape', 'rmse']
+        model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
+                             disable_default_eval_metric=True, random_state=75)
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             
-            metric = 'mape'
-            metrics = ['mape', 'rmse']
-            # metrics = [mean_absolute_percentage_error, r2_score]
-            model = XGBRegressor(eval_metric=metrics, importance_type='total_gain', disable_default_eval_metric=True)
             x_train = xTrain[train_idx]
             y_train = yTrain[train_idx]
             x_val = xTrain[val_idx]
             y_val = yTrain[val_idx]
             evalset = [(x_train, y_train), (x_val, y_val)]
             model.fit(x_train, y_train, eval_set=evalset, verbose=False)
-            model_lst.append(model)
+            model_state.append(model.get_xgb_params())
+            model.save_model(f".//modelWeights//xgb_{idx}.json")
+            # model_lst.append(model)
             yValPredicted = model.predict(x_val)
             results = model.evals_result()
             self.show_train_history(results, metrics, idx)
@@ -282,14 +309,24 @@ class cross_validate:
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
             draw_histo(y_val, f'Histogram of Output in Fold {idx+1}', 'seagreen', 0)
+            
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        try:
-            highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        except:
-            print(val_metric_lst[:, 1])
-            highest_valR2_idx = 0
-        best_model = model_lst[highest_valR2_idx]
-        return best_model
+        highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        # https://xgboost.readthedocs.io/en/stable/python/examples/continuation.html
+        new_model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
+                             disable_default_eval_metric=True, n_estimators=50, random_state=75)
+        best_model = XGBRegressor()
+        best_model.load_model(f".//modelWeights//xgb_{highest_valR2_idx }.json")
+        # fine tuning
+        # best_model = xgb.train(params=model.get_params(), dtrain=xgb.DMatrix(self.xTrain, label=self.yTrain),
+        #                        xgb_model=f".//modelWeights//xgb_{highest_valR2_idx }.json",
+        #                        evals_result=model.evals_result(), num_boost_round=100)
+        new_model.fit(self.xTrain, self.yTrain, xgb_model=best_model, eval_set=[(self.xTrain, self.yTrain)], verbose=False)
+        results_tune = new_model.evals_result()
+        self.show_train_history(results_tune, metrics, isValidated=False)
+        # model_state.append(new_model.get_xgb_params())
+    
+        return new_model
     
     def cross_validate_kNN(self):
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
@@ -432,7 +469,6 @@ class cross_validate:
     
     def model_testing(self, model_, category):
         model = model_
-        model.fit(self.xTrain, self.yTrain)
         yTestPredicted = model.predict(self.xTest)
         draw_histo(self.yTest, 'Test', 'royalblue', range_std=2)
         self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
