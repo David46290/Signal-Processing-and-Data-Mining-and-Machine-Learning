@@ -273,19 +273,23 @@ class cross_validate:
         # ax2.set_ylim((0, 1.1))
         plt.suptitle(f'Cross Validation', fontsize=26)
     
-    def cross_validate_XGB(self):
+    def cross_validate_XGB(self, param_setting=None):
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
         kf = KFold(n_splits=self.kfold_num)
         skf = StratifiedKFold(n_splits=self.kfold_num)
         fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
-        # model_lst = []
         model_state = []
         metric = 'mape'
         metrics = ['mape', 'rmse']
-        model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
-                             disable_default_eval_metric=True, random_state=75)
+        # default setting: https://xgboost-readthedocs-io.translate.goog/en/stable/parameter.html?_x_tr_sl=en&_x_tr_tl=zh-TW&_x_tr_hl=zh-TW&_x_tr_pto=sc
+        if param_setting != None:
+            model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
+                                 disable_default_eval_metric=True).set_params(**param_setting)
+        else:
+            model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
+                                 disable_default_eval_metric=True, random_state=75)
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             
             x_train = xTrain[train_idx]
@@ -313,10 +317,15 @@ class cross_validate:
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
         highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
         # https://xgboost.readthedocs.io/en/stable/python/examples/continuation.html
-        new_model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
-                             disable_default_eval_metric=True, n_estimators=100, random_state=75)
+        if param_setting != None:
+            new_model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
+                                 disable_default_eval_metric=True, n_estimators=100).set_params(**param_setting)
+        else:
+            new_model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
+                                 disable_default_eval_metric=True, n_estimators=100, random_state=75)
+        
         best_model = XGBRegressor()
-        best_model.load_model(f".//modelWeights//xgb_{highest_valR2_idx }.json")
+        best_model.load_model(f".//modelWeights//xgb_{highest_valR2_idx}.json")
         # fine tuning
         # best_model = xgb.train(params=model.get_params(), dtrain=xgb.DMatrix(self.xTrain, label=self.yTrain),
         #                        xgb_model=f".//modelWeights//xgb_{highest_valR2_idx }.json",
