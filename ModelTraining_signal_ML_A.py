@@ -59,8 +59,8 @@ if __name__ == '__main__':
     waviness = QEL.pick_certain_qualities(".\\quality_A.csv", ['Wav ind'], methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.pick_certain_qualities(".\\quality_2022_A.csv", ['Wav ind'], methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
     bow = QEL.pick_certain_qualities(".\\quality_A.csv", ['Bow'], methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.pick_certain_qualities(".\\quality_2022_A.csv", ['Bow'], methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
     position = QEL.get_wafer_position(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.get_wafer_position(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)  
-    
     lot = QEL.get_lot(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.get_lot(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
+    waviness_3 = QEL.pick_certain_qualities(".\\quality_A.csv", ['Wav ind', 'Entry wav', 'Exit wav'], methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.pick_certain_qualities(".\\quality_2022_A.csv", ['Wav ind', 'Entry wav', 'Exit wav'], methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
     
     ttv = sigpro.pick_run_data(ttv, valid_run_idx)
     warp = sigpro.pick_run_data(warp, valid_run_idx)
@@ -68,6 +68,7 @@ if __name__ == '__main__':
     bow = sigpro.pick_run_data(bow, valid_run_idx)
     position = sigpro.pick_run_data(position, valid_run_idx)
     lot = sigpro.pick_run_data(lot, valid_run_idx)
+    waviness_3 = sigpro.pick_run_data(waviness_3, valid_run_idx)
     
     general_run_idx = QEL.high_similarity_runs(waviness, lot)
     ttv = sigpro.pick_run_data(ttv, general_run_idx)
@@ -76,6 +77,7 @@ if __name__ == '__main__':
     bow = sigpro.pick_run_data(bow, general_run_idx)
     position = sigpro.pick_run_data(position, general_run_idx)
     lot = sigpro.pick_run_data(lot, general_run_idx)
+    waviness_3 = sigpro.pick_run_data(waviness_3, general_run_idx)
     
     # waviness_label = quality_labeling(waviness, [1, 1.2, 1.5, 2])
 
@@ -127,59 +129,24 @@ if __name__ == '__main__':
     # x_lot1 = f_combine[:, important_feature_idx] # important features
     # f_combine = f_combine[:, important_feature_idx] # important features
     
-    locPrepare = locIntegrate([ttv, warp, waviness, bow], position)
+    locPrepare = locIntegrate([waviness], position)
     x, y = locPrepare.mixFeatureAndQuality(f_combine)
-    # x_signal, y = locPrepare.mixFeatureAndQuality_signal(signals_resize)
-    
-    # locPrepare_class = locIntegrate([waviness_label], position)
-    # x, y_label = locPrepare_class.mixFeatureAndQuality(f_combine)
-    # label_unique, label_count = np.unique(y_label, return_counts=True)
-    # label_total = np.concatenate((label_unique.reshape(-1, 1), label_count.reshape(-1, 1)), axis=1)
-    # importance = resultOfRandomForest(x, y[:, 0], 'squared_error')
-    # importance_threshold = 1 / importance.shape[0]
-    # important_feature_idx = np.where(importance >= importance_threshold)[0]
-    
-    # similarity1 = result_cosine_similarity(x, y[:, 0])
-    # similarity2 = result_cosine_similarity(x_lot1, y_lot1)
-    
-    # pearson1 = result_pearson(x, y[:, 0])
-    # pearson2 = result_pearson(x_lot1, y_lot1)
-
-    # total_matrix = np.concatenate((x, y.reshape(-1, 1)), axis=1)
-    # corr_matrix_total = np.corrcoef(total_matrix, rowvar=False)
-    # get_corr_value_2variables(x[:, 37], y[:, 0], isPlot=True, title_='Correlation',
-    #                           content_=['Wafer Location', 'Waviness'])
-    # get_corr_value_2variables(x_lot1[:, 35], y_lot1, isPlot=True, title_='Correlation',
-    #                           content_=['Seg. 4 | Lower Enve. | Max. Peak 2 Peak', 'Waviness'])
-    # get_corr_value_2variables(x_lot1[:, 25], y_lot1, isPlot=True, title_='Correlation',
-    #                           content_=['Seg. 1 | Lower Enve. | Variance', 'Waviness'])
-    """
-    Image Making
-    """    
-    # signals = time_series_resize(signals, 890)
-    # signal_lot1 = signals[run_idx_lot1]
-    # outlet = pick_one_signal(signals, signal_idx=2)
-    # outlet_diff = subtract_initial_value(outlet)
-    # outlet_img = np.array(signals_to_images(outlet_diff, value_limit=[-4, 10]))
-    
-    
-    # bModelTTV = []
-    # bModelWarp = []
-    # bModelWavi = []
-    # bModelBOW = []
+    # x_signal, y = locPrepare.mixFeatureAndQuality_signal(signals_resize)  
+    # y = np.array([max(values) for values in y])
     
     """
     PSO
     """
     # psoModelTTV = psokNN(x, y[:, 0], 'TTV (datasetA)', normalized='')
     # psoModelWarp = psokNN(x, y[:, 1], 'Warp (datasetA)', normalized='')
-    psoModelWavi = psokNN(x, y[:, 2], 'Waviness (datasetA)', normalized='')
+    # psoModelWavi = psokNN(x, y, 'Waviness (datasetA)', normalized='')
     # psoModelBOW = psokNN(x, y[:, 3], 'BOW (datasetA)', normalized='')
     # psoModelWavi = psokNN(x_lot1, y_lot1, 'Waviness (datasetA)', normalized='')
 
     # psoModelTTV.pso(particleAmount=20, maxIterTime=10)
     # psoModelWarp.pso(particleAmount=20, maxIterTime=10)
-    psoModelWavi.pso(particleAmount=20, maxIterTime=10)
+    # model, fitnessHistory = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
+    # print('K =', model.n_neighbors)
     # psoModelBOW.pso(particleAmount=20, maxIterTime=10)
 
 
@@ -189,15 +156,16 @@ if __name__ == '__main__':
     # cvWarp = cross_validate(x, y[:, 1], 'Warp (datasetA)', y_thresholds=[1,1.2,1.5,2], normalized='')
     # cvWavi_signal = cross_validate_signal(x_signal[:, :, [0, 2, -1]], y, 'Waviness (datasetA)', normalized='x')
     # cvWavi_image = cross_validate_image(np.expand_dims(outlet_img, axis=3), y_lot1, 'Waviness (datasetA)', normalized='')
-    # cvWavi = cross_validate(x, y, 'Waviness (datasetA)', normalized='')
+    cvWavi = cross_validate(x, y, 'Waviness (datasetA)', normalized='')
     
     # model_A_warp = cvWarp.cross_validate_kNN()
     # model_A_wavi = cvWavi_signal.cross_validate_LSTM()
     # model_A_wavi = cvWavi_image.cross_validate_2DCNN()
-    # model_A_wavi = cvWavi.cross_validate_XGB()
+    param_setting = {'eta':0.3, 'gamma':0, 'max_depth':6, 'subsample':1, 'lambda':1, 'random_state':75}
+    model_A_wavi = cvWavi.cross_validate_XGB(param_setting)
 
     # cvWarp.model_testing(model_A_warp, 'kNN')
-    # cvWavi.model_testing(model_A_wavi, 'XGB')
+    cvWavi.model_testing(model_A_wavi, 'XGB')
     # cvWavi_signal.model_testing(model_A_wavi, 'LSTM')
     # cvWavi_image.model_testing(model_A_wavi, '2D-CNN')
     # print()
@@ -205,3 +173,5 @@ if __name__ == '__main__':
     # draw_histo(y[:, 1], 'Warp', 'tab:orange', 1)
     # draw_histo(y[:, 2], 'Waviness', 'tab:green', 1)
     # draw_histo(y[:, 3], 'BOW', 'tab:red', 1)
+    
+
