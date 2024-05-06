@@ -286,7 +286,7 @@ class cross_validate:
         # default setting: https://xgboost-readthedocs-io.translate.goog/en/stable/parameter.html?_x_tr_sl=en&_x_tr_tl=zh-TW&_x_tr_hl=zh-TW&_x_tr_pto=sc
         if param_setting != None:
             model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
-                                 disable_default_eval_metric=True).set_params(**param_setting)
+                                 disable_default_eval_metric=True, random_state=75).set_params(**param_setting)
         else:
             model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
                                  disable_default_eval_metric=True, random_state=75)
@@ -319,7 +319,7 @@ class cross_validate:
         # https://xgboost.readthedocs.io/en/stable/python/examples/continuation.html
         if param_setting != None:
             new_model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
-                                 disable_default_eval_metric=True, n_estimators=100).set_params(**param_setting)
+                                 disable_default_eval_metric=True, n_estimators=100, random_state=75).set_params(**param_setting)
         else:
             new_model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
                                  disable_default_eval_metric=True, n_estimators=100, random_state=75)
