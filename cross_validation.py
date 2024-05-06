@@ -314,7 +314,7 @@ class cross_validate:
         highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
         # https://xgboost.readthedocs.io/en/stable/python/examples/continuation.html
         new_model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
-                             disable_default_eval_metric=True, n_estimators=50, random_state=75)
+                             disable_default_eval_metric=True, n_estimators=100, random_state=75)
         best_model = XGBRegressor()
         best_model.load_model(f".//modelWeights//xgb_{highest_valR2_idx }.json")
         # fine tuning
