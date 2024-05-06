@@ -26,7 +26,7 @@ def quick_check_extremes(signal_lst, alarm_values):
             print(f'max: {signal.max()}')
 
 if __name__ == '__main__':
-    dataset_idx = 2 # 0(60s/sample), 1(10s/sample), 2(4s/sample)
+    dataset_idx = 0 # 0(60s/sample), 1(10s/sample), 2(4s/sample)
     dataset_dict = {0:'A', 1:'B', 2:'C'}
 
     isEnveCombined = True
@@ -98,22 +98,21 @@ if __name__ == '__main__':
     """
     AE
     """
-    loss = 'mean_absolute_error'
-    metric = "cosine_similarity"
-    callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
-    ae_model = AE.build_AE(np.array(outlet_diff), loss, metric)
-    history = ae_model.fit(np.array(outlet_diff), np.array(outlet_diff),
-                epochs=1000, batch_size=10,
-                shuffle=True, verbose=0, callbacks=[callback])
-    encoded_outlet_diff = ae_model.encoder(np.array(outlet_diff)).numpy()
+    # loss = 'mean_absolute_error'
+    # metric = "cosine_similarity"
+    # callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
+    # ae_model = AE.build_AE(np.array(outlet_diff), loss, metric)
+    # history = ae_model.fit(np.array(outlet_diff), np.array(outlet_diff),
+    #             epochs=1000, batch_size=10,
+    #             shuffle=True, verbose=0, callbacks=[callback])
+    # encoded_outlet_diff = ae_model.encoder(np.array(outlet_diff)).numpy()
     
     """
     Feature
     """ 
-    # f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
-    # features = features_from_signal(signals, target_signal_idx=1, isDifferencing=differencing, isEnveCombined_=isEnveCombined)
-    # f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
-    f_combine = np.concatenate((encoded_outlet_diff, ingot_len), axis=1)
+    f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
+    f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
+    # f_combine = np.concatenate((encoded_outlet_diff, ingot_len), axis=1)
 
     """
     Feature Analysis 
@@ -136,14 +135,14 @@ if __name__ == '__main__':
     """
     # psoModelTTV = psokNN(x, y[:, 0], 'TTV (datasetC)', normalized='')
     # psoModelWarp = psokNN(x, y[:, 1], 'Warp (datasetC)', normalized='')
-    psoModelWavi = psokNN(x, y, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='')
+    # psoModelWavi = psokNN(x, y, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='')
     # psoModelBOW = psokNN(x, y[:, 3], 'BOW (datasetC)', normalized='')
     # psoModelWavi = psokNN(x_lot1, y_lot1, 'Waviness (datasetC)', normalized='')
 
     # psoModelTTV.pso(particleAmount=20, maxIterTime=10)
     # psoModelWarp.pso(particleAmount=20, maxIterTime=10)
-    model, fitnessHistory = psoModelWavi.pso(particleAmount=30, maxIterTime=20)
-    print('K =', model.n_neighbors)
+    # model, fitnessHistory = psoModelWavi.pso(particleAmount=30, maxIterTime=20)
+    # print('K =', model.n_neighbors)
     # psoModelBOW.pso(particleAmount=20, maxIterTime=10)
 
 
@@ -153,19 +152,20 @@ if __name__ == '__main__':
     # cvWarp = cross_validate(x, y[:, 1], 'Warp (datasetC)', normalized='')
     # cvWavi_signal = cross_validate_signal(torque_resize, waviness2, 'Waviness (datasetC)', normalized='')
     # cvWavi_image = cross_validate_image(np.expand_dims(torque_imgs_resize, axis=3), waviness2, 'Waviness (datasetC)', normalized='')
-    # cvWavi = cross_validate(x, y, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='')
+    cvWavi = cross_validate(x, y, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='')
 
     
     # model_C_warp = cvWarp.cross_validate_kNN()
     # model_C_wavi = cvWavi_signal.cross_validate_1DCNN()
     # model_C_wavi = cvWavi_image.cross_validate_2DCNN()
-    # model_C_wavi = cvWavi.cross_validate_XGB()
-    
+    param_setting = {'eta':0.3, 'gamma':0, 'max_depth':6, 'subsample':1, 'lambda':50, 'random_state':75}
+    model_C_wavi = cvWavi.cross_validate_XGB(param_setting=param_setting)
+    # test = model_C_wavi.get_xgb_params()
     
     # cvWarp.model_testing(model_C_warp, 'kNN')
     # cvWavi_signal.model_testing(model_C_wavi, '1D-CNN')
     # cvWavi_image.model_testing(model_C_wavi, '2D-CNN')
-    # cvWavi.model_testing(model_C_wavi, 'XGB')
+    cvWavi.model_testing(model_C_wavi, 'XGB')
     
 
 
