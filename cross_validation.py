@@ -8,14 +8,11 @@ from sklearn.svm import SVR
 from sklearn.model_selection import RandomizedSearchCV
 import xgboost as xgb
 from xgboost import XGBRegressor
+import sklearn as sk
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.utils import shuffle
-import random
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import KFold, StratifiedKFold
+from sklearn.model_selection import KFold
 from plot_histogram import draw_histo
-from sklearn.utils import shuffle
-import tensorflow as tf
 from tensorflow import keras
 from keras import layers
 from keras import optimizers as opti
@@ -28,6 +25,7 @@ from keras.callbacks import EarlyStopping
 
 def cleanOutlier(x, y):
     # Gid rid of y values exceeding 2 std value
+    # ONLY WORKS ONE SINGLE OUTPUT
     y_std = np.std(y)
     y_median = np.median(y)
     # quartile_1 = np.round(np.quantile(y, 0.25), 2)
@@ -276,7 +274,6 @@ class cross_validate:
     def cross_validate_XGB(self, param_setting=None):
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
         kf = KFold(n_splits=self.kfold_num)
-        skf = StratifiedKFold(n_splits=self.kfold_num)
         fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
@@ -357,8 +354,6 @@ class cross_validate:
             model.fit(x_train, y_train)
             model_lst.append(model)
             yValPredicted = model.predict(x_val)
-            # results = model.evals_result()
-            # self.show_train_history(results, metrics, idx)
             yTrainPredicted = model.predict(x_train)
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
@@ -367,13 +362,45 @@ class cross_validate:
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
-            # fitness_lst.append(1 - r2_val)
-            # fitness_lst.append(mape_val)
-            # print(f'\tTrain MAPE: {mape_train:.2f} Val. MAPE: {mape_val:.2f}')
-            # print(f'\tTrain R2:   {r2_train:.2f}   Val. R2:   {r2_val:.2f}\n')
+
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
         highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
         best_model = model_lst[highest_valR2_idx]
+        return best_model
+    
+    def cross_validate_test(self, param_setting=None):
+        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
+        kf = KFold(n_splits=self.kfold_num)
+        fitness_lst = []
+        train_metric_lst = np.zeros((self.kfold_num, 2))
+        val_metric_lst = np.zeros((self.kfold_num, 2))
+        model_lst = []
+        if param_setting != None:
+            model = sk.linear_model.Ridge(**param_setting)
+        else:
+            model = sk.linear_model.Ridge()
+            
+        for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
+            x_train = xTrain[train_idx]
+            y_train = yTrain[train_idx]
+            x_val = xTrain[val_idx]
+            y_val = yTrain[val_idx]
+            model.fit(x_train, y_train)
+            model_lst.append(model)
+            yValPredicted = model.predict(x_val)
+            yTrainPredicted = model.predict(x_train)
+            r2_train = r2_score(y_train, yTrainPredicted)
+            mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
+            train_metric_lst[idx] = (np.array([mape_train, r2_train]))
+    
+            r2_val = r2_score(y_val, yValPredicted)
+            mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
+            val_metric_lst[idx] = np.array([mape_val, r2_val])
+
+        self.plot_metrics_folds(train_metric_lst, val_metric_lst)
+        highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        best_model = model_lst[highest_valR2_idx]
+        best_model.fit(self.xTrain, self.yTrain)
         return best_model
 
     def build_ANN(self, loss):
