@@ -42,16 +42,16 @@ if __name__ == '__main__':
      
     if plot_band_pass:
         sig_fft_runs = sigpro.get_frequency_spectra(sig_runs, sample_rate)
-        sigplot.draw_signals(sig_runs[run_idx_demo], time_runs[run_idx_demo])
+        sigplot.draw_signal(sig_runs[run_idx_demo], time_runs[run_idx_demo], title='Original')
         band_demo = sig_fft_runs[run_idx_demo][0]
         spectrum_demo = sig_fft_runs[run_idx_demo][1]
         sigplot.frequency_spectrum(band_demo, spectrum_demo, title='Original')
         
         
-        signals_filtered = sigpro.freq_pass(sig_runs, order_=2, assigned_freq=[50, 600], btype='bandpass')
+        signals_filtered = sigpro.freq_pass(sig_runs, order_=2, assigned_freq=[50, 600], btype='bandpass', fs=sample_rate)
         sig_fft_runs_filtered = sigpro.get_frequency_spectra(signals_filtered, sample_rate)
 
-        sigplot.draw_signals(sig_fft_runs_filtered[run_idx_demo], time_runs[run_idx_demo])
+        sigplot.draw_signal(signals_filtered [run_idx_demo], time_runs[run_idx_demo], title='Filtered')
         band_demo = sig_fft_runs_filtered[run_idx_demo][0]
         spectrum_demo = sig_fft_runs_filtered[run_idx_demo][1]
         sigplot.frequency_spectrum(band_demo, spectrum_demo, title='Filtered')
