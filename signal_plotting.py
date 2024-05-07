@@ -41,9 +41,11 @@ def frequency_spectrum(band, spectrum):
     plt.figure(figsize=(20, 8))
     plt.plot(band, spectrum, color='green', lw=3)
     plt.xticks(np.linspace(0, np.max(band), 10), fontsize=22)
+    plt.yticks(fontsize=22)
     plt.xlabel('Frequency (hz)', fontsize=24)
     plt.ylabel('Amplitude', fontsize=24)
     plt.grid()
+    
     
 
 
