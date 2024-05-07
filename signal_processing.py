@@ -863,7 +863,7 @@ def get_frequency_spectra(signals, sample_rate):
         fft_results.append(np.array([freq_band, freq_spectrum]))
     return fft_results
 
-def cwt(signal, widths, wavelet=scisig.ricker):
+def cwt(signal, widths, wavelet=scisig.morlet2):
     # widths: scaling factors of wavelet, bigger mean narrower
     cwt = np.abs(scisig.cwt(signal, wavelet=wavelet, widths=widths))
     cwt = np.flipud(cwt) # if not doing this, it's upside down
