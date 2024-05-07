@@ -11,7 +11,8 @@ if __name__ == '__main__':
     plot_run_signals = False
     plot_fft = False
     plot_enve = False
-    plot_band_pass = True
+    plot_band_pass = False
+    plot_difference = True
     
     signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset')
     sample_rate = int(20000/10)
@@ -55,4 +56,11 @@ if __name__ == '__main__':
         band_demo = sig_fft_runs_filtered[run_idx_demo][0]
         spectrum_demo = sig_fft_runs_filtered[run_idx_demo][1]
         sigplot.frequency_spectrum(band_demo, spectrum_demo, title='Filtered')
+        
+    if plot_difference:
+        sig_runs_2 = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo+1)
+        sig_difference_runs = sigpro.subtraction_2signals(list(zip(sig_runs, sig_runs_2)))
+        sigplot.draw_signal(sig_runs[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo}', color_='royalblue')
+        sigplot.draw_signal(sig_runs_2[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo+1}', color_='seagreen')
+        sigplot.draw_signal(sig_difference_runs[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo+1} - Signal {siganl_idx_demo}', color_='peru')
         
