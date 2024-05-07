@@ -1,17 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squared_error, mean_absolute_error
-# from keras import optimizers as opti
 from sklearn.model_selection import train_test_split
-# from tensorflow.keras.models import model_from_json
 import random
-# import datetime
 import copy
-# import os
-# from tensorflow_addons.metrics import r_square
 from sklearn.neighbors import KNeighborsRegressor
-from sklearn.model_selection import cross_val_score
-from sklearn.model_selection import KFold, StratifiedKFold
+from sklearn.model_selection import KFold
 from sklearn.utils import shuffle
 from plot_histogram import draw_histo
 
@@ -276,7 +270,7 @@ class psokNN:
     # def roundUpRSN(self, x, prec=2, base=0.01):
     #     return round(base * round(float(x)/base), prec)   
 
-    def particlePopulationInitialize(self, particleAmount):
+    def population_currentInitialize(self, particleAmount):
         """
         # step size shrinkage (learning rate)
         eta = [round(x, 2) for x in np.linspace(0, 1, num = 11)]
@@ -301,38 +295,34 @@ class psokNN:
 
         return initialPosition
     
-    def particleBoundary(self, particlePopulation):
+    def particleBoundary(self, population_current):
         # edit the part below when model is changed
-        # particleAmount = len(particlePopulation)
+        # particleAmount = len(population_current)
         k_min = 1
         k_max = 50
         RSN_min = 0
         RSN_max = 100
         param_min_lst = [k_min, RSN_min]
         param_max_lst = [k_max, RSN_max]
-        # test = particlePopulation
-        for particleIdx, particle in enumerate(particlePopulation):
+        # test = population_current
+        for particleIdx, particle in enumerate(population_current):
             for dnaIdx, dnaData in enumerate(particle):
-                if particlePopulation[particleIdx, dnaIdx] < param_min_lst[dnaIdx]:
-                    particlePopulation[particleIdx, dnaIdx] = self.roundUpFloat(param_min_lst[dnaIdx] + random.uniform(0, 1)*(param_max_lst[dnaIdx] - param_min_lst[dnaIdx]))
-                elif particlePopulation[particleIdx, dnaIdx] > param_max_lst[dnaIdx]:
-                    particlePopulation[particleIdx, dnaIdx] = self.roundUpFloat(param_min_lst[dnaIdx] + random.uniform(0, 1)*(param_max_lst[dnaIdx] - param_min_lst[dnaIdx]))
+                if population_current[particleIdx, dnaIdx] < param_min_lst[dnaIdx]:
+                    population_current[particleIdx, dnaIdx] = self.roundUpFloat(param_min_lst[dnaIdx] + random.uniform(0, 1)*(param_max_lst[dnaIdx] - param_min_lst[dnaIdx]))
+                elif population_current[particleIdx, dnaIdx] > param_max_lst[dnaIdx]:
+                    population_current[particleIdx, dnaIdx] = self.roundUpFloat(param_min_lst[dnaIdx] + random.uniform(0, 1)*(param_max_lst[dnaIdx] - param_min_lst[dnaIdx]))
 
         
-        return particlePopulation
+        return population_current
     
     """
     find best fitness
     """
-    def findIdxOfBestParticle(self, bestPopulationFitness):
-        bestParticleIdx = 0
-        while bestParticleIdx < len(bestPopulationFitness):
-            if bestPopulationFitness[bestParticleIdx] == min(bestPopulationFitness):
+    def findIdxOfparticle_best(self, fitness_best_population):
+        for idx, best_particle_fitness in enumerate(fitness_best_population):
+            if best_particle_fitness == min(fitness_best_population):
                 break
-                bestParticleIdx = bestParticleIdx
-            else:
-                bestParticleIdx += 1
-        return bestParticleIdx
+        return idx
     
     def model_testing(self, model_, category):
         model = model_
@@ -381,7 +371,7 @@ class psokNN:
                     r2_val = r2_score(y_val, yValPredicted)
                     mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
                     val_metric_lst[idx] = np.array([mape_val, r2_val])
-                    draw_histo(y_val, f'Histogram of Output in Fold {idx+1}', 'seagreen', 0)
+                    # draw_histo(y_val, f'Histogram of Output in Fold {idx+1}', 'seagreen', 0)
                     
         self.plot_metrics_folds(train_metric_lst, val_metric_lst, 'last', 'best')
         try:
@@ -419,10 +409,10 @@ class psokNN:
         fitnessHistory1 = []
         
         # set up initial particle population
-        particlePopulation = self.particlePopulationInitialize(particleAmount)   # Initial population
-        newPopulation = np.zeros((particleAmount, DNA_amount))          
-        velocity = 0.1 * particlePopulation # Initial velocity
-        newVelocity = np.zeros((particleAmount, DNA_amount))
+        population_current = self.population_currentInitialize(particleAmount)   # Initial population
+        population_new = np.zeros((particleAmount, DNA_amount))          
+        velocity = 0 * population_current # Initial velocity
+        velocity_new = np.zeros((particleAmount, DNA_amount))
         
         
         IterTime = 0
@@ -433,45 +423,41 @@ class psokNN:
         while IterTime < maxIterTime:
             # print(f'Iter. time: {IterTime}')
             # print('iteration: ', IterTime)
-            newFitness = np.zeros(len(particlePopulation))
-            for particleIdx in range(len(particlePopulation)):
+            fitness_current_population = np.zeros(len(population_current))
+            for particleIdx, particle in enumerate(population_current):
                 # print(f'Particle: {particleIdx}')
                 for dnaIdx, dna in enumerate(dna_kind):
-                    locals()[dna] = particlePopulation[particleIdx, dnaIdx]
+                    locals()[dna] = particle[dnaIdx]
 
                 # training result of current particle
                 # edit the part below when model is changed
-                newFitness[particleIdx], metricHistory = self.modelTraining(locals()[dna_kind[0]], locals()[dna_kind[1]], metricHistory, IterTime, particleIdx)
+                fitness_current_population[particleIdx], metricHistory = self.modelTraining(locals()[dna_kind[0]], locals()[dna_kind[1]], metricHistory, IterTime, particleIdx)
             
             # first iteration
             if IterTime == 0:
-                particlePopulation = particlePopulation
+                population_current = population_current
                 velocity = velocity
-                bestPopulation = copy.deepcopy(particlePopulation)
-                bestPopulationFitness = copy.deepcopy(newFitness)
-                bestParticleIdx = self.findIdxOfBestParticle(bestPopulationFitness)
-                bestParticle = bestPopulation[bestParticleIdx,:]
+                population_best = copy.deepcopy(population_current)
+                fitness_best_population = copy.deepcopy(fitness_current_population)
+                
             
             # rest iteration
             else:
-                for particleIdx in range(particleAmount):   # memory saving
-                    if newFitness[particleIdx] < bestPopulationFitness[particleIdx]:
-                        bestPopulation[particleIdx,:] = copy.deepcopy(particlePopulation[particleIdx,:])
-                        bestPopulationFitness[particleIdx] = copy.deepcopy(newFitness[particleIdx])
+                for particleIdx in range(particleAmount):   # recycling same fitness/population array
+                    if fitness_current_population[particleIdx] < fitness_best_population[particleIdx]:
+                        population_best[particleIdx,:] = copy.deepcopy(population_current[particleIdx,:])
+                        fitness_best_population[particleIdx] = copy.deepcopy(fitness_current_population[particleIdx])
                     else:
-                        bestPopulation[particleIdx,:] = copy.deepcopy(bestPopulation[particleIdx,:])
-                        bestPopulationFitness[particleIdx] = copy.deepcopy(bestPopulationFitness[particleIdx])
+                        population_best[particleIdx,:] = copy.deepcopy(population_best[particleIdx,:])
+                        fitness_best_population[particleIdx] = copy.deepcopy(fitness_best_population[particleIdx])
             
-            bestParticleIdx = self.findIdxOfBestParticle(bestPopulationFitness)   
-            bestParticle = bestPopulation[bestParticleIdx,:]
+            idx_best_particle = self.findIdxOfparticle_best(fitness_best_population)   
+            particle_best = population_best[idx_best_particle,:]
             
-            fitnessHistory0.append(min(bestPopulationFitness))
-            fitnessHistory1.append(np.mean(bestPopulationFitness))
-            print(f'Iteration {IterTime + 1}:')
-            print(f'minimum fitness: {min(bestPopulationFitness)}')
-            print(f'average fitness: {np.mean(bestPopulationFitness)}\n')
+            fitnessHistory0.append(min(fitness_best_population))
+            fitnessHistory1.append(np.mean(fitness_best_population))
             
-            if abs(np.mean(bestPopulationFitness)-min(bestPopulationFitness)) < 0.05: #convergent criterion
+            if abs(np.mean(fitness_best_population)-min(fitness_best_population)) < 0.05: #convergent criterion
                 print('PSO is ended because of convergence')
                 break
             # https://towardsdatascience.com/particle-swarm-optimization-visually-explained-46289eeb2e14
@@ -485,7 +471,7 @@ class psokNN:
                     r1[particleIdx, dnaIdx] = random.uniform(0, 1)
                     r2[particleIdx, dnaIdx] = random.uniform(0, 1)
                     
-            bestParticle = bestParticle.reshape(1, -1)
+            particle_best = particle_best.reshape(1, -1)
             
             # making new population
             for particleIdx in range(particleAmount):
@@ -493,17 +479,17 @@ class psokNN:
                     # w_max = 0.9
                     # w_min = 0.4
                     # w = (w_max - w_min)*(maxIterTime - IterTime) / maxIterTime + w_min
-                    newVelocity[particleIdx, dnaIdx] = w * velocity[particleIdx, dnaIdx] + c1 * r1[particleIdx, dnaIdx] * (bestPopulation[particleIdx, dnaIdx] - particlePopulation[particleIdx, dnaIdx]) + c2*r2[particleIdx, dnaIdx] * (bestParticle[0, dnaIdx] - particlePopulation[particleIdx, dnaIdx])
-                    newPopulation[particleIdx, dnaIdx] = particlePopulation[particleIdx, dnaIdx] + newVelocity[particleIdx, dnaIdx]
+                    velocity_new[particleIdx, dnaIdx] = w * velocity[particleIdx, dnaIdx] + c1 * r1[particleIdx, dnaIdx] * (population_best[particleIdx, dnaIdx] - population_current[particleIdx, dnaIdx]) + c2*r2[particleIdx, dnaIdx] * (particle_best[0, dnaIdx] - population_current[particleIdx, dnaIdx])
+                    population_new[particleIdx, dnaIdx] = population_current[particleIdx, dnaIdx] + velocity_new[particleIdx, dnaIdx]
             
-            particlePopulation = copy.deepcopy(newPopulation)
-            velocity = copy.deepcopy(newVelocity)
+            population_current = copy.deepcopy(population_new)
+            velocity = copy.deepcopy(velocity_new)
             
-            particlePopulation = self.particleBoundary(particlePopulation)
+            population_current = self.particleBoundary(population_current)
 
             for particleIdx in range(particleAmount):
                 for dnaIdx in range(DNA_amount):
-                    particlePopulation[particleIdx, dnaIdx] = self.roundUpInt(particlePopulation[particleIdx, dnaIdx])
+                    population_current[particleIdx, dnaIdx] = self.roundUpInt(population_current[particleIdx, dnaIdx])
 
 
                 
@@ -511,25 +497,25 @@ class psokNN:
             
         # final iteration
         # edit the part below when model is changed
-        newFitness = np.zeros(len(particlePopulation))
-        for particleIdx in range(len(particlePopulation)):
+        fitness_current_population = np.zeros(len(population_current))
+        for particleIdx in range(len(population_current)):
             for dnaIdx, dna in enumerate(dna_kind):
-                locals()[dna] = particlePopulation[particleIdx, dnaIdx]
-                newFitness[particleIdx], metricHistory = self.modelTraining(locals()[dna_kind[0]], locals()[dna_kind[1]], metricHistory, '(Last)', 'Best')
+                locals()[dna] = population_current[particleIdx, dnaIdx]
+                fitness_current_population[particleIdx], metricHistory = self.modelTraining(locals()[dna_kind[0]], locals()[dna_kind[1]], metricHistory, '(Last)', 'Best')
                 
         for particleIdx in range(particleAmount):
-            if newFitness[particleIdx] < bestPopulationFitness[particleIdx]:
-                bestPopulation[particleIdx, :] = copy.deepcopy(particlePopulation[particleIdx, :])
-                bestPopulationFitness[particleIdx] = copy.deepcopy(newFitness[particleIdx])
+            if fitness_current_population[particleIdx] < fitness_best_population[particleIdx]:
+                population_best[particleIdx, :] = copy.deepcopy(population_current[particleIdx, :])
+                fitness_best_population[particleIdx] = copy.deepcopy(fitness_current_population[particleIdx])
             else:
-                bestPopulation[particleIdx,:] = copy.deepcopy(bestPopulation[particleIdx,:])
-                bestPopulationFitness[particleIdx] = copy.deepcopy(bestPopulationFitness[particleIdx])
+                population_best[particleIdx,:] = copy.deepcopy(population_best[particleIdx,:])
+                fitness_best_population[particleIdx] = copy.deepcopy(fitness_best_population[particleIdx])
                 
-        bestParticleIdx = self.findIdxOfBestParticle(bestPopulationFitness)                
-        bestParticle = bestPopulation[bestParticleIdx,:]
+        idx_best_particle = self.findIdxOfparticle_best(fitness_best_population)                
+        particle_best = population_best[idx_best_particle,:]
                 
-        fitnessHistory0.append(min(bestPopulationFitness))
-        fitnessHistory1.append(np.mean(bestPopulationFitness))
+        fitnessHistory0.append(min(fitness_best_population))
+        fitnessHistory1.append(np.mean(fitness_best_population))
         fitnessHistory0 = np.array(fitnessHistory0)
         fitnessHistory1 = np.array(fitnessHistory1)
         fitnessHistory = np.hstack((fitnessHistory0, fitnessHistory1))
@@ -541,11 +527,8 @@ class psokNN:
         for i in range(len(metricHistory)):
             if metricHistory[i] < 1000 and metricHistory[i] > min(metricHistory):
                 history1.append(metricHistory[i])
-    
-        # for i in range(len(history1)):
-        #     os.remove(f".\modelWeights\preTrain_{history1[i]}.h5")
-        #     os.remove(f".\modelWeights\preTrain_{history1[i]}.json")
+
         
-        optimal_model = self.bestModel(metricHistory, bestParticle)
+        optimal_model = self.bestModel(metricHistory, particle_best)
         self.plot_fitness(fitnessHistory)
         return optimal_model, fitnessHistory
