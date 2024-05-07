@@ -1,13 +1,12 @@
 import numpy as np
+from scipy import signal as scisig
+from matplotlib import pyplot as plt
 
 from featureExtraction import features_of_signal
 import signal_processing as sigpro
 import signal_plotting as sigplot
 
 def signal_processing_demo(plot_run_signals=False, plot_fft=False, plot_enve=False, plot_band_pass=False, plot_difference=False):
-    run_idx_demo = 4
-    run_signals = signals_runs[run_idx_demo]
-    siganl_idx_demo = 2
     if plot_run_signals: 
         # plot all signals of one run
         sigplot.draw_signals(run_signals[1:], run_signals[0])
@@ -57,4 +56,18 @@ if __name__ == '__main__':
     y = np.genfromtxt('demo_y.csv', delimiter=',')
     time_runs = sigpro.pick_one_signal(signals_runs, signal_idx=0)
     
-    signal_processing_demo(plot_run_signals=True, plot_fft=True, plot_enve=True, plot_band_pass=True, plot_difference=True)
+    run_idx_demo = 4
+    run_signals = signals_runs[run_idx_demo]
+    siganl_idx_demo = 3
+    # signal_processing_demo(plot_run_signals=True, plot_fft=True, plot_enve=True, plot_band_pass=True, plot_difference=True)
+    
+    sig_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
+    test_sig = sig_runs[run_idx_demo]
+    test_band, test_spectrum = sigpro.fft(test_sig , sample_rate)
+    sigplot.draw_signal(sig_runs[run_idx_demo], time_runs[run_idx_demo])
+    sigplot.frequency_spectrum(test_band, test_spectrum)
+    cwt = sigpro.cwt(test_sig, widths=np.arange(1, 60), wavelet=scisig.ricker)
+    plt.figure(figsize=(20, 8))
+    plt.imshow(cwt, extent=[time_runs[run_idx_demo][0], time_runs[run_idx_demo][-1], 1, 61], cmap='PRGn', aspect='auto',
+               vmax=abs(cwt).max(), vmin=-abs(cwt).max())
+    plt.show()
