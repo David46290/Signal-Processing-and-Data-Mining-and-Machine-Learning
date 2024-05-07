@@ -56,96 +56,6 @@ def draw_signal(signal, time, title, color):
 
     plt.title(f'{title}\nmean: {mean:.2f} | variance: {vari:.2f} | kurtosis: {kurt:.2f} | skewness: {skew:.2f}', fontsize=26)
 
-def interpolation(target_sig, target_time, result_time):
-    cs = interpolate.CubicSpline(target_time, target_sig)
-    interpolated_sig = cs(result_time)
-    return interpolated_sig
-
-def drawAllSin():
-    plt.figure(figsize=(10, 8))
-    legend = []
-
-    count = 0
-    for wave in sin:
-        if sum(wave - sin[-1]) != 0:
-            plt.plot(t, wave, lw=3, linestyle=(0, (5, 1)))
-            legend.append(f'sin{count+1}')
-        else:
-            plt.plot(t, wave, lw=2)
-            legend.append('sum')
-        count += 1
-
-
-    plt.legend(legend, fontsize=14, loc='upper right')
-    plt.xlabel('time (s)', fontsize=20)
-    plt.ylabel('amplitude (mm)', fontsize=20)
-    plt.xticks(fontsize=18)
-    plt.yticks(fontsize=18)
-    plt.grid()
-    plt.savefig("sin_waves.png", dpi=300)
-
-def drawScoreTrend2D(t_, score):
-    fig, ax1 = plt.subplots()
-    fig.set_size_inches(10, 8)
-    ax2 = ax1.twinx()
-    ax1.plot(t_, score, lw=3, color='r')
-    ax2.plot(t_, sin[-1], lw=2, linestyle=(0, (5, 1)), color='b')
-    # fig.title("Score", fontsize=20)
-    ax1.set_xlabel('time (s)', fontsize=16)
-    ax1.set_ylabel('dot score', fontsize=16)
-    ax2.set_ylabel('amplitude (mm)', fontsize=16)
-    plt.grid()
-    
-def drawFTfig3D(t_, f_, score):
-    fig = plt.figure(figsize=(8, 8))
-    ax = fig.add_subplot(111, projection='3d')
-    x, y = np.meshgrid(t_, f_)
-    surf = ax.plot_surface(x, y, score, cmap=cm.coolwarm, linewidth=0, antialiased=False)
-    ax.set_title('Trending of Score', fontsize=20)
-    ax.set_xlabel('time (s)', fontsize=16)
-    ax.set_ylabel('frequency (rad/s)', fontsize=16)
-    ax.set_zlabel('dot score', fontsize=16)
-    fig.colorbar(surf, shrink=0.5, aspect=10, location='left')
-    plt.show()
-
-def drawFTfig2D(t_, f_, score):
-    fig, ax = plt.subplots()
-    fig.set_size_inches(10, 8)
-    
-    x, y = np.meshgrid(t_, f_)
-    img = ax.pcolor(x, y, score, shading='auto')
-    fig.colorbar(img)
-    ax.set_title('Trending of Score', fontsize=20)
-    ax.set_xlabel('time (s)', fontsize=16)
-    ax.set_ylabel('frequency (rad/s)', fontsize=16)
-    ax.set_xticks(np.arange(0, t_[-1] + 1, 1))
-    ax.set_yticks(np.arange(0, f_[-1] + 1, 2))
-    ax.grid()
-    plt.show()
-    fig.savefig("score_trending.png", dpi=300)
-
-def gaussian_diff_filter(mu, sigma, filter_size):
-    t = np.linspace(0, 2, 1000) # time (sec.)
-    gaussian = stats.norm.pdf(np.linspace(mu - 3*sigma, mu + 3*sigma, filter_size), mu, sigma)
-    gaussian_1st = np.diff(gaussian, 1)
-    gaussian_2nd = np.diff(gaussian, 2)
-
-    test_signal = sinMaker(A=1, W=20, THETA=0) + sinMaker(A=0.5, W=30, THETA=0) + sinMaker(A=0.25, W=60, THETA=0)
-    test_signal += scisig.square(2*np.pi * t, duty=0.5) * 10
-
-    test_filtered = gaussian_filter(test_signal, sigma=10)
-    test_filtered2 = scisig.fftconvolve(test_signal, gaussian_1st, 'same')
-    
-    plt.figure(figsize=(8, 8))
-    plt.plot(t, test_signal, lw=2)
-    plt.plot(t, test_filtered, lw=4)
-    plt.plot(t, test_filtered2, lw=4)
-    plt.legend(['OG', 'smoothed', 'smoothed_1st diff'], fontsize=20)
-    plt.xticks(fontsize=18)
-    plt.yticks(fontsize=18)
-    plt.grid()
-
-def draw_histo(signal, kind, color_, range_std):
     np.set_printoptions()
     low_boundary = min(signal) * 0.8 if min(signal) >= 0 else min(signal) * 1.2
     up_boundary = max(signal) * 1.2 if max(signal) >= 0 else max(signal) * 0.8
@@ -176,6 +86,11 @@ def draw_histo(signal, kind, color_, range_std):
     skew = stats.skew(signal)
     plt.title(f'{kind}\nmean: {mean:.2f} | variance: {vari:.2f} | kurtosis: {kurt:.2f} | skewness: {skew:.2f}', fontsize=26)
 
+def save_files(folder, data_sig, data_y):
+    for run_idx, run in enumerate(data_sig):
+        np.savetxt(f'.\\{folder}\\demo_signals_{run_idx}.csv', run, delimiter=',')
+    np.savetxt(f'.\\demo_y.csv', data_y, delimiter=',')
+
 color = ['steelblue', 'peru', 'green']
 color2 = ['steelblue', 'red', 'purple']
 color3 = ['steelblue', 'purple', 'blue']
@@ -184,10 +99,11 @@ sr = int(20000/10)
 time_total = 10
 dataset_sig = []
 dataset_y = []
-num_run = 2
+num_run = 20
 for run_idx in range(num_run):
     random_seed = np.random.uniform(0.1, 0.3)
-    t = np.linspace(0, time_total, int(sr*time_total * (1 + np.random.uniform(0, 0.1))))
+    t = np.arange(0, time_total*(1+np.random.uniform(0,0.1)), 1/sr)
+    print(f'final time = {t[-1]:.2f} | time length = {t.shape[0]:.2f}')
     noise = np.random.normal(0,1,t.shape[0])
     amplitude_1 = np.array([5, 2, 1]) * (1 + random_seed)
     amplitude_2 = np.array([3, 1, 0.5]) * (1 + random_seed)
@@ -196,10 +112,13 @@ for run_idx in range(num_run):
     sig2 = sinMaker(A = amplitude_2[0], W = 0.5, THETA = 0) + sinMaker(A = amplitude_2[1], W = 6, THETA = 30) + sinMaker(A = amplitude_2[2], W = 50, THETA = 90) + noise
     sig3 = sinMaker(A = amplitude_3[0], W = 1, THETA = 30) + expMaker(amplitude_3[1], 1, 0) + expMaker(amplitude_3[2], 2, 6) + noise
     draw_signals([sig1, sig2, sig3], [t, t, t], ['1', '2', '3'])
-    run_content = np.concatenate((sig1.reshape(-1, 1), sig2.reshape(-1, 1), sig3.reshape(-1, 1)), axis=1)
-    dataset_sig.append(run_content)
+    run_content = np.concatenate((t.reshape(-1, 1), sig1.reshape(-1, 1), sig2.reshape(-1, 1), sig3.reshape(-1, 1)), axis=1)
+    dataset_sig.append(run_content.T)
     
     y1 = (amplitude_1[0] + amplitude_2[1]) * (1+amplitude_3[2])
     y2 = (amplitude_1[0] * amplitude_3[1] + amplitude_1[2]) - amplitude_2[0] * amplitude_2[2]
     y3 = amplitude_1[0] * (1+amplitude_3[0]) * (1+amplitude_3[2]) * amplitude_3[1]
     dataset_y.append(np.array([y1, y2, y3]))
+dataset_y = np.array(dataset_y)
+
+save_files('demonstration_signal_dataset', dataset_sig, dataset_y)
