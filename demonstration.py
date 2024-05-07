@@ -1,24 +1,10 @@
 import numpy as np
 
-
 from featureExtraction import features_of_signal
 import signal_processing as sigpro
 import signal_plotting as sigplot
 
-
-if __name__ == '__main__':
-    
-    plot_run_signals = False
-    plot_fft = False
-    plot_enve = False
-    plot_band_pass = False
-    plot_difference = True
-    
-    signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset')
-    sample_rate = int(20000/10)
-    y = np.genfromtxt('demo_y.csv', delimiter=',')
-    time_runs = sigpro.pick_one_signal(signals_runs, signal_idx=0)
-    
+def signal_processing_demo(plot_run_signals=False, plot_fft=False, plot_enve=False, plot_band_pass=False, plot_difference=False):
     run_idx_demo = 4
     run_signals = signals_runs[run_idx_demo]
     siganl_idx_demo = 2
@@ -64,3 +50,17 @@ if __name__ == '__main__':
         sigplot.draw_signal(sig_runs_2[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo+1}', color_='seagreen')
         sigplot.draw_signal(sig_difference_runs[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo+1} - Signal {siganl_idx_demo}', color_='peru')
         
+    
+if __name__ == '__main__':
+    
+    plot_run_signals = True
+    plot_fft = True
+    plot_enve = True
+    plot_band_pass = True
+    plot_difference = True
+    
+    signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset')
+    sample_rate = int(20000/10)
+    y = np.genfromtxt('demo_y.csv', delimiter=',')
+    time_runs = sigpro.pick_one_signal(signals_runs, signal_idx=0)
+    signal_processing_demo(plot_run_signals, plot_fft, plot_enve, plot_band_pass, plot_difference)
