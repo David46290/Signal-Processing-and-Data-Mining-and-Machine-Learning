@@ -8,7 +8,7 @@ from PIL import Image
 from qualityExtractionLoc import get_mean_each_run, quality_labeling, high_similarity_runs, pick_one_lot, get_lot, get_ingot_length, qualities_from_dataset, qualities_from_dataset_edge, get_worst_value_each_run
 # from scipy.interpolate import LinearNDInterpolator
 
-def draw_signals(signal_lst, t, legend_lst=None, color_lst=None):
+def draw_signals(signal_lst, t, legend_lst=None, color_lst=None, title=None):
     plt.figure(figsize=(10, 8))
     for idx, wave in enumerate(signal_lst):
         if color_lst != None:
@@ -23,11 +23,13 @@ def draw_signals(signal_lst, t, legend_lst=None, color_lst=None):
     plt.yticks(fontsize=18)
     plt.grid()
     plt.show()
+    if title != None:
+        plt.title(f'{title}', fontsize=28)
 
-def draw_signal(signal, time, color_=None):
+def draw_signal(signal, time, color_=None, title=None):
     plt.figure(figsize=(10, 8))
     if color_ != None:
-        plt.plot(time, signal, lw=3, color=color)
+        plt.plot(time, signal, lw=3, color=color_)
     else:
         plt.plot(time, signal, lw=3)
     plt.xlabel('Time (s)', fontsize=25)
@@ -35,9 +37,11 @@ def draw_signal(signal, time, color_=None):
     plt.xticks(fontsize=18)
     plt.yticks(fontsize=18)
     plt.grid()
+    if title != None:
+        plt.title(f'{title}', fontsize=28)
 
 
-def frequency_spectrum(band, spectrum):
+def frequency_spectrum(band, spectrum, title=None):
     plt.figure(figsize=(20, 8))
     plt.plot(band, spectrum, color='green', lw=3)
     plt.xticks(np.linspace(0, np.max(band), 10), fontsize=22)
@@ -45,10 +49,12 @@ def frequency_spectrum(band, spectrum):
     plt.xlabel('Frequency (hz)', fontsize=24)
     plt.ylabel('Amplitude', fontsize=24)
     plt.grid()
+    if title != None:
+        plt.title(f'{title}', fontsize=28)
     
 
 
-def plot_envelope(signal, time, enve_up, enve_low):
+def plot_envelope(signal, time, enve_up, enve_low, title=None):
     plt.figure(figsize=(16, 4))
     plt.plot(time, signal, label='original', lw=2, color='royalblue')
     plt.plot(time, enve_up, label='up enve.', lw=2, color='green')
@@ -60,6 +66,8 @@ def plot_envelope(signal, time, enve_up, enve_low):
     plt.xlabel('Time (s)', fontsize=24)
     # plt.title(f'Run {idxR+1}', fontsize=28)
     plt.legend(loc='lower right', fontsize=22)
+    if title != None:
+        plt.title(f'{title}', fontsize=28)
 
 
     
