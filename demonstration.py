@@ -66,7 +66,7 @@ if __name__ == '__main__':
     test_band, test_spectrum = sigpro.fft(test_sig , sample_rate)
     sigplot.draw_signal(sig_runs[run_idx_demo], time_runs[run_idx_demo])
     sigplot.frequency_spectrum(test_band, test_spectrum)
-    cwt = sigpro.cwt(test_sig, widths=np.arange(1, 60), wavelet=scisig.ricker)
+    cwt = sigpro.cwt(test_sig, widths=np.arange(1, 60), wavelet=scisig.morlet2)
     plt.figure(figsize=(20, 8))
     plt.imshow(cwt, extent=[time_runs[run_idx_demo][0], time_runs[run_idx_demo][-1], 1, 61], cmap='PRGn', aspect='auto',
                vmax=abs(cwt).max(), vmin=-abs(cwt).max())
