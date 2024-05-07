@@ -367,7 +367,7 @@ def mean_enve_extract(target_sig, target_x, gau_sig=0.01, gau_rad=1, w_size=1):
     
     return enve_mean
         
-def get_envelope_lst(target_signal_lst, target_x_lst, gau_sig=0.01, gau_rad=1, w_size=1, isInterpolated=True, isResized=True, isDifferenced=False):
+def get_envelope_lst(target_signal_lst, target_x_lst, gau_sig=0.01, gau_rad=1, w_size=1, isInterpolated=True, isResized=False, isDifferenced=False):
     """
     get envelope for signals (may be in different length)
     
@@ -400,15 +400,13 @@ def get_envelope_lst(target_signal_lst, target_x_lst, gau_sig=0.01, gau_rad=1, w
                     (envelope length, )
 
     """
-    sigma_sig, radius_sig = 3.5, 10 # Gaussian smoothing for OG signal
-    window_size = 7
     target_signal_lst = target_signal_lst
     target_x_lst = target_x_lst
     up_lst = []
     low_lst = []
     for run_idx, target_signal in enumerate(target_signal_lst):
         enve_up, enve_low = envelope_extract(target_signal, target_x_lst[run_idx],
-                                             gau_sig=sigma_sig, gau_rad=radius_sig, w_size=window_size,
+                                             gau_sig=gau_sig, gau_rad=gau_rad, w_size=w_size,
                                              isInterpolated=isInterpolated)
         up_lst.append(enve_up)
         low_lst.append(enve_low)
