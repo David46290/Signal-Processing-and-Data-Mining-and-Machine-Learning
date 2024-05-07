@@ -557,7 +557,37 @@ def subtract_initial_value(signals_):
         new_signal.append(run_data - run_data[0])
     return new_signal
 
-def low_pass_butterworth(signal_, order_, freq_):
+def freq_pass(signals, order_, assigned_freq, btype='lowpass', fs=None):
+    """
+    
+    Parameters:
+        signals_ : list
+            [signal 1, signal 2, ...]; lenth: amount of runs (samples)
+            signal: ndarray
+                (signal_length, )
+        order_ : int
+            order of butterworth filter
+            
+        assigned_freq : int
+            frequency threshold of butterworth filter
+            
+        btype : str
+            {‘lowpass’, ‘highpass’, ‘bandpass’, ‘bandstop’}, optional
+            Default is ‘lowpass’. 
+
+    Returns
+    -------
+        signals_filtered : list
+            [signal 1, signal 2, ...]; lenth: amount of runs (samples)
+            signal: ndarray
+                (signal_length, )
+    """
+    signals_filtered = []
+    for idx, signal in enumerate(signals):
+        signals_filtered.append(butterworth(signal, order_, assigned_freq, btype=btype, fs=fs))
+    return signals_filtered
+
+def butterworth(signal_, order_, assigned_freq, btype='lowpass', fs=None):
     """
     low pass filter for a signal
 
@@ -566,19 +596,18 @@ def low_pass_butterworth(signal_, order_, freq_):
     signal_ : ndarray (signal_length, )
         the target signal
     order_ : int
-        order of butterworth lp filter
-    freq_ : int
-        frequency threshold of butterworth lp filter
+        order of butterworth filter
+    assigned_freq : int
+        frequency threshold of butterworth filter
 
     Returns
     -------
     signal_lp : ndarray (signal_length, )
         filtered signal
-
     """
-    b, a = scisig.butter(order_, freq_, 'lowpass')
-    signal_lp = scisig.filtfilt(b, a, signal_)
-    return signal_lp
+    b, a = scisig.butter(order_, assigned_freq, btype=btype, fs=fs)
+    signal_filtered = scisig.filtfilt(b, a, signal_)
+    return signal_filtered
 
 def time_series_downsample(run_lst, dt_original, dt_final):
     """
@@ -788,7 +817,30 @@ def signals_to_images(run_lst, value_limit):
         image_lst.append(bresebham_modified(signal, value_limit))
     return image_lst
 
-def get_frequency_spectra(signals_, sample_rate):
+def fft(signal, sample_rate):
+    """
+    Parameters
+    ----------
+    signal : ndarray
+        (signal length,)
+    sample_rate : int
+        
+
+    Returns
+    -------
+    freq_band : ndarray
+        (signal length//2,)
+    freq_spectrum : ndarray
+        (signal length//2,)
+
+    """
+    delta_time = 1 / sample_rate
+    signal_length = signal.shape[0]
+    freq_band = np.fft.fftfreq(signal_length, delta_time)[1 : signal_length//2]
+    freq_spectrum = np.abs(np.fft.fft(signal, signal_length))[1 : signal_length//2] * (2 / signal_length)
+    return freq_band, freq_spectrum 
+
+def get_frequency_spectra(signals, sample_rate):
     """
     get frequency spectra w/ FFT
     
@@ -805,12 +857,9 @@ def get_frequency_spectra(signals_, sample_rate):
                 signal[0]: frequency band
                 signal[1]: frequency spectrum
     """
-    delta_time = 1 / sample_rate
     fft_results = []
-    for idx, signal in enumerate(signals_):
-        signal_length = signal.shape[0]
-        freq_band = np.fft.fftfreq(signal_length, delta_time)[1 : signal_length//2]
-        freq_spectrum = np.abs(np.fft.fft(signal, signal_length))[1 : signal_length//2] * (2 / signal_length)
-        
+    for idx, signal in enumerate(signals):
+        freq_band, freq_spectrum = fft(signal, sample_rate)
         fft_results.append(np.array([freq_band, freq_spectrum]))
     return fft_results
+
