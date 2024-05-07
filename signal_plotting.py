@@ -46,36 +46,18 @@ def frequency_spectrum(band, spectrum):
     plt.ylabel('Amplitude', fontsize=24)
     plt.grid()
     
-    
 
 
-def plot_envelope_interval(signal_, enve_up_, enve_low_, interval, title):
-    timeHour, timeMinute = get_process_time(signal_)
-    start_index = np.where(np.abs(timeMinute - interval[0]) == np.min(np.abs(timeMinute - interval[0])))[0][0]
-    end_index = np.where(np.abs(timeMinute - interval[1]) == np.min(np.abs(timeMinute - interval[1])))[0][0]
-    # idx_signal [start_index:end_index]
-    
-    start_index_up = np.where(np.abs(enve_up_[:, 0] - interval[0]) == np.min(np.abs(enve_up_[:, 0] - interval[0])))[0][0]
-    end_index_up = np.where(np.abs(enve_up_[:, 0] - interval[1]) == np.min(np.abs(enve_up_[:, 0] - interval[1])))[0][0]
-    # idx_up_enve [start_index_up:end_index_up]
-    
-    start_index_low = np.where(np.abs(enve_low_[:, 0] - interval[0]) == np.min(np.abs(enve_low_[:, 0] - interval[0])))[0][0]
-    end_index_low = np.where(np.abs(enve_low_[:, 0] - interval[1]) == np.min(np.abs(enve_low_[:, 0] - interval[1])))[0][0]
-    # idx_low_enve [start_index_low:end_index_low]
-    
-    
+def plot_envelope(signal, time, enve_up, enve_low):
     plt.figure(figsize=(16, 4))
-    plt.plot(timeMinute[start_index:end_index], signal_[start_index:end_index], label='original', marker='o', lw=2, color='royalblue')
-    plt.plot(enve_up_[:, 0][start_index_up:end_index_up], enve_up_[:, 1][start_index_up:end_index_up], label='up enve.', marker='o', lw=2, color='green')
-    plt.plot(enve_low_[:, 0][start_index_low:end_index_low], enve_low_[:, 1][start_index_low:end_index_low], label='low enve.', marker='o', lw=2, color='red')
+    plt.plot(time, signal, label='original', lw=2, color='royalblue')
+    plt.plot(time, enve_up, label='up enve.', lw=2, color='green')
+    plt.plot(time, enve_low, label='low enve.', lw=2, color='red')
     plt.grid()
     plt.yticks(fontsize=24)
     plt.xticks(fontsize=24)
-    # plt.ylim(np.min(signal_)*0.98, np.max(signal_)*1.01)
-    plt.ylim(22, 29)
-    plt.xlim(interval[0]+2, interval[1]-2)
-    plt.ylabel(title, fontsize=26)
-    plt.xlabel('cutting time (minute)', fontsize=24)
+    plt.ylabel('Amplitude', fontsize=26)
+    plt.xlabel('Time (s)', fontsize=24)
     # plt.title(f'Run {idxR+1}', fontsize=28)
     plt.legend(loc='lower right', fontsize=22)
 
