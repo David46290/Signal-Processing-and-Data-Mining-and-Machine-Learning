@@ -789,3 +789,30 @@ def signals_to_images(run_lst, value_limit):
     for signal in run_lst:
         image_lst.append(bresebham_modified(signal, value_limit))
     return image_lst
+
+def get_frequency_spectra(signals_, sample_rate):
+    """
+    get frequency spectra w/ FFT
+    
+    Parameters:
+        signals_ : list
+            [signal 1, signal 2, ...]; lenth: amount of runs (samples)
+            signal: ndarray
+                (signal_length, )
+             
+    Return:
+        fft_results: list
+            [fft1 1, fft2 2, ...]; lenth: amount of runs (samples)
+            signal: ndarray
+                signal[0]: frequency band
+                signal[1]: frequency spectrum
+    """
+    delta_time = 1 / sample_rate
+    fft_results = []
+    for idx, signal in enumerate(signals_):
+        signal_length = signal.shape[0]
+        freq_band = np.fft.fftfreq(signal_length, delta_time)[1 : signal_length//2]
+        freq_spectrum = np.abs(np.fft.fft(signal, signal_length))[1 : signal_length//2] * (2 / signal_length)
+        
+        fft_results.append(np.array([freq_band, freq_spectrum]))
+    return fft_results
