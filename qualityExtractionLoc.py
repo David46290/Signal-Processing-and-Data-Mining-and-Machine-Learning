@@ -186,7 +186,18 @@ class getQuality:
         position = self.slicing(self.waferIdx, splitIndice)
         return warp_entry_10, warp_entry_20, warp_entry_30, warp_exit_10, warp_exit_20, warp_exit_30, wavi_entry, wavi_exit, position
     
-    
+    def get_specific_qualities(self, name_lst):
+        total_lst = []
+        for numIdx in range(0, len(self.waferIdx)):
+            location = self.waferIdx[numIdx][1] # lot: the location of the wafer
+            wafer_content = [location]
+            for name_idx, name in enumerate(name_lst): 
+                wafer_content.append(self.dataFrame[f'{name}'][numIdx])
+            total_lst.append(wafer_content)
+        split_indice = self.split(self.waferIdx)
+        total_lst = self.slicing(total_lst, split_indice)
+
+        return total_lst
     
     #%%
     """
@@ -245,7 +256,7 @@ def pick_run_data(series_list_, target_runIdx):
             quality_finale.append(series)
     return quality_finale
     
-def qualities_from_dataset(quality_dir, runIdxes, isDifferentParamSets_):
+def qualities_from_dataset(quality_dir, runIdxes=[], isDifferentParamSets_=False):
     get_quality = getQuality(quality_dir)
     ttv, warp, waviness, bow, position = get_quality.getWholeQuality()
     if isDifferentParamSets_:
@@ -257,7 +268,7 @@ def qualities_from_dataset(quality_dir, runIdxes, isDifferentParamSets_):
         
     return ttv, warp, waviness, bow, position  
 
-def qualities_from_dataset_edge(quality_dir, runIdxes, isDifferentParamSets_):
+def qualities_from_dataset_edge(quality_dir, runIdxes=[], isDifferentParamSets_=False):
     get_quality = getQuality(quality_dir)
     warp_entry_10, warp_entry_20, warp_entry_30, warp_exit_10, warp_exit_20, warp_exit_30, wavi_entry, wavi_exit, position = get_quality.getEdgeQuality()
     if isDifferentParamSets_:
@@ -273,7 +284,7 @@ def qualities_from_dataset_edge(quality_dir, runIdxes, isDifferentParamSets_):
         
     return warp_entry_10, warp_entry_20, warp_entry_30, warp_exit_10, warp_exit_20, warp_exit_30, wavi_entry, wavi_exit, position       
     
-def get_lot(quality_dir, runIdxes, isDifferentParamSets_):
+def get_lot(quality_dir, runIdxes=[], isDifferentParamSets_=False):
     get_quality = getQuality(quality_dir)
     lot = get_quality.getLot()
     if isDifferentParamSets_:
@@ -281,7 +292,7 @@ def get_lot(quality_dir, runIdxes, isDifferentParamSets_):
     return lot
 
 
-def get_ingot_length(quality_dir, runIdxes, isDifferentParamSets_):
+def get_ingot_length(quality_dir, runIdxes=[], isDifferentParamSets_=False):
     get_quality = getQuality(quality_dir)
     ingot_length = get_quality.length
     if isDifferentParamSets_:
@@ -289,7 +300,7 @@ def get_ingot_length(quality_dir, runIdxes, isDifferentParamSets_):
     return ingot_length
 
 
-def qualities_from_dataset_noLoc(quality_dir, runIdxes, isDifferentParamSets_):
+def qualities_from_dataset_noLoc(quality_dir, runIdxes=[], isDifferentParamSets_=False):
     get_quality = getQuality(quality_dir)
     ttv, warp, waviness, bow, position = get_quality.getWholeQuality_noLoc()
     if isDifferentParamSets_:
@@ -301,7 +312,7 @@ def qualities_from_dataset_noLoc(quality_dir, runIdxes, isDifferentParamSets_):
         
     return ttv, warp, waviness, bow, position  
 
-def qualities_from_dataset_edge(quality_dir, runIdxes, isDifferentParamSets_):
+def qualities_from_dataset_edge(quality_dir, runIdxes=[], isDifferentParamSets_=False):
     get_quality = getQuality(quality_dir)
     warp_entry_10, warp_entry_20, warp_entry_30, warp_exit_10, warp_exit_20, warp_exit_30, wavi_entry, wavi_exit, position = get_quality.getEdgeQuality()
     if isDifferentParamSets_:
@@ -317,7 +328,7 @@ def qualities_from_dataset_edge(quality_dir, runIdxes, isDifferentParamSets_):
         
     return warp_entry_10, warp_entry_20, warp_entry_30, warp_exit_10, warp_exit_20, warp_exit_30, wavi_entry, wavi_exit, position       
 
-def qualities_from_dataset_edge_noLoc(quality_dir, runIdxes, isDifferentParamSets_):
+def qualities_from_dataset_edge_noLoc(quality_dir, runIdxes=[], isDifferentParamSets_=False):
     get_quality = getQuality(quality_dir)
     warp_entry_10, warp_entry_20, warp_entry_30, warp_exit_10, warp_exit_20, warp_exit_30, wavi_entry, wavi_exit, position = get_quality.getEdgeQuality_noLoc()
     if isDifferentParamSets_:
@@ -332,8 +343,22 @@ def qualities_from_dataset_edge_noLoc(quality_dir, runIdxes, isDifferentParamSet
         wavi_exit = pick_run_data(wavi_exit, runIdxes)
         
     return warp_entry_10, warp_entry_20, warp_entry_30, warp_exit_10, warp_exit_20, warp_exit_30, wavi_entry, wavi_exit, position       
-     
-        
+
+def pick_certain_qualities(quality_dir, name_lst, runIdxes=[], isDifferentParamSets_=False):
+    get_quality = getQuality(quality_dir)
+    qualities = get_quality.get_specific_qualities(name_lst)
+    if isDifferentParamSets_:
+        qualities = pick_run_data(qualities, runIdxes)
+    return qualities
+
+def get_wafer_position(quality_dir, runIdxes=[], isDifferentParamSets_=False):
+    get_quality = getQuality(quality_dir)
+    splitIndice = get_quality.split(get_quality.waferIdx)
+    position = get_quality.slicing(get_quality.waferIdx, splitIndice)
+    if isDifferentParamSets_:
+        position = pick_run_data(position, runIdxes)
+    return position
+       
 def get_worst_value_each_run(run_lst, specific):
     new_data = np.zeros(len(run_lst))
     for run_idx, run_data  in enumerate(run_lst):
