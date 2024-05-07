@@ -489,7 +489,7 @@ def subtraction_2signals(signals_):
     get difference between signal of the two channels
     
     Parameters:
-        signals_ : list
+        signals_ : list or tuple
             [signal 1, signal 2, ...]; lenth: amount of runs (samples)
             signal: ndarray
                 (number of signal channels=2, signal_length)
@@ -514,7 +514,7 @@ def addition_2signals(signals_):
     get summation from signal of the two channels
     
     Parameters:
-        signals_ : list
+        signals_ : list or tuple
             [signal 1, signal 2, ...]; lenth: amount of runs (samples)
             signal: ndarray
                 (number of signal channels=2, signal_length)
