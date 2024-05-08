@@ -1,12 +1,13 @@
 import numpy as np
 from scipy import signal as scisig
 from matplotlib import pyplot as plt
+import math
 
 from featureExtraction import features_of_signal
 import signal_processing as sigpro
 import signal_plotting as sigplot
 
-def signal_processing_demo(plot_run_signals=False, plot_fft=False, plot_enve=False, plot_band_pass=False, plot_difference=False):
+def signal_processing_demo(plot_run_signals=False, plot_fft=False, plot_enve=False, plot_band_pass=False, plot_difference=False, plot_cwt=False, plot_gaf=False):
     if plot_run_signals: 
         # plot all signals of one run
         sigplot.draw_signals(run_signals[1:], run_signals[0])
@@ -48,8 +49,23 @@ def signal_processing_demo(plot_run_signals=False, plot_fft=False, plot_enve=Fal
         sigplot.draw_signal(sig_runs[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo}', color_='royalblue')
         sigplot.draw_signal(sig_runs_2[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo+1}', color_='seagreen')
         sigplot.draw_signal(sig_difference_runs[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo+1} - Signal {siganl_idx_demo}', color_='peru')
+
+    if plot_cwt:
+        band, spectrum = sigpro.fft(sig_runs[run_idx_demo] , sample_rate)
+        sigplot.draw_signal(sig_runs[run_idx_demo], time_runs[run_idx_demo])
+        sigplot.frequency_spectrum(band, spectrum)
+        cwt = sigpro.cwt(sig_runs[run_idx_demo], widths=np.arange(1, 60), wavelet=scisig.morlet2)
+        sigplot.draw_signal_2d(cwt)
         
-    
+    if plot_gaf:
+        sigplot.draw_signal(sig_runs[run_idx_demo], time_runs[run_idx_demo])
+        gaf = sigpro.gaf(sig_runs[run_idx_demo])
+        sigplot.draw_signal_2d(gaf)
+
+def sum_cos(a, b):
+    return (math.cos(a+b))
+
+
 if __name__ == '__main__':
     signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset')
     sample_rate = int(20000/10)
@@ -59,15 +75,8 @@ if __name__ == '__main__':
     run_idx_demo = 4
     run_signals = signals_runs[run_idx_demo]
     siganl_idx_demo = 3
-    # signal_processing_demo(plot_run_signals=True, plot_fft=True, plot_enve=True, plot_band_pass=True, plot_difference=True)
+    signal_processing_demo(plot_gaf=True)
     
-    sig_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
-    test_sig = sig_runs[run_idx_demo]
-    test_band, test_spectrum = sigpro.fft(test_sig , sample_rate)
-    sigplot.draw_signal(sig_runs[run_idx_demo], time_runs[run_idx_demo])
-    sigplot.frequency_spectrum(test_band, test_spectrum)
-    cwt = sigpro.cwt(test_sig, widths=np.arange(1, 60), wavelet=scisig.morlet2)
-    plt.figure(figsize=(20, 8))
-    plt.imshow(cwt, extent=[time_runs[run_idx_demo][0], time_runs[run_idx_demo][-1], 1, 61], cmap='PRGn', aspect='auto',
-               vmax=abs(cwt).max(), vmin=-abs(cwt).max())
-    plt.show()
+    signal = run_signals[siganl_idx_demo]
+
+
