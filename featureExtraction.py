@@ -256,132 +256,8 @@ def getFlattenFeature(feature):
         xN.append(feature)
     xN = np.array(xN)
     return xN.T
-
-
-def features_from_dataset(signals_lst, isDifferencing):
-    signal_All_temp_out = []
-    signal_All_temp_out_upEnve = []
-    signal_All_temp_out_lowEnve = []
-    signal_All_torque_out = []
-    for signals in signals_lst:
-        """
-        Slicing based on the shape of temperature signal
-        """
-        # temperature
-        # 0~75 mm
-        # 75~175 mm
-        # 175~275 mm
-        # 275~306 mm
-        idx_1 = np.where(signals[0, :] >= 75)[0][0]
-        idx_2 = np.where(signals[0, :] >= 175)[0][0]
-        idx_3 = np.where(signals[0, :] >= 275)[0][0]
-        outLet_temp = signals[2, :]
-        initial_temp = outLet_temp[0]
-        if isDifferencing:
-            outLet_temp = outLet_temp - initial_temp
-        
-        lst_temp_out = []
-        lst_temp_out_upEnve = []
-        lst_temp_out_lowEnve = []
-        lst_temp_out.append(outLet_temp[:idx_1])
-        lst_temp_out.append(outLet_temp[idx_1:idx_2])
-        lst_temp_out.append(outLet_temp[idx_2:idx_3])
-        lst_temp_out.append(outLet_temp[idx_3:])
-        for temp_seg in lst_temp_out:
-            enve_up_out = temp_seg[scisig.find_peaks(temp_seg, distance=1)[0]]
-            lst_temp_out_upEnve.append(enve_up_out)
-            enve_low_out = temp_seg[scisig.find_peaks(temp_seg*-1, distance=1)[0]]
-            lst_temp_out_lowEnve.append(enve_low_out)
-        signal_All_temp_out.append(lst_temp_out)
-        signal_All_temp_out_upEnve.append(lst_temp_out_upEnve)
-        signal_All_temp_out_lowEnve.append(lst_temp_out_lowEnve)
-
     
-    
-    features_temp_out = get3Dfeatures(signal_All_temp_out)
-    features_temp_out = getFlattenFeature(features_temp_out)
-    features_temp_out_upEnve = get3Dfeatures(signal_All_temp_out_upEnve)
-    features_temp_out_upEnve = getFlattenFeature(features_temp_out_upEnve)
-    features_temp_out_lowEnve = get3Dfeatures(signal_All_temp_out_lowEnve)
-    features_temp_out_lowEnve = getFlattenFeature(features_temp_out_lowEnve)
-    
-    features_torque_out = get3Dfeatures(signal_All_torque_out)
-    features_torque_out = getFlattenFeature(features_torque_out)
-
-    return features_temp_out, features_temp_out_upEnve, features_temp_out_lowEnve, features_torque_out
-
-def features_from_signal(signals_lst, target_signal_idx, isDifferencing, isEnveCombined_, gau_sig, gau_rad):
-    signal_all = []
-    if isDifferencing:
-        signal_all_upEnve = []
-        signal_all_lowEnve = []
-    for signals in signals_lst:
-        # signals: [progress_signal, target_signal]
-        target_signal = signals[1, :]
-        progress = signals[0, :]
-        """
-        Get envelopes
-        """
-        if isEnveCombined_:
-            # Gaussian smoothing
-            sig_for_enve = gaussian_filter1d(target_signal, sigma=gau_sig, radius=gau_rad)
-            
-            # Savitzky-Golay smoothing
-            # w_size_sig, order_sig = 10, 2 
-            # sig_for_enve = curve_fitting(signals[1, :], window_size=w_size_sig, order=order_sig)
-            up, low = sigpro.envelope_extract(target_sig=sig_for_enve, target_x=progress)
-        
-        """
-        Slicing based on the shape of signal
-        """
-        # 0~75 mm
-        # 75~175 mm
-        # 175~275 mm
-        # 275~306 mm
-        progress_split = [75, 175, 275]
-        idx_lst = []
-        for split in progress_split:
-            idx_lst.append(np.where(progress >= split)[0][0])
-        if isDifferencing:
-            target = target_signal - target_signal[0]
-        # appending segments
-        lst_signal = []
-        lst_signal.append(target[:idx_lst[:0]])
-        for jdx, idx in enumerate(idx_lst[:-1]):
-            lst_signal.append(target[idx:idx_lst[jdx+1]])
-        lst_signal.append(target[idx_lst[-1:]:])
-        signal_all.append(lst_signal)
-        
-        if isEnveCombined_:
-            lst_upEnve = []
-            lst_lowEnve = []
-            for signal_seg in lst_signal:
-                lst_upEnve.append(up[:idx_lst[:0], 1])
-                lst_lowEnve.append(up[:idx_lst[:0], 1])
-                for jdx, idx in enumerate(idx_lst[:-1]):
-                    lst_upEnve.append(target[idx:idx_lst[jdx+1], 1])
-                    lst_lowEnve.append(target[idx:idx_lst[jdx+1], 1])
-                lst_upEnve.append(target[idx_lst[-1:]:, 1])
-                lst_lowEnve.append(target[idx_lst[-1:]:, 1])
-
-            signal_all_upEnve.append(lst_upEnve)
-            signal_all_lowEnve.append(lst_lowEnve)
-
-    
-    features = get3Dfeatures(signal_all)
-    features = getFlattenFeature(features)
-    if isEnveCombined_:
-        features_upEnve = get3Dfeatures(signal_all_upEnve)
-        features_lowEnve = get3Dfeatures(signal_all_lowEnve)
-        features_upEnve = getFlattenFeature(features_upEnve)
-        features_lowEnve = getFlattenFeature(features_lowEnve)
-        # feature_total = np.concatenate((features, features_upEnve, features_lowEnve), axis=1)
-        feature_total = np.concatenate((features, features_upEnve), axis=1)
-        return feature_total
-    else:
-        return features
-    
-def features_of_signal(progress_lst, signals_lst, isEnveCombined_, gau_sig=0.01, gau_rad=1, w_size=1):
+def features_of_signal(progress_lst, signals_lst, isEnveCombined_, gau_sig=0.01, gau_rad=1, w_size=1, split_by_x=[75, 175, 275]):
     # gau_sig, gau_rad: Gaussian smooth param.  ; w_size: window size for peak searching
     signal_all = []
     signal_all_upEnve = []
@@ -406,14 +282,9 @@ def features_of_signal(progress_lst, signals_lst, isEnveCombined_, gau_sig=0.01,
         """
         Slicing based on the shape of signal
         """
-        # 0~75 mm
-        # 75~175 mm
-        # 175~275 mm
-        # 275~306 mm
-        progress_split = [75, 175, 275]
         idx_lst = []
         try:
-            for split in progress_split:
+            for split in split_by_x:
                 idx_lst.append(np.where(progress >= split)[0][0])
         except:
             print()
