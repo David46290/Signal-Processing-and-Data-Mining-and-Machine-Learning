@@ -4,6 +4,7 @@ from scipy import signal as scisig
 from PIL import Image 
 from scipy import interpolate
 from scipy.ndimage import gaussian_filter1d
+import math
 
 
 def pick_run_data(run_series, target_runIdx):
@@ -868,3 +869,14 @@ def cwt(signal, widths, wavelet=scisig.morlet2):
     cwt = np.abs(scisig.cwt(signal, wavelet=wavelet, widths=widths))
     cwt = np.flipud(cwt) # if not doing this, it's upside down
     return cwt
+
+def sum_cos(a, b):
+    return (math.cos(a+b))
+
+def gaf(signal):
+    # normalize => [-1, 1]
+    sig_normalized = ((signal - np.amax(signal)) + (signal - np.amin(signal))) / (np.amax(signal) - np.amin(signal))
+    phi = np.arccos(sig_normalized)
+    phi_grid = np.meshgrid(phi, phi, sparse=True)
+    gaf = np.vectorize(sum_cos)(*phi_grid)
+    return gaf
