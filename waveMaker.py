@@ -35,7 +35,7 @@ color2 = ['steelblue', 'red', 'purple']
 color3 = ['steelblue', 'purple', 'blue']
 
 sr = int(20000/10)
-time_total = 20
+time_total = 5
 dataset_sig = []
 dataset_y = []
 num_run = 20
@@ -44,10 +44,10 @@ for run_idx in range(num_run):
     t = np.arange(0, time_total*(1+np.random.uniform(0,0.1)), 1/sr)
     print(f'final time = {t[-1]:.2f} | time length = {t.shape[0]:.2f}')
     noise = np.random.normal(0,1,t.shape[0])
-    amplitude_1 = np.array([5, 2, 1]) * (1 + random_seed)
-    amplitude_2 = np.array([3, 1, 0.5]) * (1 + random_seed)
-    amplitude_3 = np.array([0.5, 1, 0.25]) * (1 + random_seed)
-    sig1 = sinMaker(A = amplitude_1[0], W = 2.5, THETA = 10) + sinMaker(A = amplitude_1[1], W = 30, THETA = 5) + sinMaker(A = amplitude_1[2], W = 500, THETA = 90) + noise
+    amplitude_1 = np.array([10, 2, 1]) * (1 + random_seed)
+    amplitude_2 = np.array([6, 1, 0.5]) * (1 + random_seed)
+    amplitude_3 = np.array([3, 2, 1]) * (1 + random_seed)
+    sig1 = sinMaker(A = amplitude_1[0], W = 20, THETA = 10) + sinMaker(A = amplitude_1[1], W = 230, THETA = 5) + sinMaker(A = amplitude_1[2], W = 500, THETA = 90) + noise
     sig2 = sinMaker(A = amplitude_2[0], W = 10, THETA = 0) + sinMaker(A = amplitude_2[1], W = 100, THETA = 30) + sinMaker(A = amplitude_2[2], W = 900, THETA = 90) + noise
     sig3 = sinMaker(A = amplitude_3[0], W = 120, THETA = 30) + expMaker(amplitude_3[1], 1, 0) + expMaker(amplitude_3[2], 2, 6) + expMaker(amplitude_3[2], 1.5, 15) + noise
     run_content = np.concatenate((t.reshape(-1, 1), sig1.reshape(-1, 1), sig2.reshape(-1, 1), sig3.reshape(-1, 1)), axis=1)
