@@ -183,26 +183,38 @@ class TimeFeatures():
         return np.array(features_all_signal)
 
 def get3Dfeatures(signal3D, gau_sig=0.01, gau_rad=1, w_size=1): # gau_sig, gau_rad: Gaussian smooth param.; w_size: window size for peak searching
-    '''
-        signal3D shape: (amount of samples, amount of signal categories, signal length)
-        features_all_samples: (amount of samples, amount of signal categories, amount of feature categories)
-    '''
-    # allFeatures3D = FeaturesExtraction3D(signal3D)
+    """
+    
+    Parameters:
+        signal3D : list
+            [signals 1, signals 2, ...]; lenth: amount of runs (samples)
+            signals: ndarray
+                (number of signal channels, signal_length)
+                
+    Return:
+        features_all_samples:  ndarray
+            (amount of samples, amount of signal categories, amount of feature categories)
+    """    
+
     features_all_samples = []
     for sample_idx, signal_list in enumerate(signal3D):
         feature_per_experiment = TimeFeatures(signal_list, gau_sig, gau_rad, w_size)
         features_all_samples.append(feature_per_experiment.features_all_signals)
-
-    # allFeature = np.array([rmsList, kurtList, skewList, variList, medianList, crestList, p2pList])
     features_all_samples = np.array(features_all_samples)
-    # allFeatures3D = np.moveaxis(features_all_samples, [0, 1, 2], [2, 0, 1])
     return features_all_samples
 
 def get2Dfeatures(signal2D, gau_sig=0.01, gau_rad=1, w_size=1): # gau_sig, gau_rad: Gaussian smooth param.; w_size: window size for peak searching
-    '''
-        signal2D shape: (amount of signal categories, signal length))
-        allFeature shape: (amount of signal categories, amount of feature categories)
-    '''
+    """
+    
+    Parameters:
+        signal2D: ndarray
+            (number of signal channels, signal_length)
+                
+    Return:
+        features_all_samples:  ndarray
+            (amount of signal categories, amount of feature categories)
+    """      
+
     feature_per_experiment = TimeFeatures(signal2D, gau_sig, gau_rad, w_size)
     features_one_samples = feature_per_experiment.features_all_signals
 
