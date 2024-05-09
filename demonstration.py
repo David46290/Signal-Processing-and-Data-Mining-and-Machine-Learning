@@ -6,6 +6,7 @@ import math
 import featureExtraction as feaext
 import signal_processing as sigpro
 import signal_plotting as sigplot
+import correlation_analysis as corr
 
 def signal_processing_demo(plot_run_signals=False, plot_fft=False, plot_enve=False, plot_band_pass=False, plot_difference=False, plot_cwt=False, plot_gaf=False):
     if plot_run_signals: 
@@ -74,12 +75,17 @@ if __name__ == '__main__':
     signal_processing_demo()
     
     signal_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
-    runs_features = feaext.TimeFeatures(signal_runs, target_lst=['rms', 'kurtosis', 'skewness', 'variance', 'p2p'])
-    features = runs_features.features_all_signals
-    features_name = runs_features.feature_names
+    features_time = feaext.TimeFeatures(signal_runs, target_lst=['rms', 'kurtosis', 'skewness', 'variance', 'p2p'])
+    features = features_time.features_all_signals
+    features_name = features_time.feature_names
     
     features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=1)
     domain_fre = features_freq.domain_frequency
     domain_energy = features_freq.domain_energy
     domain_fre_name = features_freq.feature_name_freq
     domain_energy_name = features_freq.feature_name_energy
+    feature_idx = 3
+    corr.get_corr_value_2variables(features[:, feature_idx], y[:, 2], title_='Pearson Correlation', content_=[f'{features_name[0, feature_idx]} of signal {siganl_idx_demo}', 'Y3'])
+    
+    features_time_y_corr = corr.features_vs_quality(features, y)
+    corr.plot_correlation_matrix(features_time_y_corr)
