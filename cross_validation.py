@@ -20,7 +20,6 @@ from keras import losses
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, MaxPooling1D, Flatten, Convolution1D, LSTM, Activation
 from keras.layers import Dropout, Flatten, Conv2D, MaxPooling2D, BatchNormalization
-from tensorflow_addons.metrics import r_square
 from keras.callbacks import EarlyStopping
 
 def cleanOutlier(x, y):
@@ -168,7 +167,8 @@ def show_train_history_NN_onlyTrain(history_, loss, metric_name_tr, fold_idx):
     plt.close()
 
 class cross_validate:
-    def __init__(self, x, y, qualityKind, normalized=None):
+    def __init__(self, x, y, qualityKind='Y', normalized=None, y_value_boundary=[0, 1]):
+        self.y_boundary = y_value_boundary
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
@@ -278,7 +278,6 @@ class cross_validate:
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
         model_state = []
-        metric = 'mape'
         metrics = ['mape', 'rmse']
         # default setting: https://xgboost-readthedocs-io.translate.goog/en/stable/parameter.html?_x_tr_sl=en&_x_tr_tl=zh-TW&_x_tr_hl=zh-TW&_x_tr_pto=sc
         if param_setting != None:
@@ -297,7 +296,6 @@ class cross_validate:
             model.fit(x_train, y_train, eval_set=evalset, verbose=False)
             model_state.append(model.get_xgb_params())
             model.save_model(f".//modelWeights//xgb_{idx}.json")
-            # model_lst.append(model)
             yValPredicted = model.predict(x_val)
             results = model.evals_result()
             self.show_train_history(results, metrics, idx)
@@ -309,10 +307,10 @@ class cross_validate:
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
-            draw_histo(y_val, f'Histogram of Output in Fold {idx+1}', 'seagreen', 0)
+            # draw_histo(y_val, f'Histogram of Output in Fold {idx+1}', 'seagreen', 0)
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
         # https://xgboost.readthedocs.io/en/stable/python/examples/continuation.html
         if param_setting != None:
             new_model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
@@ -322,10 +320,10 @@ class cross_validate:
                                  disable_default_eval_metric=True, n_estimators=100, random_state=75)
         
         best_model = XGBRegressor()
-        best_model.load_model(f".//modelWeights//xgb_{highest_valR2_idx}.json")
+        best_model.load_model(f".//modelWeights//xgb_{hiest_r2_idx}.json")
         # fine tuning
         # best_model = xgb.train(params=model.get_params(), dtrain=xgb.DMatrix(self.xTrain, label=self.yTrain),
-        #                        xgb_model=f".//modelWeights//xgb_{highest_valR2_idx }.json",
+        #                        xgb_model=f".//modelWeights//xgb_{hiest_r2_idx }.json",
         #                        evals_result=model.evals_result(), num_boost_round=100)
         new_model.fit(self.xTrain, self.yTrain, xgb_model=best_model, eval_set=[(self.xTrain, self.yTrain)], verbose=False)
         results_tune = new_model.evals_result()
@@ -342,8 +340,6 @@ class cross_validate:
         val_metric_lst = np.zeros((self.kfold_num, 2))
         model_lst = []
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
-            metric = 'mape'
-            metrics = ['mape', 'rmse']
             # metrics = [mean_absolute_percentage_error, r2_score]
             model = KNeighborsRegressor(n_neighbors=3)
             x_train = xTrain[train_idx]
@@ -364,8 +360,8 @@ class cross_validate:
             val_metric_lst[idx] = np.array([mape_val, r2_val])
 
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        best_model = model_lst[highest_valR2_idx]
+        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        best_model = model_lst[hiest_r2_idx]
         return best_model
     
     def cross_validate_test(self, param_setting=None):
@@ -398,8 +394,8 @@ class cross_validate:
             val_metric_lst[idx] = np.array([mape_val, r2_val])
 
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        best_model = model_lst[highest_valR2_idx]
+        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        best_model = model_lst[hiest_r2_idx]
         best_model.fit(self.xTrain, self.yTrain)
         return best_model
 
@@ -410,7 +406,7 @@ class cross_validate:
         model.add(Dense(1, activation='linear'))
         model.compile(loss=loss,
                       optimizer=optimizer,
-                      metrics=[r_square.RSquare()])
+                      metrics=[keras.metrics.MeanAbsolutePercentageError])
         return model
 
     def build_DNN(self, loss):
@@ -422,7 +418,7 @@ class cross_validate:
         model.add(Dense(units=1, activation=('linear')))
         model.compile(loss=loss,
                       optimizer=optimizer,
-                      metrics=[r_square.RSquare()])
+                      metrics=[keras.metrics.MeanAbsolutePercentageError])
         return model
 
     def cross_validate_ANN(self):
@@ -431,11 +427,12 @@ class cross_validate:
         fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
-        loss = "mean_absolute_error"
+        loss = "mean_square_error"
+        metric = "mean_absolute_percentage_error"
         model = self.build_ANN(loss)
         model.save_weights('./modelWeights/ANN_initial.h5') 
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
-            metric = 'mape'
+            
             optimizer = opti.Adam(learning_rate=0.0035)
             callback = EarlyStopping(monitor="loss", patience=30, verbose=0, mode="auto")
             
@@ -446,7 +443,7 @@ class cross_validate:
             history = model.fit(x_train, y_train, validation_data = (x_val, y_val),
                                 epochs=100, batch_size=30, verbose=0)
             model.save_weights(f'./modelWeights/ANN{idx}.h5')  
-            show_train_history_NN(history, loss, 'r_square', 'val_r_square', idx)
+            show_train_history_NN(history, loss, f'{metric}', f'val_{metric}', idx)
             yTrainPredicted = model.predict(x_train)
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
@@ -455,13 +452,11 @@ class cross_validate:
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
-            # fitness_lst.append(1 - r2_val)
-            fitness_lst.append(mape_val)
             model.load_weights('./modelWeights/ANN_initial.h5')
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        model.load_weights(f'./modelWeights/ANN{highest_valR2_idx}.h5')
+        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        model.load_weights(f'./modelWeights/ANN{hiest_r2_idx}.h5')
         return model
     
     def cross_validate_DNN(self):
@@ -498,19 +493,19 @@ class cross_validate:
             fitness_lst.append(mape_val)
             model.load_weights('./modelWeights/DNN_initial.h5')
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        model.load_weights(f'./modelWeights/DNN{highest_valR2_idx}.h5')
+        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        model.load_weights(f'./modelWeights/DNN{hiest_r2_idx}.h5')
         return model
     
     
     def model_testing(self, model_, category):
         model = model_
         yTestPredicted = model.predict(self.xTest)
-        draw_histo(self.yTest, 'Test', 'royalblue', range_std=2)
+        # draw_histo(self.yTest, 'Test', 'royalblue', range_std=2)
         self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
         
     def plotTrueAndPredicted(self, x, YT, YP, category):
-        plot = True
+        bottomValue, topValue = self.y_boundary[0], self.y_boundary[1]
         if self.normalized == 'xy':
             YT = (self.yMax - self.yMin) * YT + self.yMin
             YP = (self.yMax - self.yMin) * YP + self.yMin
@@ -519,38 +514,33 @@ class cross_validate:
         mape = mean_absolute_percentage_error(YT, YP) * 100
         mae = mean_absolute_error(YT, YP)
         color1 = ['slateblue', 'orange', 'firebrick', 'steelblue', 'purple', 'green']
-        if plot:
-            plt.figure(figsize=(12, 9))
-            plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
-            plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
-            topValue = (max(YT) if max(YT) > max(YP) else max(YP))
-            topValue = topValue * 1.1 if topValue > 0 else topValue * 0.9
-            bottomValue = (min(YT) if min(YT) < min(YP) else min(YP))
-            bottomValue = bottomValue * 0.9 if topValue > 0 else topValue * 1.1
-            bottomValue = 0
-            topValue = 2.7
-            plt.ylabel("Predicted Value", fontsize=24)
-            plt.xlabel("True Value", fontsize=24)
-            plt.ylim([bottomValue, topValue])
-            plt.xlim([bottomValue, topValue])
-            plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
-            plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
-            plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
-                      , fontsize=26)
-            plt.axhline(y=1, color=color1[0])
-            plt.axhline(y=1.2, color=color1[1])
-            plt.axhline(y=1.5, color=color1[2])
-            plt.axhline(y=2, color=color1[3])
-            plt.axvline(x=1, color=color1[0])
-            plt.axvline(x=1.2, color=color1[1])
-            plt.axvline(x=1.5, color=color1[2])
-            plt.axvline(x=2, color=color1[3])
-            plt.grid()
-            plt.show()
+        plt.figure(figsize=(12, 9))
+        plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
+        plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
+        topValue = (max(YT) if max(YT) > max(YP) else max(YP))
+        topValue = topValue * 1.1 if topValue > 0 else topValue * 0.9
+        plt.ylabel("Predicted Value", fontsize=24)
+        plt.xlabel("True Value", fontsize=24)
+        plt.ylim([bottomValue, topValue])
+        plt.xlim([bottomValue, topValue])
+        plt.xticks(fontsize=22)
+        plt.yticks(fontsize=22)
+        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
+                  , fontsize=26)
+        plt.axhline(y=1, color=color1[0])
+        plt.axhline(y=1.2, color=color1[1])
+        plt.axhline(y=1.5, color=color1[2])
+        plt.axhline(y=2, color=color1[3])
+        plt.axvline(x=1, color=color1[0])
+        plt.axvline(x=1.2, color=color1[1])
+        plt.axvline(x=1.5, color=color1[2])
+        plt.axvline(x=2, color=color1[3])
+        plt.grid()
+        plt.show()
         print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
 
 class cross_validate_signal:
-    def __init__(self, x, y, qualityKind, normalized):
+    def __init__(self, x, y, qualityKind='Y', normalized=None):
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
@@ -586,7 +576,7 @@ class cross_validate_signal:
         model.add(Dense(1, activation='linear'))
         model.compile(loss=loss,
                       optimizer=optimizer,
-                      metrics=[r_square.RSquare()])
+                      metrics=[keras.metrics.MeanAbsolutePercentageError])
         return model   
     
  
@@ -627,8 +617,8 @@ class cross_validate_signal:
 
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        model.load_weights(f'./modelWeights/1DCNN{highest_valR2_idx}.h5')
+        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        model.load_weights(f'./modelWeights/1DCNN{hiest_r2_idx}.h5')
         return model
     
     def build_LSTM(self, loss, metrics):
@@ -687,8 +677,8 @@ class cross_validate_signal:
 
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        model.load_weights(f'./modelWeights/LSTM{highest_valR2_idx}.h5')
+        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        model.load_weights(f'./modelWeights/LSTM{hiest_r2_idx}.h5')
         return model
     
     def model_testing(self, model_, category):
@@ -727,9 +717,7 @@ class cross_validate_signal:
         plt.suptitle(f'Cross Validation', fontsize=26)    
     
     def plotTrueAndPredicted(self, x, YT, YP, category):
-        bottomValue = 0
-        topValue = 2.7
-        plot = True
+        bottomValue, topValue = self.y_boundary[0], self.y_boundary[1]
         if self.normalized == 'xy':
             YT = (self.yMax - self.yMin) * YT + self.yMin
             YP = (self.yMax - self.yMin) * YP + self.yMin
@@ -737,28 +725,34 @@ class cross_validate_signal:
         r2 = r2_score(YT, YP)
         mape = mean_absolute_percentage_error(YT, YP) * 100
         mae = mean_absolute_error(YT, YP)
-        if plot:
-            plt.figure(figsize=(12, 9))
-            plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
-            plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
-            # topValue = (max(YT) if max(YT) > max(YP) else max(YP))
-            # topValue = topValue * 1.1 if topValue > 0 else topValue * 0.9
-            # bottomValue = (min(YT) if min(YT) < min(YP) else min(YP))
-            # bottomValue = bottomValue * 0.9 if topValue > 0 else topValue * 1.1
-            plt.ylabel("Predicted Value", fontsize=24)
-            plt.xlabel("True Value", fontsize=24)
-            plt.ylim([bottomValue, topValue])
-            plt.xlim([bottomValue, topValue])
-            plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
-            plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
-            plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
-                      , fontsize=26)
-            plt.grid()
-            plt.show()
+        color1 = ['slateblue', 'orange', 'firebrick', 'steelblue', 'purple', 'green']
+        plt.figure(figsize=(12, 9))
+        plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
+        plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
+        topValue = (max(YT) if max(YT) > max(YP) else max(YP))
+        topValue = topValue * 1.1 if topValue > 0 else topValue * 0.9
+        plt.ylabel("Predicted Value", fontsize=24)
+        plt.xlabel("True Value", fontsize=24)
+        plt.ylim([bottomValue, topValue])
+        plt.xlim([bottomValue, topValue])
+        plt.xticks(fontsize=22)
+        plt.yticks(fontsize=22)
+        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
+                  , fontsize=26)
+        plt.axhline(y=1, color=color1[0])
+        plt.axhline(y=1.2, color=color1[1])
+        plt.axhline(y=1.5, color=color1[2])
+        plt.axhline(y=2, color=color1[3])
+        plt.axvline(x=1, color=color1[0])
+        plt.axvline(x=1.2, color=color1[1])
+        plt.axvline(x=1.5, color=color1[2])
+        plt.axvline(x=2, color=color1[3])
+        plt.grid()
+        plt.show()
         print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
         
 class cross_validate_image:
-    def __init__(self, x, y, qualityKind, normalized):
+    def __init__(self, x, y, qualityKind='Y', normalized=None):
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
@@ -798,7 +792,7 @@ class cross_validate_image:
         
         model.compile(loss=loss,
                       optimizer=optimizer,
-                      metrics=[r_square.RSquare()])
+                      metrics=[keras.metrics.MeanAbsolutePercentageError])
         return model
     
     def cross_validate_2DCNN(self):
@@ -837,8 +831,8 @@ class cross_validate_image:
             model.load_weights('./modelWeights/2DCNN_initial.h5')
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        model.load_weights(f'./modelWeights/2DCNN{highest_valR2_idx}.h5')
+        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        model.load_weights(f'./modelWeights/2DCNN{hiest_r2_idx}.h5')
         return model
     
     
@@ -879,9 +873,7 @@ class cross_validate_image:
         plt.suptitle(f'Cross Validation', fontsize=26)    
     
     def plotTrueAndPredicted(self, x, YT, YP, category):
-        bottomValue = 0
-        topValue = 2.7
-        plot = True
+        bottomValue, topValue = self.y_boundary[0], self.y_boundary[1]
         if self.normalized == 'xy':
             YT = (self.yMax - self.yMin) * YT + self.yMin
             YP = (self.yMax - self.yMin) * YP + self.yMin
@@ -889,23 +881,29 @@ class cross_validate_image:
         r2 = r2_score(YT, YP)
         mape = mean_absolute_percentage_error(YT, YP) * 100
         mae = mean_absolute_error(YT, YP)
-        if plot:
-            plt.figure(figsize=(12, 9))
-            plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
-            plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
-            # topValue = (max(YT) if max(YT) > max(YP) else max(YP))
-            # topValue = topValue * 1.1 if topValue > 0 else topValue * 0.9
-            # bottomValue = (min(YT) if min(YT) < min(YP) else min(YP))
-            # bottomValue = bottomValue * 0.9 if topValue > 0 else topValue * 1.1
-            plt.ylabel("Predicted Value", fontsize=24)
-            plt.xlabel("True Value", fontsize=24)
-            plt.ylim([bottomValue, topValue])
-            plt.xlim([bottomValue, topValue])
-            plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
-            plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
-            plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
-                      , fontsize=26)
-            plt.grid()
-            plt.show()
+        color1 = ['slateblue', 'orange', 'firebrick', 'steelblue', 'purple', 'green']
+        plt.figure(figsize=(12, 9))
+        plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
+        plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
+        topValue = (max(YT) if max(YT) > max(YP) else max(YP))
+        topValue = topValue * 1.1 if topValue > 0 else topValue * 0.9
+        plt.ylabel("Predicted Value", fontsize=24)
+        plt.xlabel("True Value", fontsize=24)
+        plt.ylim([bottomValue, topValue])
+        plt.xlim([bottomValue, topValue])
+        plt.xticks(fontsize=22)
+        plt.yticks(fontsize=22)
+        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
+                  , fontsize=26)
+        # plt.axhline(y=1, color=color1[0])
+        # plt.axhline(y=1.2, color=color1[1])
+        # plt.axhline(y=1.5, color=color1[2])
+        # plt.axhline(y=2, color=color1[3])
+        # plt.axvline(x=1, color=color1[0])
+        # plt.axvline(x=1.2, color=color1[1])
+        # plt.axvline(x=1.5, color=color1[2])
+        # plt.axvline(x=2, color=color1[3])
+        plt.grid()
+        plt.show()
         print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
     
