@@ -66,8 +66,8 @@ def signal_processing_demo(plot_run_signals=False, plot_resize=False, plot_fft=F
         
     if plot_gaf:
         sigplot.draw_signal(signal_runs[run_idx_demo], time_runs[run_idx_demo])
-        gaf = sigpro.gaf(signal_runs[run_idx_demo])
-        sigplot.draw_signal_2d(gaf)
+        gasf = sigpro.gasf(signal_runs[run_idx_demo])
+        sigplot.draw_signal_2d(gasf)
         
     
         
@@ -133,17 +133,20 @@ if __name__ == '__main__':
     run_idx_demo = 4
     siganl_idx_demo = 3
     y_idx_demo = 1
+    signal_resize_coeff = 1000
+    img_resize_coeff = (800, 800)
     
     run_signals = signals_runs[run_idx_demo]
     signal_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
-    signals_resize = sigpro.signal_resize(signal_runs, 5000, isPeriodic=True)
+    signals_resize = sigpro.signal_resize(signal_runs, signal_resize_coeff, isPeriodic=True)
     
-    time_resize = sigpro.signal_resize(time_runs, 5000)
+    time_resize = sigpro.signal_resize(time_runs, signal_resize_coeff)
     # signal_processing_demo()
     # feature_extract_demo()
+    # cross_validate_DNN_demo()
     
     
-    cross_validate_DNN_demo()
-    
-    
+    signals_imgs = sigpro.signals_to_images(signals_resize, method='cwt')
+    signals_imgs = sigpro.images_resize_lst(signals_imgs, size=img_resize_coeff)
+    sigplot.draw_signal_2d(signals_imgs[run_idx_demo])
     
