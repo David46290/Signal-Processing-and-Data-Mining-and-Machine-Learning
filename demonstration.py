@@ -3,7 +3,7 @@ from scipy import signal as scisig
 from matplotlib import pyplot as plt
 import math
 
-from featureExtraction import features_of_signal
+import featureExtraction as feaext
 import signal_processing as sigpro
 import signal_plotting as sigplot
 
@@ -62,21 +62,24 @@ def signal_processing_demo(plot_run_signals=False, plot_fft=False, plot_enve=Fal
         gaf = sigpro.gaf(sig_runs[run_idx_demo])
         sigplot.draw_signal_2d(gaf)
 
-def sum_cos(a, b):
-    return (math.cos(a+b))
-
-
 if __name__ == '__main__':
     signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset')
     sample_rate = int(20000/10)
     y = np.genfromtxt('demo_y.csv', delimiter=',')
     time_runs = sigpro.pick_one_signal(signals_runs, signal_idx=0)
-    
     run_idx_demo = 4
-    run_signals = signals_runs[run_idx_demo]
     siganl_idx_demo = 3
-    signal_processing_demo(plot_gaf=True)
+    run_signals = signals_runs[run_idx_demo]
     
-    signal = run_signals[siganl_idx_demo]
-
-
+    signal_processing_demo()
+    
+    signal_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
+    runs_features = feaext.TimeFeatures(signal_runs, target_lst=['rms', 'kurtosis', 'skewness', 'variance', 'p2p'])
+    features = runs_features.features_all_signals
+    features_name = runs_features.feature_names
+    
+    features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=1)
+    domain_fre = features_freq.domain_frequency
+    domain_energy = features_freq.domain_energy
+    domain_fre_name = features_freq.feature_name_freq
+    domain_energy_name = features_freq.feature_name_energy
