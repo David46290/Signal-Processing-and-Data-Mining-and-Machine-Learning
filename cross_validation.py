@@ -167,11 +167,15 @@ def show_train_history_NN_onlyTrain(history_, loss, metric_name_tr, fold_idx):
     plt.close()
 
 class cross_validate:
-    def __init__(self, x, y, qualityKind='Y', normalized=None, y_value_boundary=[0, 1]):
-        self.y_boundary = y_value_boundary
+    def __init__(self, x, y, qualityKind='Y', normalized=None, y_value_boundary=[]):
+        
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
+        if len(y_value_boundary) == 0:
+            self.y_boundary = [min(y)-1, max(y)+1]
+        else:
+            self.y_boundary = y_value_boundary
         
         if self.normalized == 'xy':
             self.x, self.xMin, self.xMax = normalizationX(self.x)
@@ -517,8 +521,6 @@ class cross_validate:
         plt.figure(figsize=(12, 9))
         plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
         plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
-        topValue = (max(YT) if max(YT) > max(YP) else max(YP))
-        topValue = topValue * 1.1 if topValue > 0 else topValue * 0.9
         plt.ylabel("Predicted Value", fontsize=24)
         plt.xlabel("True Value", fontsize=24)
         plt.ylim([bottomValue, topValue])
@@ -540,10 +542,14 @@ class cross_validate:
         print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
 
 class cross_validate_signal:
-    def __init__(self, x, y, qualityKind='Y', normalized=None):
+    def __init__(self, x, y, qualityKind='Y', normalized=None, y_value_boundary=[]):
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
+        if len(y_value_boundary) == 0:
+            self.y_boundary = [min(y)-1, max(y)+1]
+        else:
+            self.y_boundary = y_value_boundary
         
         if self.normalized == 'xy':
             self.x, self.xMin, self.xMax = normalization_signal(self.x)
@@ -752,10 +758,14 @@ class cross_validate_signal:
         print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
         
 class cross_validate_image:
-    def __init__(self, x, y, qualityKind='Y', normalized=None):
+    def __init__(self, x, y, qualityKind='Y', normalized=None, y_value_boundary=[]):
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
+        if len(y_value_boundary) == 0:
+            self.y_boundary = [min(y)-1, max(y)+1]
+        else:
+            self.y_boundary = y_value_boundary
         
         if self.normalized == 'xy':
             self.x, self.xMin, self.xMax = normalization_signal(self.x)
@@ -885,8 +895,6 @@ class cross_validate_image:
         plt.figure(figsize=(12, 9))
         plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
         plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
-        topValue = (max(YT) if max(YT) > max(YP) else max(YP))
-        topValue = topValue * 1.1 if topValue > 0 else topValue * 0.9
         plt.ylabel("Predicted Value", fontsize=24)
         plt.xlabel("True Value", fontsize=24)
         plt.ylim([bottomValue, topValue])
