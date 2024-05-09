@@ -241,7 +241,7 @@ def curve_fitting(signal_, window_size, order):
 
     return curve
 
-def interpolation(target_sig, target_x, result_x):
+def interpolation(target_sig, target_x, result_x, isLinear=True):
     """
     Interpolation 
     target_sig: ndarray(signal_length,)
@@ -251,11 +251,12 @@ def interpolation(target_sig, target_x, result_x):
     result_x: ndarray(signal_length,)
         the ideal x axis (time/progress)
     """
-    f = interpolate.interp1d(target_x, target_sig)
-    interpolated_sig = f(result_x)
-    # save the lines below for later uses
-    # cs = interpolate.CubicSpline(target_x, target_sig)
-    # interpolated_sig = cs(result_x)
+    if isLinear:
+        f = interpolate.interp1d(target_x, target_sig)
+        interpolated_sig = f(result_x)
+    else:
+        cs = interpolate.CubicSpline(target_x, target_sig)
+        interpolated_sig = cs(result_x)
     return interpolated_sig
 
 def envelope_extract(target_sig, target_x, gau_sig=0.01, gau_rad=1, w_size=1, isInterpolated=True):
@@ -709,115 +710,9 @@ def signal_resize(signal_lst, final_length, isPeriodic=False):
     return np.array(signalLst_new)
   
 
-def images_resize_lst(image_lst, size):
-    """
-    resize image
 
-    Parameters
-    ----------
-    image_lst : ndarray
-        (number of samples, img_width, img_height) (grey scale) (img_width = img_height)
-    size : int
-        final size of image (width)
 
-    Returns
-    -------
-    np.array(new_lst) : ndarray
-        resized images from different runs (samples)
 
-    """
-    new_lst = []
-    for image in image_lst:
-        image_pil = Image.fromarray(np.uint8(image))
-        image_resample = image_pil.resize(size, resample=Image.BILINEAR)
-        new_lst.append(np.asarray(image_resample))
-    return np.array(new_lst)
-
-def image_resize(img, dimension):
-    # for single image
-    img_image  = Image.fromarray(img, mode='I')
-    img_image_resize = img_image.resize(dimension, Image.BILINEAR)
-    img_resize = np.asarray(img_image_resize)
-    return img_resize
-
-def bresebham_modified(signal, value_limit): 
-    """
-    Bresebham signal plotting
-    
-    Parameters:
-        signal: ndarray (signal_length, )
-        
-        value_limit: list
-            [lower limit, upper limit]
-            
-    Return:
-        array[::-1] : ndarray
-            [signal_length, signal_length] (2d)
-    """
-    # modified Bresenham algorithm
-    # make the image have the same width as the signal
-    # image has identical pixels on both X, Y axes
-    array = np.zeros((signal.shape[0], signal.shape[0])).astype(int)
-    coordinates = np.zeros((signal.shape[0], 2)).astype(int)
-    pu, pl = 0, signal.shape[0]-1 # pixel upper limit & lower limit
-    sl, su = value_limit[0], value_limit[1] # signal lower limit & upper limit
-    for x1, value in enumerate(signal[:-1]):
-        y1 = int(round(((pl-pu)*(value-sl) / (su-sl)), 0)) # pixel index in row
-        array[y1][x1] = 1 * 255
-        coordinates[x1] = np.array([x1, y1])
-        interpolated_value = 1
-        x2 = x1 + 1
-        y2 = int(round(((pl-pu)*(signal[x2]-sl) / (su-sl)), 0))
-        # interpolate
-        if abs(y2 - y1) > 0: # only interploate at no adjacent points
-            points_in = abs(y2 - y1) - 1 + 2
-            interIdx_row = np.arange(y1+(y2-y1)/abs(y2-y1), y2, (y2-y1)/abs(y2-y1)).astype(int)
-            y_mid = (y1 + y2) / 2
-            x_mid = (x1 + x2) / 2
-            
-            if y2 - y1 < 0:
-                interY_1side = interIdx_row[np.where(interIdx_row >= y_mid)[0]]
-                interY_2side = interIdx_row[np.where(interIdx_row <= y_mid)[0]]
-                array[interY_1side, x1] = interpolated_value * 255
-                array[interY_2side, x2] = interpolated_value * 255
-            else:
-                interY_1side = interIdx_row[np.where(interIdx_row <= y_mid)[0]]
-                interY_2side = interIdx_row[np.where(interIdx_row >= y_mid)[0]]
-                array[interY_1side, x1] = interpolated_value * 255
-                array[interY_2side, x2] = interpolated_value * 255
-        
-    x_final = signal.shape[0] - 1
-    y_final = int(round(((pl-pu)*(signal[x_final]-sl) / (su-sl)), 0))
-    array[y_final][x_final] = 1 * 255
-    return array[::-1] # [::-1] to turn image upside down, so that the image is not flipped upside down
-
-def signals_to_images(run_lst, value_limit):
-    """
-    for 3D signal_lst: (num_sample, num_signal, num_length)
-    final_length should be the minimum length among signals in signal_lst
-    
-    do not use scisig.resample unless necessary
-    it deforms the orginial NON-perfectly-periodic signal
-    
-    Parameters:
-        run_lst : list
-            [signal 1, signal 2, ...]; lenth: amount of runs (samples)
-            signal: ndarray
-                (signal_length, )
-                
-        value_limit: list
-            [lower limit, upper limit]
-            the min. and max. of signals
-            
-    Returns:
-        image_lst : ndarray
-            (num of runs(samples), signal channels, final_length) (3d)
-    """
-    image_lst = []
-    # each run contain 1 signal
-    for signal in run_lst:
-        image_lst.append(bresebham_modified(signal, value_limit))
-    return image_lst
 
 def fft(signal, sample_rate):
     """
@@ -874,10 +769,139 @@ def cwt(signal, widths, wavelet=scisig.morlet2):
 def sum_cos(a, b):
     return (math.cos(a+b))
 
-def gaf(signal):
+def diff_cos(a, b):
+    return (math.cos(a-b))
+
+def gasf(signal):
     # normalize => [-1, 1]
     sig_normalized = ((signal - np.amax(signal)) + (signal - np.amin(signal))) / (np.amax(signal) - np.amin(signal))
     phi = np.arccos(sig_normalized)
     phi_grid = np.meshgrid(phi, phi, sparse=True)
-    gaf = np.vectorize(sum_cos)(*phi_grid)
-    return gaf
+    gasf = np.vectorize(sum_cos)(*phi_grid)
+    return gasf
+
+def gadf(signal):
+    # normalize => [-1, 1]
+    sig_normalized = ((signal - np.amax(signal)) + (signal - np.amin(signal))) / (np.amax(signal) - np.amin(signal))
+    phi = np.arccos(sig_normalized)
+    phi_grid = np.meshgrid(phi, phi, sparse=True)
+    gadf = np.vectorize(diff_cos)(*phi_grid)
+    return gadf
+
+def bresebham_modified(signal, value_limit=[0, 1]): 
+    """
+    Bresebham signal plotting
+    
+    Parameters:
+        signal: ndarray (signal_length, )
+        
+        value_limit: list
+            [lower limit, upper limit]
+            
+    Return:
+        array[::-1] : ndarray
+            [signal_length, signal_length] (2d)
+    """
+    # modified Bresenham algorithm
+    # make the image have the same width as the signal
+    # image has identical pixels on both X, Y axes
+    array = np.zeros((signal.shape[0], signal.shape[0])).astype(int)
+    coordinates = np.zeros((signal.shape[0], 2)).astype(int)
+    pu, pl = 0, signal.shape[0]-1 # pixel upper limit & lower limit
+    sl, su = value_limit[0], value_limit[1] # signal lower limit & upper limit
+    for x1, value in enumerate(signal[:-1]):
+        y1 = int(round(((pl-pu)*(value-sl) / (su-sl)), 0)) # pixel index in row
+        array[y1][x1] = 1
+        coordinates[x1] = np.array([x1, y1])
+        interpolated_value = 1
+        x2 = x1 + 1
+        y2 = int(round(((pl-pu)*(signal[x2]-sl) / (su-sl)), 0))
+        # interpolate
+        if abs(y2 - y1) > 0: # only interploate at no adjacent points
+            points_in = abs(y2 - y1) - 1 + 2
+            interIdx_row = np.arange(y1+(y2-y1)/abs(y2-y1), y2, (y2-y1)/abs(y2-y1)).astype(int)
+            y_mid = (y1 + y2) / 2
+            x_mid = (x1 + x2) / 2
+            
+            if y2 - y1 < 0:
+                interY_1side = interIdx_row[np.where(interIdx_row >= y_mid)[0]]
+                interY_2side = interIdx_row[np.where(interIdx_row <= y_mid)[0]]
+                array[interY_1side, x1] = interpolated_value
+                array[interY_2side, x2] = interpolated_value
+            else:
+                interY_1side = interIdx_row[np.where(interIdx_row <= y_mid)[0]]
+                interY_2side = interIdx_row[np.where(interIdx_row >= y_mid)[0]]
+                array[interY_1side, x1] = interpolated_value
+                array[interY_2side, x2] = interpolated_value
+        
+    # x_final = signal.shape[0] - 1
+    # y_final = int(round(((pl-pu)*(signal[x_final]-sl) / (su-sl)), 0))
+    # array[y_final][x_final] = 1 * 255
+    return array[::-1] # [::-1] to turn image upside down, so that the image is not flipped upside down
+
+def signals_to_images(run_lst, method='bresebham', widths=np.arange(1, 10, 1), wavelet=scisig.morlet2):
+    """
+
+    Parameters:
+        run_lst : list
+            [signal 1, signal 2, ...]; lenth: amount of runs (samples)
+            signal: ndarray
+                (signal_length, )
+                
+        value_limit: list
+            [lower limit, upper limit]
+            the min. and max. of signals
+            
+    Returns:
+        image_lst : ndarray
+            (num of runs(samples), signal channels, final_length) (3d)
+    """
+    value_limit = [min([min(signal) for signal in run_lst]), max([max(signal) for signal in run_lst])]
+    image_lst = []
+    # each run contain 1 signal
+    if method == 'bresebham':
+        for signal in run_lst:
+            image_lst.append(bresebham_modified(signal, value_limit))
+    elif method == 'cwt':
+        for signal in run_lst:
+            image_lst.append(cwt(signal, widths, wavelet))
+    elif method == 'gasf':
+        for signal in run_lst:
+            image_lst.append(gasf(signal))      
+    elif method == 'gadf':
+        for signal in run_lst:
+            image_lst.append(gadf(signal))
+
+            
+    return image_lst
+
+def image_resize(img, dimension):
+    # for single image
+    img_image  = Image.fromarray(img, mode='I')
+    img_image_resize = img_image.resize(dimension, Image.BILINEAR)
+    img_resize = np.asarray(img_image_resize)
+    return img_resize
+
+def images_resize_lst(image_lst, size):
+    """
+    resize image
+
+    Parameters
+    ----------
+    image_lst : ndarray
+        (number of samples, img_width, img_height) (grey scale) (img_width = img_height)
+    size : list or tuple of int
+        (width, height)
+
+    Returns
+    -------
+    np.array(new_lst) : ndarray
+        resized images from different runs (samples)
+
+    """
+    new_lst = []
+    for image in image_lst:
+        image_pil = Image.fromarray(np.uint8(image))
+        image_resample = image_pil.resize(size, resample=Image.BILINEAR)
+        new_lst.append(np.asarray(image_resample))
+    return np.array(new_lst)
