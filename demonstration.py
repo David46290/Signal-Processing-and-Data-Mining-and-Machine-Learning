@@ -79,7 +79,7 @@ if __name__ == '__main__':
     features = features_time.features_all_signals
     features_name = features_time.feature_names
     
-    features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=1)
+    features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
     domain_fre = features_freq.domain_frequency
     domain_energy = features_freq.domain_energy
     domain_fre_name = features_freq.feature_name_freq
@@ -87,5 +87,5 @@ if __name__ == '__main__':
     feature_idx = 3
     corr.get_corr_value_2variables(features[:, feature_idx], y[:, 2], title_='Pearson Correlation', content_=[f'{features_name[0, feature_idx]} of signal {siganl_idx_demo}', 'Y3'])
     
-    features_time_y_corr = corr.features_vs_quality(features, y)
+    features_time_y_corr = corr.features_vs_quality(domain_energy, y)
     corr.plot_correlation_matrix(features_time_y_corr)
