@@ -9,10 +9,10 @@ import signal_plotting as sigplot
 import correlation_analysis as corr
 
 def signal_processing_demo(plot_run_signals=False, plot_fft=False, plot_enve=False, plot_band_pass=False, plot_difference=False, plot_cwt=False, plot_gaf=False):
+    
     if plot_run_signals: 
         # plot all signals of one run
         sigplot.draw_signals(run_signals[1:], run_signals[0])
-
     
     sig_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
     if plot_fft:
@@ -62,18 +62,8 @@ def signal_processing_demo(plot_run_signals=False, plot_fft=False, plot_enve=Fal
         sigplot.draw_signal(sig_runs[run_idx_demo], time_runs[run_idx_demo])
         gaf = sigpro.gaf(sig_runs[run_idx_demo])
         sigplot.draw_signal_2d(gaf)
-
-if __name__ == '__main__':
-    signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset')
-    sample_rate = int(20000/10)
-    y = np.genfromtxt('demo_y.csv', delimiter=',')
-    time_runs = sigpro.pick_one_signal(signals_runs, signal_idx=0)
-    run_idx_demo = 4
-    siganl_idx_demo = 3
-    run_signals = signals_runs[run_idx_demo]
-    
-    signal_processing_demo()
-    
+        
+def feature_extract_demo(plot_corr=False, plot_matrix=False):
     signal_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
     features_time = feaext.TimeFeatures(signal_runs, target_lst=['rms', 'kurtosis', 'skewness', 'variance', 'p2p'])
     features = features_time.features_all_signals
@@ -85,7 +75,22 @@ if __name__ == '__main__':
     domain_fre_name = features_freq.feature_name_freq
     domain_energy_name = features_freq.feature_name_energy
     feature_idx = 3
-    corr.get_corr_value_2variables(features[:, feature_idx], y[:, 2], title_='Pearson Correlation', content_=[f'{features_name[0, feature_idx]} of signal {siganl_idx_demo}', 'Y3'])
+    if plot_corr:
+        corr.get_corr_value_2variables(features[:, feature_idx], y[:, 2], title_='Pearson Correlation', content_=[f'{features_name[0, feature_idx]} of signal {siganl_idx_demo}', 'Y3'])
     
     features_time_y_corr = corr.features_vs_quality(domain_energy, y)
-    corr.plot_correlation_matrix(features_time_y_corr)
+    if plot_matrix:
+        corr.plot_correlation_matrix(features_time_y_corr)
+
+if __name__ == '__main__':
+    signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset')
+    sample_rate = int(20000/10)
+    y = np.genfromtxt('demo_y.csv', delimiter=',')
+    time_runs = sigpro.pick_one_signal(signals_runs, signal_idx=0)
+    run_idx_demo = 4
+    siganl_idx_demo = 3
+    run_signals = signals_runs[run_idx_demo]
+    
+    signal_processing_demo()
+    feature_extract_demo()
+    
