@@ -68,7 +68,7 @@ def non_discontinuous_runs(x_lst, start_standard, end_standard, tolerance):
     
     return remaining_run
 
-def get_signals(join_path, param_idx_lst=None):
+def get_signals(join_path, param_idx_lst=None, first_signal_minus=True):
     """
     get signal data from a dataset (.csv)
         dataset:
@@ -97,7 +97,8 @@ def get_signals(join_path, param_idx_lst=None):
                 signalTrimmed = signal[param_idx_lst, :]
             else:
                 signalTrimmed = signal
-            # signalTrimmed[0, :] = signalTrimmed[0, :] * -1 # this one is optional, I do this for my case specificly
+            if first_signal_minus:
+                signalTrimmed[0, :] = signalTrimmed[0, :] * -1 # this one is optional, I do this for my case specificly
             signals_all.append(signalTrimmed)
         file.close()  
 

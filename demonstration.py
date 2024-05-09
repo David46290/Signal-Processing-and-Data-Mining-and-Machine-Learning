@@ -7,6 +7,8 @@ import featureExtraction as feaext
 import signal_processing as sigpro
 import signal_plotting as sigplot
 import correlation_analysis as corr
+import cross_validation as cv
+import autoencoder as ae
 
 def signal_processing_demo(plot_run_signals=False, plot_fft=False, plot_enve=False, plot_band_pass=False, plot_difference=False, plot_cwt=False, plot_gaf=False):
     
@@ -82,15 +84,33 @@ def feature_extract_demo(plot_corr=False, plot_matrix=False):
     if plot_matrix:
         corr.plot_correlation_matrix(features_time_y_corr)
 
-if __name__ == '__main__':
-    signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset')
+if __name__ == '__main__': 
+    signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset', first_signal_minus=False)
     sample_rate = int(20000/10)
     y = np.genfromtxt('demo_y.csv', delimiter=',')
     time_runs = sigpro.pick_one_signal(signals_runs, signal_idx=0)
     run_idx_demo = 4
     siganl_idx_demo = 3
+    y_idx_demo = 1
+    
     run_signals = signals_runs[run_idx_demo]
+    signal_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
+    signals_resize = sigpro.signal_resize(signal_runs, min([run.shape[0] for run in signal_runs]), isPeriodic=True)
+    time_resize = sigpro.signal_resize(time_runs, min([run.shape[0] for run in time_runs]))
+    ae_model, ae_train_history = ae.train_AE(signals_resize)
+    encoded_signal = ae_model.encoder(signals_resize).numpy()
+    decoded_signal = ae_model.decoder(encoded_signal).numpy()
+    sigplot.draw_signal(signal_runs[run_idx_demo], time_runs[run_idx_demo], color_='royalblue', title='OG Signal')
+    sigplot.draw_signal(signals_resize[run_idx_demo], time_resize[run_idx_demo], color_='seagreen', title='Resized Signal')
+    sigplot.draw_signal(encoded_signal[run_idx_demo], color_='peru', title='Encoded Signal')
+    sigplot.draw_signal(decoded_signal[run_idx_demo], time_resize[run_idx_demo], color_='crimson', title='Decoded Signal')
     
-    signal_processing_demo()
-    feature_extract_demo()
+    # signal_processing_demo()
+    # feature_extract_demo()
+    # features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
+    # domain_energy = features_freq.domain_energy
     
+    # cv = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+    # param_setting = {'eta':0.3, 'gamma':0.01, 'max_depth':6, 'subsample':0.8, 'lambda':50, 'random_state':75}
+    # trained_model = cv.cross_validate_XGB(param_setting=param_setting)
+    # cv.model_testing(trained_model, 'XGB')

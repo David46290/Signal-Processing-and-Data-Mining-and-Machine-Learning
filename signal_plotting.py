@@ -26,13 +26,19 @@ def draw_signals(signal_lst, t, legend_lst=None, color_lst=None, title=None):
     if title != None:
         plt.title(f'{title}', fontsize=28)
 
-def draw_signal(signal, time, color_=None, title=None):
+def draw_signal(signal, time=[], color_=None, title=None):
     plt.figure(figsize=(10, 8))
+    x_label = 'Time (s)'
+    if len(time)==0:
+        time = np.arange(1, signal.shape[0]+1, 1)
+        x_label = 'Points'
+        
     if color_ != None:
         plt.plot(time, signal, lw=3, color=color_)
     else:
         plt.plot(time, signal, lw=3)
-    plt.xlabel('Time (s)', fontsize=25)
+        
+    plt.xlabel(x_label, fontsize=25)
     plt.ylabel('Amplitude', fontsize=25)
     plt.xticks(fontsize=18)
     plt.yticks(fontsize=18)

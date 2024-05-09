@@ -180,31 +180,31 @@ class TimeFeatures():
             feature_name = []
             if 'rms' in target_lst:
                 features_local_signal.append(math.sqrt(sum(x**2 for x in signal)/len(signal))) # RMS
-                feature_name.append(f'signal {signal_idx+1} RMS')
+                feature_name.append('RMS')
             if 'mean' in target_lst:
                 features_local_signal.append(np.mean(signal))  # mean
-                feature_name.append(f'signal {signal_idx+1} Mean')
+                feature_name.append('Mean')
             if 'median' in target_lst:
                 features_local_signal.append(statistics.median(signal)) # median
-                feature_name.append(f'signal {signal_idx+1} Median')
+                feature_name.append('Median')
             if 'kurtosis' in target_lst:
                 features_local_signal.append(stats.kurtosis(signal)) # kurtosis
-                feature_name.append(f'signal {signal_idx+1} Kurtosis')
+                feature_name.append('Kurtosis')
             if 'skewness' in target_lst:
                 features_local_signal.append(stats.skew(signal)) # skewness
-                feature_name.append(f'signal {signal_idx+1} Skewness')
+                feature_name.append('Skewness')
             if 'variance' in target_lst:
                 features_local_signal.append(statistics.variance(signal)) # variance
-                feature_name.append(f'signal {signal_idx+1} Variance')
+                feature_name.append('Variance')
             if 'std' in target_lst:
                 features_local_signal.append(np.std(signal)) # STD
-                feature_name.append(f'signal {signal_idx+1} STD')
+                feature_name.append('STD')
             if 'crest' in target_lst:
                 features_local_signal.append(np.max(signal) / math.sqrt(sum(x**2 for x in signal)/len(signal))) # crest factor
-                feature_name.append(f'signal {signal_idx+1} Crest Factor')
+                feature_name.append('Crest Factor')
             if 'p2p' in target_lst:
                 features_local_signal.append(self.get_max_p2p(signal)) # max. P2P
-                feature_name.append(f'signal {signal_idx+1} Max. P2P')
+                feature_name.append('Max. P2P')
             
             features_all_signal.append(np.array(features_local_signal))
             feature_name_all.append(np.array(feature_name))
