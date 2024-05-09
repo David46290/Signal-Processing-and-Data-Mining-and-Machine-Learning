@@ -9,50 +9,72 @@ from scipy import signal as scisig
 import signal_processing as sigpro
 
 class FreqFeatures():
-    def __init__(self, signal_list, sample_rate):
+    def __init__(self, signal_list, sample_rate, num_wanted_freq=6):
         """
-        signal_list shape: (amount of signal categories, signal length)
+            signal_lst : list
+                [target_signal 1, target_signal 2, ...]; lenth: amount of runs (samples)
+                    target_signal: ndarray
+                        (signal_category, signal_length)
+            
+            sample_rate: int
+            
+            num_wanted_freq: int
+                number of dominating frequency features that are chosen
         """
-        self.signals = signal_list 
         self.sample_rate = sample_rate
-        self.domain_frequency, self.domain_energy = self.getFreqFeatures(self.FFT_all_signals())
+        self.num_wanted_freq = num_wanted_freq
+        self.domain_frequency, self.domain_energy, self.feature_name_freq, self.feature_name_energy = self.getFreqFeatures(self.FFT_all_signals(signal_list))
 
-    def FFT_all_signals(self):
+    def FFT_all_signals(self, signal_list):
         # signals_freq shape: (amount of signal categories, signal length//2)
         # freq_bands shape: (amount of signal categories, signal length//2)
         delta_time = 1 / self.sample_rate
         signals_freq = []
         freq_bands = []
-        for signal_idx, signal in enumerate(self.signals):
+        for signal_idx, signal in enumerate(signal_list):
             signal_length = signal.shape[0]
             signal_fft = np.abs(np.fft.fft(signal, signal_length))[1 : signal_length//2] * (2 / signal_length)
             freq_band = np.fft.fftfreq(signal_length, delta_time)[1 : signal_length//2]
             signals_freq.append(signal_fft)
             freq_bands.append(freq_band)
             
-        return signals_freq, freq_bands
+        return (signals_freq, freq_bands)
     
-    def getFreqFeatures(self, signals_freq, freq_bands):
-        main_freqs = []
-        main_energy = []
+    def getFreqFeatures(self, band_spectrum_tuple):
+        main_freqs_total = []
+        main_energy_total = []
+        freq_name_total = []
+        energy_name_total = []
+        signals_freq, freq_bands = band_spectrum_tuple[0], band_spectrum_tuple[1]
         for signal_idx, signal_spectrum in enumerate(signals_freq): 
-            # signal_fft_band: axis0 = frequency band; axis1 = energy value of corresponding frequency
+            main_freqs = []
+            main_energy = []
+            freq_name = []
+            energy_name = []
+            # band_spectrum: axis0 = frequency band; axis1 = energy value of corresponding frequency
             band_spectrum = np.concatenate((np.expand_dims(freq_bands[signal_idx], 1), (np.expand_dims(signal_spectrum, 1))), axis=1).T
             band_spectrum = band_spectrum[:, np.argsort(band_spectrum[1, :])[::-1]]
-            # self.plot_fft_decreasing_magnitude(signal_fft_band[0], signal_fft_band[1], signal_idx)
-            main_freqs.append(band_spectrum[0, :6])
-            main_energy.append(band_spectrum[1, :6])
-        main_freqs = np.array(main_freqs)
-        main_freqs.resize((main_freqs.shape[0] * main_freqs.shape[1]))
+            main_freqs.append(band_spectrum[0, :self.num_wanted_freq])
+            main_energy.append(band_spectrum[1, :self.num_wanted_freq])
+            freq_name.append(f'Top {self.num_wanted_freq} Frequencies of Signal {signal_idx}')
+            energy_name.append(f'Top {self.num_wanted_freq} Energies of Signal {signal_idx}')
+            
+            main_freqs_total.append(np.array(main_freqs).reshape(-1))
+            main_energy_total.append(np.array(main_energy).reshape(-1))
+            freq_name_total.append(freq_name)
+            energy_name_total.append(energy_name)
+            
+        main_freqs_total = np.array(main_freqs_total)
+        main_energy_total = np.array(main_energy_total) 
+        freq_name_total = np.array(freq_name_total)
+        energy_name_total = np.array(energy_name_total) 
         
-        main_energy = np.array(main_energy) 
-        main_energy.resize((main_energy.shape[0] * main_energy.shape[1]))
-        return main_freqs, main_energy
+        return main_freqs_total, main_energy_total, freq_name_total, energy_name_total
 
 class TimeFeatures():
     def __init__(self, signal_list, gau_sig=0.01, gau_rad=1, w_size=1, target_lst=['mean', 'kurtosis', 'skewness', 'variance', 'p2p']): 
       """
-          target_signal_lst : list
+          signal_lst : list
               [target_signal 1, target_signal 2, ...]; lenth: amount of runs (samples)
               target_signal: ndarray
                   (signal_category, signal_length)
@@ -158,31 +180,31 @@ class TimeFeatures():
             feature_name = []
             if 'rms' in target_lst:
                 features_local_signal.append(math.sqrt(sum(x**2 for x in signal)/len(signal))) # RMS
-                feature_name.append(f'signal {signal_idx} RMS')
+                feature_name.append(f'signal {signal_idx+1} RMS')
             if 'mean' in target_lst:
                 features_local_signal.append(np.mean(signal))  # mean
-                feature_name.append(f'signal {signal_idx} Mean')
+                feature_name.append(f'signal {signal_idx+1} Mean')
             if 'median' in target_lst:
                 features_local_signal.append(statistics.median(signal)) # median
-                feature_name.append(f'signal {signal_idx} Median')
+                feature_name.append(f'signal {signal_idx+1} Median')
             if 'kurtosis' in target_lst:
                 features_local_signal.append(stats.kurtosis(signal)) # kurtosis
-                feature_name.append(f'signal {signal_idx} Kurtosis')
+                feature_name.append(f'signal {signal_idx+1} Kurtosis')
             if 'skewness' in target_lst:
                 features_local_signal.append(stats.skew(signal)) # skewness
-                feature_name.append(f'signal {signal_idx} Skewness')
+                feature_name.append(f'signal {signal_idx+1} Skewness')
             if 'variance' in target_lst:
                 features_local_signal.append(statistics.variance(signal)) # variance
-                feature_name.append(f'signal {signal_idx} Variance')
+                feature_name.append(f'signal {signal_idx+1} Variance')
             if 'std' in target_lst:
                 features_local_signal.append(np.std(signal)) # STD
-                feature_name.append(f'signal {signal_idx} STD')
+                feature_name.append(f'signal {signal_idx+1} STD')
             if 'crest' in target_lst:
                 features_local_signal.append(np.max(signal) / math.sqrt(sum(x**2 for x in signal)/len(signal))) # crest factor
-                feature_name.append(f'signal {signal_idx} Crest Factor')
+                feature_name.append(f'signal {signal_idx+1} Crest Factor')
             if 'p2p' in target_lst:
                 features_local_signal.append(self.get_max_p2p(signal)) # max. P2P
-                feature_name.append(f'signal {signal_idx} Max. P2P')
+                feature_name.append(f'signal {signal_idx+1} Max. P2P')
             
             features_all_signal.append(np.array(features_local_signal))
             feature_name_all.append(np.array(feature_name))
