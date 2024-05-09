@@ -20,7 +20,7 @@ class Autoencoder(Model):
             # layers.Dense(latent_dim//10, activation='relu')
         ])
         self.decoder = tf.keras.Sequential([
-            layers.Dense(latent_dim//2, activation='relu'),
+            layers.Dense(latent_dim, activation='relu'),
             # layers.Dropout(0.1),
             layers.Dense(tf.math.reduce_prod(shape).numpy(), activation='linear'),
             layers.Reshape(shape)
@@ -31,18 +31,18 @@ class Autoencoder(Model):
         decoded = self.decoder(encoded)
         return decoded
 
-def build_AE(x_input, loss, metric):
+def build_AE(x_input, loss, metric, shrick_rate=10):
     optimizer = opti.Adam(learning_rate=0.005)
     shape = x_input.shape[1:]
-    latent_dim = shape[0] // 10
+    latent_dim = shape[0] // shrick_rate
     model = Autoencoder(latent_dim, shape)
     model.compile(optimizer=optimizer, loss=loss, metrics=[metric])
     model(tf.ones((1, shape[0]))) # initialize weights
     return model
 
-def train_AE(x_input, loss='mean_absolute_error', metric='cosine_similarity'):
+def train_AE(x_input, loss='mean_absolute_error', metric='cosine_similarity', shrick_rate=10):
     callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
-    ae_model = build_AE(x_input, loss, metric)
+    ae_model = build_AE(x_input, loss, metric, shrick_rate)
     history = ae_model.fit(x_input, x_input,
                 epochs=1000, batch_size=10,
                 shuffle=True, verbose=0, callbacks=[callback])
