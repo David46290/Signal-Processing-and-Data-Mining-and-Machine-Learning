@@ -121,8 +121,17 @@ def cross_validate_DNN_demo():
 
 def cross_validate_1DCNN_demo():
     cv_prepare = cv.cross_validate_signal(signals_resize, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
-    trained_model = cv_prepare.cross_validate_1DCNN(4)
+    trained_model = cv_prepare.cross_validate_1DCNN(dense_coeff=4)
     cv_prepare.model_testing(trained_model, '1DCNN')
+
+def cross_validate_2DCNN_demo():
+    signals_imgs = sigpro.signals_to_images(signals_resize, method='bresebham')
+    signals_imgs = sigpro.images_resize_lst(signals_imgs, size=img_resize_coeff)
+    sigplot.draw_signal_2d(signals_imgs[run_idx_demo])
+    
+    cv_prepare = cv.cross_validate_image(signals_imgs, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+    trained_model = cv_prepare.cross_validate_2DCNN(dense_coeff=4)
+    cv_prepare.model_testing(trained_model, '2DCNN')
     
 
 if __name__ == '__main__': 
@@ -144,9 +153,7 @@ if __name__ == '__main__':
     # signal_processing_demo()
     # feature_extract_demo()
     # cross_validate_DNN_demo()
+    # cross_validate_1DCNN_demo()
     
     
-    signals_imgs = sigpro.signals_to_images(signals_resize, method='cwt')
-    signals_imgs = sigpro.images_resize_lst(signals_imgs, size=img_resize_coeff)
-    sigplot.draw_signal_2d(signals_imgs[run_idx_demo])
     
