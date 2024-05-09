@@ -544,10 +544,11 @@ class cross_validate_signal:
     def build_1DCNN(self, loss, metric, dense_coeff=4):
         optimizer = opti.Adam(learning_rate=0.001)
         model = Sequential()
+        n_channel = self.xTrain.shape[2] if len(self.xTrain.shape)==3 else 1
         model.add(Convolution1D(filters=32, kernel_size=29,
                                 strides=9,
                                 data_format='channels_last', padding = 'same',
-                                input_shape=(self.xTrain.shape[1], 1),
+                                input_shape=(self.xTrain.shape[1], n_channel),
                                 activation = 'relu'))
         model.add(Flatten())
         model.add(Dense(round(self.xTrain.shape[1]//dense_coeff), activation='relu'))
@@ -751,9 +752,10 @@ class cross_validate_image:
     
     def build_2DCNN(self, loss, metric, dense_coeff):
         optimizer = opti.Adam(learning_rate=0.0035)
+        n_channel = self.xTrain.shape[3] if len(self.xTrain.shape)==4 else 1
         model = Sequential()
         model.add(Conv2D(filters=16, kernel_size=(5, 5), strides=(3, 3)
-                 ,padding='valid', input_shape=(self.xTrain.shape[1], self.xTrain.shape[2], self.xTrain.shape[3])
+                 ,padding='valid', input_shape=(self.xTrain.shape[1], self.xTrain.shape[2], n_channel)
                  ,activation='relu'))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Conv2D(filters=8, kernel_size=(3, 3), strides=(1, 1)
@@ -772,7 +774,7 @@ class cross_validate_image:
                       metrics=[metric])
         return model
     
-    def cross_validate_2DCNN(self):
+    def cross_validate_2DCNN(self, dense_coeff):
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
         # xTrain = tf.cast(xTrain, tf.int64)
         # yTrain = tf.cast(yTrain, tf.int64)
@@ -782,17 +784,16 @@ class cross_validate_image:
         val_metric_lst = np.zeros((self.kfold_num, 2))
         loss = "mean_squared_error"
         metric = "mean_absolute_error"
-        model = self.build_2DCNN(loss, metric)
+        model = self.build_2DCNN(loss, metric, dense_coeff)
         model.save_weights('./modelWeights/2DCNN_initial.h5') 
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
-        
-            callback = EarlyStopping(monitor="loss", patience=30, verbose=0, mode="auto")
+            callback = EarlyStopping(monitor="loss", patience=10, verbose=0, mode="auto")
             x_train = xTrain[train_idx]
             y_train = yTrain[train_idx]
             x_val = xTrain[val_idx]
             y_val = yTrain[val_idx]
             history = model.fit(x_train, y_train, validation_data = (x_val, y_val),
-                                epochs=1000, batch_size=5, verbose=1, callbacks=[callback])
+                                epochs=120, batch_size=5, verbose=1, callbacks=[callback])
             model.save_weights(f'./modelWeights/2DCNN{idx}.h5')           
             yTrainPredicted = model.predict(x_train, verbose=0)
             r2_train = r2_score(y_train, yTrainPredicted)
