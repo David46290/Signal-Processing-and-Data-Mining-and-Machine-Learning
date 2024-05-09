@@ -41,7 +41,7 @@ sr = int(20000/10)
 time_total = 5
 dataset_sig = []
 dataset_y = []
-num_run = 20
+num_run = 50
 for run_idx in range(num_run):
     random_seed = np.random.uniform(0.1, 0.3)
     t = np.arange(0, time_total*(1+np.random.uniform(0,0.1)), 1/sr)

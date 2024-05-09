@@ -10,7 +10,7 @@ import correlation_analysis as corr
 import cross_validation as cv
 import autoencoder as ae
 
-def signal_processing_demo(plot_run_signals=False, plot_fft=False, plot_enve=False, plot_band_pass=False, plot_difference=False, plot_cwt=False, plot_gaf=False):   
+def signal_processing_demo(plot_run_signals=False, plot_resize=False, plot_fft=False, plot_enve=False, plot_band_pass=False, plot_difference=False, plot_cwt=False, plot_gaf=False):   
     if plot_run_signals: 
         # plot all signals of one run
         sigplot.draw_signals(run_signals[1:], run_signals[0])
@@ -51,6 +51,12 @@ def signal_processing_demo(plot_run_signals=False, plot_fft=False, plot_enve=Fal
         sigplot.draw_signal(signal_runs_2[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo+1}', color_='seagreen')
         sigplot.draw_signal(sig_difference_runs[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo+1} - Signal {siganl_idx_demo}', color_='peru')
 
+    if plot_resize:
+        signals_resize = sigpro.signal_resize(signal_runs, 5000, isPeriodic=True)
+        time_resize = sigpro.signal_resize(time_runs, 5000)
+        sigplot.draw_signal(signal_runs[run_idx_demo], time_runs[run_idx_demo], color_='royalblue', title='OG Signal')
+        sigplot.draw_signal(signals_resize[run_idx_demo], time_resize[run_idx_demo], color_='seagreen', title='Resized Signal')
+
     if plot_cwt:
         band, spectrum = sigpro.fft(signal_runs[run_idx_demo] , sample_rate)
         sigplot.draw_signal(signal_runs[run_idx_demo], time_runs[run_idx_demo])
@@ -62,6 +68,8 @@ def signal_processing_demo(plot_run_signals=False, plot_fft=False, plot_enve=Fal
         sigplot.draw_signal(signal_runs[run_idx_demo], time_runs[run_idx_demo])
         gaf = sigpro.gaf(signal_runs[run_idx_demo])
         sigplot.draw_signal_2d(gaf)
+        
+    
         
 def feature_extract_demo(plot_corr=False, plot_matrix=False):
     features_time = feaext.TimeFeatures(signal_runs, target_lst=['rms', 'kurtosis', 'skewness', 'variance', 'p2p'])
@@ -81,6 +89,7 @@ def feature_extract_demo(plot_corr=False, plot_matrix=False):
     if plot_matrix:
         corr.plot_correlation_matrix(features_time_y_corr)
 
+
 def autoencoder_demo(plot_coding=False):
     signals_resize = sigpro.signal_resize(signal_runs, min([run.shape[0] for run in signal_runs]), isPeriodic=True)
     time_resize = sigpro.signal_resize(time_runs, min([run.shape[0] for run in time_runs]))
@@ -94,6 +103,28 @@ def autoencoder_demo(plot_coding=False):
         sigplot.draw_signal(decoded_signal[run_idx_demo], time_resize[run_idx_demo], color_='crimson', title='Decoded Signal')
     return  encoded_signal 
 
+def cross_validate_ML_demo():
+    features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
+    domain_energy = features_freq.domain_energy
+    cv_prepare = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+    param_setting = {'eta':0.3, 'gamma':0.01, 'max_depth':6, 'subsample':0.8, 'lambda':50, 'random_state':75}
+    trained_model = cv_prepare.cross_validate_XGB(param_setting=param_setting)
+    cv_prepare.model_testing(trained_model, 'XGB')
+    
+def cross_validate_DNN_demo():
+    features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
+    domain_energy = features_freq.domain_energy
+    cv_prepare = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+    trained_model = cv_prepare.cross_validate_DNN(dense_coeff=20)
+    cv_prepare.model_testing(trained_model, 'DNN')
+    
+
+def cross_validate_1DCNN_demo():
+    cv_prepare = cv.cross_validate_signal(signals_resize, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+    trained_model = cv_prepare.cross_validate_1DCNN(4)
+    cv_prepare.model_testing(trained_model, '1DCNN')
+    
+
 if __name__ == '__main__': 
     signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset', first_signal_minus=False)
     sample_rate = int(20000/10)
@@ -105,15 +136,14 @@ if __name__ == '__main__':
     
     run_signals = signals_runs[run_idx_demo]
     signal_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
-
+    signals_resize = sigpro.signal_resize(signal_runs, 5000, isPeriodic=True)
+    
+    time_resize = sigpro.signal_resize(time_runs, 5000)
     # signal_processing_demo()
     # feature_extract_demo()
     
-    encoded = autoencoder_demo(plot_coding=True)
-    # features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
-    # domain_energy = features_freq.domain_energy
     
-    cv = cv.cross_validate(encoded, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
-    param_setting = {'eta':0.3, 'gamma':0.01, 'max_depth':6, 'subsample':0.8, 'lambda':50, 'random_state':75}
-    trained_model = cv.cross_validate_XGB(param_setting=param_setting)
-    cv.model_testing(trained_model, 'XGB')
+    cross_validate_DNN_demo()
+    
+    
+    

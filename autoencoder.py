@@ -31,18 +31,18 @@ class Autoencoder(Model):
         decoded = self.decoder(encoded)
         return decoded
 
-def build_AE(x_input, loss, metric, shrick_rate=10):
+def build_AE(x_input, loss, metric, shrink_rate=10):
     optimizer = opti.Adam(learning_rate=0.005)
     shape = x_input.shape[1:]
-    latent_dim = shape[0] // shrick_rate
+    latent_dim = shape[0] // shrink_rate
     model = Autoencoder(latent_dim, shape)
     model.compile(optimizer=optimizer, loss=loss, metrics=[metric])
     model(tf.ones((1, shape[0]))) # initialize weights
     return model
 
-def train_AE(x_input, loss='mean_absolute_error', metric='cosine_similarity', shrick_rate=10):
+def train_AE(x_input, loss='mean_absolute_error', metric='cosine_similarity', shrink_rate=10):
     callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
-    ae_model = build_AE(x_input, loss, metric, shrick_rate)
+    ae_model = build_AE(x_input, loss, metric, shrink_rate)
     history = ae_model.fit(x_input, x_input,
                 epochs=1000, batch_size=10,
                 shuffle=True, verbose=0, callbacks=[callback])

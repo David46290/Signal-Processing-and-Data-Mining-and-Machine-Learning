@@ -2,35 +2,24 @@ import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squared_error, mean_absolute_error
-from sklearn.ensemble import RandomForestRegressor, StackingRegressor, AdaBoostRegressor
-from sklearn.linear_model import BayesianRidge, ElasticNet, Lasso, TheilSenRegressor
 from sklearn.svm import SVR
-from sklearn.model_selection import RandomizedSearchCV
-import xgboost as xgb
 from xgboost import XGBRegressor
 import sklearn as sk
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.utils import shuffle
 from sklearn.model_selection import KFold
-from plot_histogram import draw_histo
+# from plot_histogram import draw_histo
 from tensorflow import keras
-from keras import layers
 from keras import optimizers as opti
-from keras import losses
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, MaxPooling1D, Flatten, Convolution1D, LSTM, Activation
-from keras.layers import Dropout, Flatten, Conv2D, MaxPooling2D, BatchNormalization
+from keras.layers import Conv2D, MaxPooling2D, BatchNormalization
 from keras.callbacks import EarlyStopping
 
 def cleanOutlier(x, y):
     # Gid rid of y values exceeding 2 std value
     # ONLY WORKS ONE SINGLE OUTPUT
     y_std = np.std(y)
-    y_median = np.median(y)
-    # quartile_1 = np.round(np.quantile(y, 0.25), 2)
-    # quartile_3 = np.round(np.quantile(y, 0.75), 2)
-    # # Interquartile range
-    # iqr = np.round(quartile_3 - quartile_1, 2)
     range_ = 2
     up_boundary = np.mean(y) + range_ * y_std 
     low_boundary = np.mean(y) - range_ * y_std 
@@ -193,7 +182,6 @@ class cross_validate:
         self.kfold_num = 5
     
     def show_train_history(self, history_, category, fold_idx=0, isValidated=True):
-        ylim = [-0.03, 0.32]
         plt.figure(figsize=(16, 6))
         if isValidated:
             ax1 = plt.subplot(121)
@@ -239,7 +227,7 @@ class cross_validate:
             ax2.tick_params(axis='both', which='major', labelsize=20)
             ax2.legend(loc='best', fontsize=20)
             ax2.grid(True)
-            plt.suptitle(f'Fining Tuning Train History', fontsize=26)
+            plt.suptitle('Fining Tuning Train History', fontsize=26)
             
         plt.tight_layout()
         plt.subplots_adjust(top=0.88)
@@ -273,12 +261,11 @@ class cross_validate:
         ax2.grid(True)
         ax2.set_ylim((0, 1.1))
         # ax2.set_ylim((0, 1.1))
-        plt.suptitle(f'Cross Validation', fontsize=26)
+        plt.suptitle('Cross Validation', fontsize=26)
     
     def cross_validate_XGB(self, param_setting=None):
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
         kf = KFold(n_splits=self.kfold_num)
-        fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
         model_state = []
@@ -339,7 +326,6 @@ class cross_validate:
     def cross_validate_kNN(self):
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
         kf = KFold(n_splits=self.kfold_num)
-        fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
         model_lst = []
@@ -350,7 +336,6 @@ class cross_validate:
             y_train = yTrain[train_idx]
             x_val = xTrain[val_idx]
             y_val = yTrain[val_idx]
-            evalset = [(x_train, y_train), (x_val, y_val)]
             model.fit(x_train, y_train)
             model_lst.append(model)
             yValPredicted = model.predict(x_val)
@@ -371,7 +356,6 @@ class cross_validate:
     def cross_validate_test(self, param_setting=None):
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
         kf = KFold(n_splits=self.kfold_num)
-        fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
         model_lst = []
@@ -403,49 +387,45 @@ class cross_validate:
         best_model.fit(self.xTrain, self.yTrain)
         return best_model
 
-    def build_ANN(self, loss):
-        optimizer = opti.Adam(learning_rate=0.0035)
+    def build_ANN(self, loss, metric, dense_coeff=8):
+        optimizer = opti.Adam(learning_rate=0.001)
         model = Sequential()
-        model.add(Dense(units=10, input_dim = self.xTrain.shape[1], activation=('relu')))
+        model.add(Dense(units=dense_coeff, input_dim = self.xTrain.shape[1], activation=('relu')))
         model.add(Dense(1, activation='linear'))
         model.compile(loss=loss,
                       optimizer=optimizer,
-                      metrics=[keras.metrics.MeanAbsolutePercentageError])
+                      metrics=[metric])
         return model
 
-    def build_DNN(self, loss):
+    def build_DNN(self, loss, metric, dense_coeff=8):
         # initializer = keras.initializers.GlorotNormal(seed=7)
-        optimizer = opti.Adam(learning_rate=0.0035)
+        optimizer = opti.Adam(learning_rate=0.001)
         model = Sequential()
-        model.add(Dense(units=10, input_dim = self.xTrain.shape[1], activation=('relu')))
-        model.add(Dense(units=15, activation=('relu')))
+        model.add(Dense(units=dense_coeff, input_dim = self.xTrain.shape[1], activation=('relu')))
+        model.add(Dense(units=(dense_coeff*2), activation=('relu')))
         model.add(Dense(units=1, activation=('linear')))
         model.compile(loss=loss,
                       optimizer=optimizer,
-                      metrics=[keras.metrics.MeanAbsolutePercentageError])
+                      metrics=[metric])
         return model
 
-    def cross_validate_ANN(self):
+    def cross_validate_ANN(self, dense_coeff=8):
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=79)
         kf = KFold(n_splits=self.kfold_num)
-        fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
-        loss = "mean_square_error"
+        loss = "mean_squared_error"
         metric = "mean_absolute_percentage_error"
-        model = self.build_ANN(loss)
+        model = self.build_ANN(loss, metric, dense_coeff)
         model.save_weights('./modelWeights/ANN_initial.h5') 
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
-            
-            optimizer = opti.Adam(learning_rate=0.0035)
-            callback = EarlyStopping(monitor="loss", patience=30, verbose=0, mode="auto")
-            
+            callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
             x_train = xTrain[train_idx]
             y_train = yTrain[train_idx]
             x_val = xTrain[val_idx]
             y_val = yTrain[val_idx]
             history = model.fit(x_train, y_train, validation_data = (x_val, y_val),
-                                epochs=100, batch_size=30, verbose=0)
+                                epochs=120, batch_size=30, verbose=0, callbacks=[callback])
             model.save_weights(f'./modelWeights/ANN{idx}.h5')  
             show_train_history_NN(history, loss, f'{metric}', f'val_{metric}', idx)
             yTrainPredicted = model.predict(x_train)
@@ -463,28 +443,25 @@ class cross_validate:
         model.load_weights(f'./modelWeights/ANN{hiest_r2_idx}.h5')
         return model
     
-    def cross_validate_DNN(self):
+    def cross_validate_DNN(self, dense_coeff=8):
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=79)
         kf = KFold(n_splits=self.kfold_num)
-        fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
-        loss = "mean_absolute_error"
-        model = self.build_DNN(loss)
+        loss = "mean_squared_error"
+        metric = "mean_absolute_error"
+        model = self.build_DNN(loss, metric, dense_coeff)
         model.save_weights('./modelWeights/DNN_initial.h5') 
-        for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
-            metric = 'mape'
-            optimizer = opti.Adam(learning_rate=0.0005)
-            callback = EarlyStopping(monitor="loss", patience=30, verbose=0, mode="auto")
-            
+        for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)): 
+            callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
             x_train = xTrain[train_idx]
             y_train = yTrain[train_idx]
             x_val = xTrain[val_idx]
             y_val = yTrain[val_idx]
             history = model.fit(x_train, y_train, validation_data = (x_val, y_val),
-                                epochs=100, batch_size=30, verbose=0)
+                                epochs=120, batch_size=30, verbose=0, callbacks=[callback])
             model.save_weights(f'./modelWeights/DNN{idx}.h5')  
-            show_train_history_NN(history, loss, 'r_square', 'val_r_square', idx)
+            show_train_history_NN(history, loss, metric, 'val_'+metric, idx)
             yTrainPredicted = model.predict(x_train)
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
@@ -493,8 +470,6 @@ class cross_validate:
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
-            # fitness_lst.append(1 - r2_val)
-            fitness_lst.append(mape_val)
             model.load_weights('./modelWeights/DNN_initial.h5')
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
         hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
@@ -513,7 +488,7 @@ class cross_validate:
         if self.normalized == 'xy':
             YT = (self.yMax - self.yMin) * YT + self.yMin
             YP = (self.yMax - self.yMin) * YP + self.yMin
-        rmse = np.sqrt(mean_squared_error(YT, YP))
+        # rmse = np.sqrt(mean_squared_error(YT, YP))
         r2 = r2_score(YT, YP)
         mape = mean_absolute_percentage_error(YT, YP) * 100
         mae = mean_absolute_error(YT, YP)
@@ -566,36 +541,35 @@ class cross_validate_signal:
         
         self.kfold_num = 5      
 
-    def build_1DCNN(self, loss):
-        optimizer = opti.Adam(learning_rate=0.0035)
+    def build_1DCNN(self, loss, metric, dense_coeff=4):
+        optimizer = opti.Adam(learning_rate=0.001)
         model = Sequential()
-        model.add(Convolution1D(filters=32, kernel_size = 29,
-                                strides = 9,
+        model.add(Convolution1D(filters=32, kernel_size=29,
+                                strides=9,
                                 data_format='channels_last', padding = 'same',
                                 input_shape=(self.xTrain.shape[1], 1),
                                 activation = 'relu'))
-        # model.add(BatchNormalization())
         model.add(Flatten())
-        model.add(Dense(round(self.xTrain.shape[1]/4), activation='relu'))
-        model.add(Dense(round(self.xTrain.shape[1]/8), activation='relu'))
-        model.add(Dense(round(self.xTrain.shape[1]/8), activation='relu'))
+        model.add(Dense(round(self.xTrain.shape[1]//dense_coeff), activation='relu'))
+        model.add(Dense(round(self.xTrain.shape[1]//(dense_coeff*2)), activation='relu'))
+        model.add(Dense(round(self.xTrain.shape[1]//(dense_coeff*4)), activation='relu'))
         model.add(Dense(1, activation='linear'))
         model.compile(loss=loss,
                       optimizer=optimizer,
-                      metrics=[keras.metrics.MeanAbsolutePercentageError])
+                      metrics=[metric])
         return model   
     
  
 
-    def cross_validate_1DCNN(self):
+    def cross_validate_1DCNN(self, dense_coeff=4):
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
         kf = KFold(n_splits=self.kfold_num)
         fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
+        loss = "mean_squared_error"
         metric = "mean_absolute_error"
-        loss = "mean_absolute_percentage_error"
-        model = self.build_1DCNN(loss, metric)
+        model = self.build_1DCNN(loss, metric, dense_coeff)
         model.save_weights('./modelWeights/1DCNN_initial.h5') 
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             
@@ -606,7 +580,7 @@ class cross_validate_signal:
             x_val = xTrain[val_idx]
             y_val = yTrain[val_idx]
             history = model.fit(x_train, y_train, validation_data = (x_val, y_val),
-                                epochs=1000, batch_size=5, verbose=1, callbacks=[callback])
+                                epochs=30, batch_size=5, verbose=1, callbacks=[callback])
             model.save_weights(f'./modelWeights/1DCNN{idx}.h5')  
             yTrainPredicted = model.predict(x_train, verbose=0)
             r2_train = r2_score(y_train, yTrainPredicted)
@@ -616,7 +590,6 @@ class cross_validate_signal:
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
-            # fitness_lst.append(1 - r2_val)
             fitness_lst.append(mape_val)
             show_train_history_NN(history, loss, metric, 'val_'+metric, idx)
             model.load_weights('./modelWeights/1DCNN_initial.h5')
@@ -627,33 +600,32 @@ class cross_validate_signal:
         model.load_weights(f'./modelWeights/1DCNN{hiest_r2_idx}.h5')
         return model
     
-    def build_LSTM(self, loss, metrics):
-        optimizer = opti.Adam(learning_rate=0.005)
+    def build_LSTM(self, loss, metrics, cell_num=1):
+        optimizer = opti.Adam(learning_rate=0.001)
         # input of LSTM should be [n_samples, n_length, n_channels] 
+        input_length = self.xTrain.shape[1]
+        input_dim = self.xTrain.shape[2] if len(self.xTrain.shape)==3 else 1
         model = Sequential()
-        model.add(LSTM(units=1, return_sequences=False,
-                       input_length=self.xTrain.shape[1],
-                       input_dim=self.xTrain.shape[2], activation='linear'))
-        # model.add(Dense(1, activation='relu'))
+        model.add(LSTM(units=cell_num, return_sequences=False,
+                       input_length=input_length,
+                       input_dim=input_dim, activation='relu'))
+        model.add(Dense(1, activation='linear'))
         model.summary()
         model.compile(loss=loss,
               optimizer=optimizer,
               metrics=[metrics])
         return model 
     
-    def cross_validate_LSTM(self):
+    def cross_validate_LSTM(self, cell_num=1):
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
         kf = KFold(n_splits=self.kfold_num)
-        fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
-        # loss = "mean_squared_error"
-        # loss = "mean_absolute_error"
-        loss = "mean_absolute_percentage_error"
-        # metric = "mean_absolute_percentage_error"
+        # loss = "mean_absolute_percentage_error"
+        loss = "mean_squared_error"
         metric = "mean_absolute_error"
         
-        model = self.build_LSTM(loss, metric)
+        model = self.build_LSTM(loss, metric, cell_num)
         model.save_weights('./modelWeights/LSTM_initial.h5') 
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             
@@ -664,7 +636,7 @@ class cross_validate_signal:
             x_val = xTrain[val_idx]
             y_val = yTrain[val_idx]
             history = model.fit(x_train, y_train, validation_data = (x_val, y_val),
-                                epochs=1000, batch_size=10, verbose=1, callbacks=[callback])
+                                epochs=30, batch_size=10, verbose=0, callbacks=[callback])
             model.save_weights(f'./modelWeights/LSTM{idx}.h5')  
             yTrainPredicted = model.predict(x_train, verbose=0)
             r2_train = r2_score(y_train, yTrainPredicted)
@@ -676,8 +648,6 @@ class cross_validate_signal:
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
-            # fitness_lst.append(1 - r2_val)
-            fitness_lst.append(mape_val)
             show_train_history_NN(history, loss, metric, 'val_'+metric, idx)
             model.load_weights('./modelWeights/LSTM_initial.h5')
 
@@ -705,7 +675,6 @@ class cross_validate_signal:
         ax1.set_xlabel('Fold', fontsize=24)
         ax1.tick_params(axis='both', which='major', labelsize=20)
         ax1.legend(loc='best', fontsize=20)
-        # ax1.set_title(f'{metrics[0]}', fontsize=26)
         ax1.grid(True)
         ax1.set_ylim((0, 40))
         
@@ -716,18 +685,16 @@ class cross_validate_signal:
         ax2.set_xlabel('Fold', fontsize=24)
         ax2.tick_params(axis='both', which='major', labelsize=20)
         ax2.legend(loc='best', fontsize=20)
-        # ax2.set_title(f'{metrics[1]}', fontsize=26)
         ax2.grid(True)
         ax2.set_ylim((0, 1.1))
-        # ax2.set_ylim((0, 1.1))
-        plt.suptitle(f'Cross Validation', fontsize=26)    
+        plt.suptitle('Cross Validation', fontsize=26)    
     
     def plotTrueAndPredicted(self, x, YT, YP, category):
         bottomValue, topValue = self.y_boundary[0], self.y_boundary[1]
         if self.normalized == 'xy':
             YT = (self.yMax - self.yMin) * YT + self.yMin
             YP = (self.yMax - self.yMin) * YP + self.yMin
-        rmse = np.sqrt(mean_squared_error(YT, YP))
+        # rmse = np.sqrt(mean_squared_error(YT, YP))
         r2 = r2_score(YT, YP)
         mape = mean_absolute_percentage_error(YT, YP) * 100
         mae = mean_absolute_error(YT, YP)
@@ -782,7 +749,7 @@ class cross_validate_image:
         
         self.kfold_num = 5      
     
-    def build_2DCNN(self, loss):
+    def build_2DCNN(self, loss, metric, dense_coeff):
         optimizer = opti.Adam(learning_rate=0.0035)
         model = Sequential()
         model.add(Conv2D(filters=16, kernel_size=(5, 5), strides=(3, 3)
@@ -795,14 +762,14 @@ class cross_validate_image:
         model.add(BatchNormalization())
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
-        model.add(Dense(64, activation='relu'))
+        model.add(Dense(round(self.xTrain.shape[1]//dense_coeff), activation='relu'))
         model.add(Dropout(0.2))
-        model.add(Dense(32, activation='relu'))
+        model.add(Dense(round(self.xTrain.shape[1]//(dense_coeff*2)), activation='relu'))
         model.add(Dense(1, activation='linear'))
         
         model.compile(loss=loss,
                       optimizer=optimizer,
-                      metrics=[keras.metrics.MeanAbsolutePercentageError])
+                      metrics=[metric])
         return model
     
     def cross_validate_2DCNN(self):
@@ -813,8 +780,9 @@ class cross_validate_image:
         fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
-        loss = "mean_absolute_error"
-        model = self.build_2DCNN(loss)
+        loss = "mean_squared_error"
+        metric = "mean_absolute_error"
+        model = self.build_2DCNN(loss, metric)
         model.save_weights('./modelWeights/2DCNN_initial.h5') 
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
         
@@ -834,10 +802,8 @@ class cross_validate_image:
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
-            # fitness_lst.append(1 - r2_val)
             fitness_lst.append(mape_val)
-            show_train_history_NN(history, loss, 'r_square', 'val_r_square', idx)
-            # keras.backend.clear_session()
+            show_train_history_NN(history, loss, metric, 'val_'+metric, idx)
             model.load_weights('./modelWeights/2DCNN_initial.h5')
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
@@ -865,7 +831,6 @@ class cross_validate_image:
         ax1.set_xlabel('Fold', fontsize=24)
         ax1.tick_params(axis='both', which='major', labelsize=20)
         ax1.legend(loc='best', fontsize=20)
-        # ax1.set_title(f'{metrics[0]}', fontsize=26)
         ax1.grid(True)
         ax1.set_ylim((0, 40))
         
@@ -876,22 +841,19 @@ class cross_validate_image:
         ax2.set_xlabel('Fold', fontsize=24)
         ax2.tick_params(axis='both', which='major', labelsize=20)
         ax2.legend(loc='best', fontsize=20)
-        # ax2.set_title(f'{metrics[1]}', fontsize=26)
         ax2.grid(True)
         ax2.set_ylim((0, 1.1))
-        # ax2.set_ylim((0, 1.1))
-        plt.suptitle(f'Cross Validation', fontsize=26)    
+        plt.suptitle('Cross Validation', fontsize=26)    
     
     def plotTrueAndPredicted(self, x, YT, YP, category):
         bottomValue, topValue = self.y_boundary[0], self.y_boundary[1]
         if self.normalized == 'xy':
             YT = (self.yMax - self.yMin) * YT + self.yMin
             YP = (self.yMax - self.yMin) * YP + self.yMin
-        rmse = np.sqrt(mean_squared_error(YT, YP))
+        # rmse = np.sqrt(mean_squared_error(YT, YP))
         r2 = r2_score(YT, YP)
         mape = mean_absolute_percentage_error(YT, YP) * 100
         mae = mean_absolute_error(YT, YP)
-        color1 = ['slateblue', 'orange', 'firebrick', 'steelblue', 'purple', 'green']
         plt.figure(figsize=(12, 9))
         plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
         plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
