@@ -27,7 +27,10 @@ def expMaker(A, G, Tau, isGaussian=True):
     
 def save_files(folder, data_sig, data_y):
     for run_idx, run in enumerate(data_sig):
-        np.savetxt(f'.\\{folder}\\demo_signals_{run_idx}.csv', run, delimiter=',')
+        if run_idx < 10:
+            np.savetxt(f'.\\{folder}\\demo_signals_0{run_idx}.csv', run, delimiter=',')
+        else:
+            np.savetxt(f'.\\{folder}\\demo_signals_{run_idx}.csv', run, delimiter=',')
     np.savetxt(f'.\\demo_y.csv', data_y, delimiter=',')
 
 color = ['steelblue', 'peru', 'green']
@@ -53,9 +56,9 @@ for run_idx in range(num_run):
     run_content = np.concatenate((t.reshape(-1, 1), sig1.reshape(-1, 1), sig2.reshape(-1, 1), sig3.reshape(-1, 1)), axis=1)
     dataset_sig.append(run_content.T)
     
-    y1 = (amplitude_1[0] + amplitude_2[1]) * (1+amplitude_3[2])
-    y2 = (amplitude_1[0] * amplitude_3[1] + amplitude_1[2]) - amplitude_2[0] * amplitude_2[2]
-    y3 = amplitude_1[0] * (1+amplitude_3[0]) * (1+amplitude_3[2]) * amplitude_3[1]
+    y1 = (amplitude_1[0] + amplitude_2[1]) * (1+amplitude_3[2]) * (1 + random_seed)
+    y2 = ((amplitude_1[0] * amplitude_3[1] + amplitude_1[2]) - amplitude_2[0] * amplitude_2[2]) * (1 + random_seed)
+    y3 = amplitude_1[0] * (1+amplitude_3[0]) * (1+amplitude_3[2]) * amplitude_3[1] * (1 + random_seed)
     dataset_y.append(np.array([y1, y2, y3]))
 dataset_y = np.array(dataset_y)
 
