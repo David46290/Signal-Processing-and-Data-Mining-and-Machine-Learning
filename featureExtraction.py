@@ -1,11 +1,9 @@
 import numpy as np
-import os, glob
+import os
 from scipy import signal as scisig
-from matplotlib import pyplot as plt
 import statistics
 from scipy import stats
 import math
-from plot_signals import time_series_downsampling
 from scipy.ndimage import gaussian_filter1d
 from scipy import signal as scisig
 import signal_processing as sigpro
@@ -71,11 +69,9 @@ class TimeFeatures():
       """
       self.gau_sig, self.gau_rad = gau_sig, gau_rad
       self.w_size = w_size
-      self.signals = signal_list 
-      # self.rms, self.kurtosis, self.skewness, self.variance, self.median, self.crest_f, self.p2p = self.getTimeFeatures()
-      self.features_all_signals = self.getTimeFeatures(target_lst)
-      
-      # print('Time Features Extracted')
+      self.target_lst = target_lst
+      self.features_all_signals, self.feature_names = self.getTimeFeatures(signal_list, target_lst)
+
     def get_max_p2p(self, signal_):
         target_filter1d = gaussian_filter1d(signal_, sigma=self.gau_sig, radius=self.gau_rad)
         up_idx = scisig.find_peaks(target_filter1d)[0]
@@ -123,7 +119,6 @@ class TimeFeatures():
         x_up = np.pad(x_up, (1, 1), 'constant', constant_values=(x_start, x_end))
         x_low = np.pad(x_low, (1, 1), 'constant', constant_values=(x_start, x_end))
         
-
         """
         Detection of P2P formed by
         1. peak and its adjacent valley
@@ -155,32 +150,44 @@ class TimeFeatures():
         # print(f'max in one {max(difference_pv)}\nmax in the other {max(difference_pv_anotherSide)}\ntotal max {max_p2p}')
         return max_p2p
     
-    def getTimeFeatures(self, target_lst):
+    def getTimeFeatures(self, signal_list, target_lst):
         features_all_signal = []
-        for signal_idx, signal in enumerate(self.signals): # signal_idx: index of signal
+        feature_name_all = []
+        for signal_idx, signal in enumerate(signal_list): # signal_idx: index of signal
             features_local_signal = []
+            feature_name = []
             if 'rms' in target_lst:
                 features_local_signal.append(math.sqrt(sum(x**2 for x in signal)/len(signal))) # RMS
+                feature_name.append(f'signal {signal_idx} RMS')
             if 'mean' in target_lst:
                 features_local_signal.append(np.mean(signal))  # mean
+                feature_name.append(f'signal {signal_idx} Mean')
             if 'median' in target_lst:
                 features_local_signal.append(statistics.median(signal)) # median
+                feature_name.append(f'signal {signal_idx} Median')
             if 'kurtosis' in target_lst:
                 features_local_signal.append(stats.kurtosis(signal)) # kurtosis
+                feature_name.append(f'signal {signal_idx} Kurtosis')
             if 'skewness' in target_lst:
                 features_local_signal.append(stats.skew(signal)) # skewness
+                feature_name.append(f'signal {signal_idx} Skewness')
             if 'variance' in target_lst:
                 features_local_signal.append(statistics.variance(signal)) # variance
+                feature_name.append(f'signal {signal_idx} Variance')
             if 'std' in target_lst:
                 features_local_signal.append(np.std(signal)) # STD
+                feature_name.append(f'signal {signal_idx} STD')
             if 'crest' in target_lst:
                 features_local_signal.append(np.max(signal) / math.sqrt(sum(x**2 for x in signal)/len(signal))) # crest factor
+                feature_name.append(f'signal {signal_idx} Crest Factor')
             if 'p2p' in target_lst:
                 features_local_signal.append(self.get_max_p2p(signal)) # max. P2P
+                feature_name.append(f'signal {signal_idx} Max. P2P')
             
             features_all_signal.append(np.array(features_local_signal))
+            feature_name_all.append(np.array(feature_name))
               
-        return np.array(features_all_signal)
+        return np.array(features_all_signal), np.array(feature_name_all)
 
 def get3Dfeatures(signal3D, gau_sig=0.01, gau_rad=1, w_size=1): # gau_sig, gau_rad: Gaussian smooth param.; w_size: window size for peak searching
     """
@@ -240,8 +247,6 @@ def saveFeatures(direction, feature):
         with open(fileName, 'w') as file:
             np.savetxt(file, feature[run], delimiter=",")
         file.close()
-
-
 
 def pick_run_data(quality_, target_runIdx):
     quality_finale = []
