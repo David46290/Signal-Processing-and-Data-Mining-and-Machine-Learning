@@ -29,11 +29,11 @@ def features_vs_quality(x_, y_):
     x_ = x_.T # shape: (amount of features, amount of samples)
     y_ = y_.T # shape: (amount of quality, amount of samples)
 
-    corr = np.zeros((x_.shape[0], y_.shape[0]))
+    corr = np.zeros((y_.shape[0], x_.shape[0]))
     for feature_idx, feature in enumerate(x_): # correlation between 2 variables: feature & quality
         for y_idx, y_target in enumerate(y_):
             R = get_corr_value_2variables(feature, y_target, isPlot=False)
-            corr[feature_idx, y_idx] = R
+            corr[y_idx, feature_idx] = R
     return corr
 
 def corr_filter(x_, corr_matrix_, threshold):
@@ -74,7 +74,10 @@ def plot_correlation_matrix(matrix):
                 
             text = ax.text(j, i, '{0:.2f}'.format(matrix[i, j]),
                            ha="center", va="center", color=text_color)
-            
+    ax.set_xticks(np.arange(0, matrix.shape[1], 1))   
+    ax.set_yticks(np.arange(0, matrix.shape[0], 1))   
+    ax.set_xlabel('Features')
+    ax.set_ylabel('Y')
     ax.set_title('Pearson Correlation Matrix', fontsize=14)
     fig.tight_layout()
 
