@@ -162,7 +162,7 @@ class cross_validate:
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
         if len(y_value_boundary) == 0:
-            self.y_boundary = [min(y)-1, max(y)+1]
+            self.y_boundary = [np.amin(y)-1, np.amax(y)+1]
         else:
             self.y_boundary = y_value_boundary
         
@@ -260,7 +260,6 @@ class cross_validate:
         # ax2.set_title(f'{metrics[1]}', fontsize=26)
         ax2.grid(True)
         ax2.set_ylim((0, 1.1))
-        # ax2.set_ylim((0, 1.1))
         plt.suptitle('Cross Validation', fontsize=26)
     
     def cross_validate_XGB(self, param_setting=None):
@@ -522,7 +521,7 @@ class cross_validate_signal:
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
         if len(y_value_boundary) == 0:
-            self.y_boundary = [min(y)-1, max(y)+1]
+            self.y_boundary = [np.amin(y)-1, np.amax(y)+1]
         else:
             self.y_boundary = y_value_boundary
         
@@ -731,7 +730,7 @@ class cross_validate_image:
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
         if len(y_value_boundary) == 0:
-            self.y_boundary = [min(y)-1, max(y)+1]
+            self.y_boundary = [np.amin(y)-1, np.amax(y)+1]
         else:
             self.y_boundary = y_value_boundary
         
