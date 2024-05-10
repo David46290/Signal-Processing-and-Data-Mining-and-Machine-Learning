@@ -11,7 +11,7 @@ from plot_histogram import draw_histo
 
 # edit the part below when model is changed
 class psokNN:
-    def __init__(self, x, y, qualityKind, normalized):
+    def __init__(self, x, y, qualityKind, normalized=None, y_boundary=[]):
         self.qualityKind = qualityKind
         # self.isMultiStacking = True
         self.normalized = normalized
@@ -21,6 +21,11 @@ class psokNN:
         self.x, self.y = self.cleanOutlier(x, y)
         self.kfold_num = 5
         
+        if len(y_boundary) == 0:
+            self.y_boundary = [min(y)-1, max(y)+1]
+        else:
+            self.y_boundary = y_boundary
+            
         if self.normalized == 'xy':
             self.x, self.xMin, self.xMax = self.normalizationX(self.x)
             self.y, self.yMin, self.yMax = self.normalizationY(self.y)
@@ -127,8 +132,8 @@ class psokNN:
             bottomValue = bottomValue * 0.9 if topValue > 0 else topValue * 1.1
             plt.ylabel("Predicted Value", fontsize=24)
             plt.xlabel("True Value", fontsize=24)
-            bottomValue = 0
-            topValue = 2.7
+            bottomValue = self.y_boundary[0]
+            topValue = self.y_boundary[1]
             plt.ylim([bottomValue, topValue])
             plt.xlim([bottomValue, topValue])
             plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
@@ -400,7 +405,7 @@ class psokNN:
     pso
     use this function only when performing pso
     """
-    def pso(self, particleAmount, maxIterTime):
+    def pso(self, particleAmount=10, maxIterTime=10):
         metricHistory = []
         metricHistory.append(1000)
 
