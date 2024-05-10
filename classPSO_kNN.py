@@ -21,7 +21,7 @@ class psokNN:
         self.kfold_num = 5
         
         if len(y_boundary) == 0:
-            self.y_boundary = [min(y)-1, max(y)+1]
+            self.y_boundary = [np.amin(y)-1, np.amax(y)+1]
         else:
             self.y_boundary = y_boundary
             
@@ -117,10 +117,6 @@ class psokNN:
             plt.figure(figsize=(12, 9))
             plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
             plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
-            topValue = (max(YT) if max(YT) > max(YP) else max(YP))
-            topValue = topValue * 1.1 if topValue > 0 else topValue * 0.9
-            bottomValue = (min(YT) if min(YT) < min(YP) else min(YP))
-            bottomValue = bottomValue * 0.9 if topValue > 0 else topValue * 1.1
             plt.ylabel("Predicted Value", fontsize=24)
             plt.xlabel("True Value", fontsize=24)
             bottomValue = self.y_boundary[0]
@@ -275,7 +271,7 @@ class psokNN:
         k_min = 1
         k_max = 50
         RSN_min = 0
-        RSN_max = 100
+        RSN_max = 100 
         param_min_lst = [k_min, RSN_min]
         param_max_lst = [k_max, RSN_max]
         # DO_min = 0
