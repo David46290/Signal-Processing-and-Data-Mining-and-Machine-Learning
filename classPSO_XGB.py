@@ -226,7 +226,8 @@ class psoXGB:
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
         metrics = ['mape', 'rmse']
-        model = XGBRegressor(eval_metric=metrics).set_params(**param_setting)
+        model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
+                                 disable_default_eval_metric=True, n_estimators=100).set_params(**param_setting)
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             x_train = xTrain[train_idx]
             y_train = yTrain[train_idx]
@@ -367,7 +368,8 @@ class psoXGB:
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
         metrics = ['mape', 'rmse']
-        model = XGBRegressor(eval_metric=metrics).set_params(**param_setting)
+        model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
+                                 disable_default_eval_metric=True, n_estimators=100).set_params(**param_setting)
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             x_train = xTrain[train_idx]
             y_train = yTrain[train_idx]
@@ -391,10 +393,11 @@ class psoXGB:
                     
         self.plot_metrics_folds(train_metric_lst, val_metric_lst, 'last', 'best')
         highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        best_model = XGBRegressor()
+        best_model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
+                                 disable_default_eval_metric=True, n_estimators=100)
         best_model.load_model(f".//modelWeights//xgb_{highest_valR2_idx}.json")
         new_model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
-                                 disable_default_eval_metric=True, n_estimators=100, random_state=75).set_params(**param_setting)
+                                 disable_default_eval_metric=True, n_estimators=100).set_params(**param_setting)
         new_model.fit(self.xTrain, self.yTrain, xgb_model=best_model, eval_set=[(self.xTrain, self.yTrain)], verbose=False)
         results_tune = new_model.evals_result()
         self.show_train_history(results_tune, metrics, isValidated=False)
