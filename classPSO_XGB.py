@@ -23,7 +23,7 @@ class psoXGB:
         self.optimized_param = ['eta','gamma', 'max_depth', 'subsample', 'lambda', 'random_state', 'RSN']
         
         if len(y_boundary) == 0:
-            self.y_boundary = [np.amin(y)-1, np.amax(y)+1]
+            self.y_boundary = [np.amin(self.y)-1, np.amax(self.y)+1]
         else:
             self.y_boundary = y_boundary
         
