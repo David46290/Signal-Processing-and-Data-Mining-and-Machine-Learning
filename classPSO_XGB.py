@@ -424,7 +424,7 @@ class psoXGB:
         IterTime = 0
         # iteration for best particle
         while IterTime < maxIterTime:
-            # print(f'Iter. time: {IterTime}')
+            print(f'Iteration {IterTime + 1}')
             newFitness = np.zeros(len(population_current))
             for particleIdx in range(len(population_current)):
                 
@@ -494,6 +494,7 @@ class psoXGB:
             IterTime += 1
             
         # final iteration
+        print(f'Final Iteration')
         newFitness = np.zeros(len(population_current))
         for particleIdx in range(len(population_current)):
 
