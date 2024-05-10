@@ -9,6 +9,7 @@ import signal_plotting as sigplot
 import correlation_analysis as corr
 import cross_validation as cv
 import autoencoder as ae
+from classPSO_kNN import psokNN
 
 def signal_processing_demo(plot_run_signals=False, plot_resize=False, plot_fft=False, plot_enve=False, plot_band_pass=False, plot_difference=False, plot_cwt=False, plot_gaf=False):   
     if plot_run_signals: 
@@ -154,6 +155,10 @@ if __name__ == '__main__':
     # feature_extract_demo()
     # cross_validate_DNN_demo()
     # cross_validate_1DCNN_demo()
+    features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
+    domain_energy = features_freq.domain_energy
+    pso_prepare = psokNN(domain_energy, y[:, y_idx_demo], f'Y{y_idx_demo}', y_boundary=[22, 39])
+    model, history = pso_prepare.pso(particleAmount=20, maxIterTime=10)
     
     
     
