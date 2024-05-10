@@ -404,8 +404,7 @@ class psokNN:
         dna_kind = ['k', 'RandomSeedNum']
         # iteration for best particle
         while IterTime < maxIterTime:
-            # print(f'Iter. time: {IterTime}')
-            # print('iteration: ', IterTime)
+            print(f'Iteration {IterTime + 1}')
             fitness_current_population = np.zeros(len(population_current))
             for particleIdx, particle in enumerate(population_current):
                 # print(f'Particle: {particleIdx}')
@@ -479,6 +478,7 @@ class psokNN:
             
         # final iteration
         # edit the part below when model is changed
+        print(f'Final Iteration')
         fitness_current_population = np.zeros(len(population_current))
         for particleIdx in range(len(population_current)):
             for dnaIdx, dna in enumerate(dna_kind):
