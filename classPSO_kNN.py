@@ -13,7 +13,6 @@ from plot_histogram import draw_histo
 class psokNN:
     def __init__(self, x, y, qualityKind, normalized=None, y_boundary=[]):
         self.qualityKind = qualityKind
-        # self.isMultiStacking = True
         self.normalized = normalized
         self.dna_amount = 2  # hyper_parameter num. + random seed
         self.x = x
@@ -55,19 +54,11 @@ class psokNN:
     def cleanOutlier(self, x, y):
         # Gid rid of y values exceeding 2 std value
         y_std = np.std(y)
-        y_median = np.median(y)
-        # quartile_1 = np.round(np.quantile(y, 0.25), 2)
-        # quartile_3 = np.round(np.quantile(y, 0.75), 2)
-        # # Interquartile range
-        # iqr = np.round(quartile_3 - quartile_1, 2)
         range_ = 2
         up_boundary = np.mean(y) + range_ * y_std 
-        # up_boundary = 1.5
-        # up_boundary = 1.38
         low_boundary = np.mean(y) - range_ * y_std 
         
         remaining = np.where(y < up_boundary)[0]
-        # remaining = np.where(y < 1.5)[0]
         y_new = y[remaining]
         x_new = x[remaining]
         remaining2 = np.where(y_new > low_boundary)[0]
@@ -277,12 +268,8 @@ class psokNN:
 
     def population_currentInitialize(self, particleAmount):
         """
-        # step size shrinkage (learning rate)
-        eta = [round(x, 2) for x in np.linspace(0, 1, num = 11)]
-        # Maximum number of levels in tree
-        max_depth = [6, 10, 20, 30, 40, 50, 60, 70, 80, 90]
-        # sampling rate of the training data (prevent overfitting)
-        subsample = [round(x, 2) for x in np.linspace(0.1, 1, num = 10)]
+        k: number of nearest neighbors
+        RSN: random seed number to shuffle the dataset
         """
         initialPosition = np.zeros((particleAmount, self.dna_amount)) 
         k_min = 1
@@ -348,15 +335,11 @@ class psokNN:
                 val_metric_lst = np.zeros((self.kfold_num, 2))
                 model_lst = []
                 for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
-                    metric = 'mape'
-                    metrics = ['mape', 'rmse']
-                    # metrics = [mean_absolute_percentage_error, r2_score]
                     model = KNeighborsRegressor(n_neighbors=k)
                     x_train = xTrain[train_idx]
                     y_train = yTrain[train_idx]
                     x_val = xTrain[val_idx]
                     y_val = yTrain[val_idx]
-                    evalset = [(x_train, y_train), (x_val, y_val)]
                     model.fit(x_train, y_train)
                     try:
                         yValPredicted = model.predict(x_val)
@@ -367,7 +350,6 @@ class psokNN:
                         model.fit(x_train, y_train)
                         yValPredicted = model.predict(x_val)
                         model_lst.append(model)
-                    # self.show_train_history(results, metrics, idx)
                     yTrainPredicted = model.predict(x_train)
                     r2_train = r2_score(y_train, yTrainPredicted)
                     mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
@@ -449,6 +431,8 @@ class psokNN:
             # rest iteration
             else:
                 for particleIdx in range(particleAmount):   # recycling same fitness/population array
+                    # if current particle have better performance, then replace the corresponding elemnt in location & fitness arrays
+                    # if not, then stay at the optimal location & fitness so far
                     if fitness_current_population[particleIdx] < fitness_best_population[particleIdx]:
                         population_best[particleIdx,:] = copy.deepcopy(population_current[particleIdx,:])
                         fitness_best_population[particleIdx] = copy.deepcopy(fitness_current_population[particleIdx])
@@ -481,9 +465,6 @@ class psokNN:
             # making new population
             for particleIdx in range(particleAmount):
                 for dnaIdx in range(DNA_amount):
-                    # w_max = 0.9
-                    # w_min = 0.4
-                    # w = (w_max - w_min)*(maxIterTime - IterTime) / maxIterTime + w_min
                     velocity_new[particleIdx, dnaIdx] = w * velocity[particleIdx, dnaIdx] + c1 * r1[particleIdx, dnaIdx] * (population_best[particleIdx, dnaIdx] - population_current[particleIdx, dnaIdx]) + c2*r2[particleIdx, dnaIdx] * (particle_best[0, dnaIdx] - population_current[particleIdx, dnaIdx])
                     population_new[particleIdx, dnaIdx] = population_current[particleIdx, dnaIdx] + velocity_new[particleIdx, dnaIdx]
             
