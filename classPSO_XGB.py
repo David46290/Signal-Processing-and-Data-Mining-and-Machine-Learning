@@ -3,9 +3,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split
 import random
-# import datetime
 import copy
-# from tensorflow_addons.metrics import r_square
 from xgboost import XGBRegressor
 from sklearn.model_selection import KFold
 from sklearn.utils import shuffle
@@ -133,7 +131,7 @@ class psoXGB:
             plt.show()
         print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
         
-    def show_train_history(self, history_, category, fold_idx, isValidated=True):
+    def show_train_history(self, history_, category, fold_idx=0, isValidated=True):
         plt.figure(figsize=(16, 6))
         if isValidated:
             ax1 = plt.subplot(121)
@@ -209,7 +207,6 @@ class psoXGB:
         ax2.grid(True)
         ax2.legend(loc='best', fontsize=20)
         ax2.set_ylim((0, 1.1))
-        # ax2.set_ylim((0, 1.1))
         plt.suptitle(f'Iteration: {iter_idx} | Particle: {particle_idx}', fontsize=26)
         plt.tight_layout()
         plt.subplots_adjust(top=0.88)
@@ -390,7 +387,7 @@ class psoXGB:
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
-            draw_histo(y_val, f'Histogram of Output in Fold {idx+1}', 'seagreen', 0)
+            # draw_histo(y_val, f'Histogram of Output in Fold {idx+1}', 'seagreen', 0)
                     
         self.plot_metrics_folds(train_metric_lst, val_metric_lst, 'last', 'best')
         highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
@@ -425,29 +422,12 @@ class psoXGB:
         # iteration for best particle
         while IterTime < maxIterTime:
             # print(f'Iter. time: {IterTime}')
-            # print('iteration: ', IterTime)
-            # edit the part below when model is changed
             newFitness = np.zeros(len(particlePopulation))
             for particleIdx in range(len(particlePopulation)):
                 
                 newFitness[particleIdx] = self.modelTraining(particlePopulation[particleIdx],
                                                              IterTime, particleIdx,
                                                              show_result_each_fold=False)
-                # print(f'Particle: {particleIdx}')
-                # for dnaIdx, dna in enumerate(self.optimized_param):
-                #     locals()[dna] = particlePopulation[particleIdx, dnaIdx]
-
-                # training result of current particle
-                # edit the part below when model is changed
-                # [eta, gamma, max_depth, subsample, lambda_, random_state, RSN]
-                # newFitness[particleIdx], metricHistory = self.modelTraining(locals()[self.optimized_param[0]], 
-                #                                                             locals()[self.optimized_param[1]], 
-                #                                                             locals()[self.optimized_param[2]], 
-                #                                                             locals()[self.optimized_param[3]], 
-                #                                                             locals()[self.optimized_param[4]], 
-                #                                                             locals()[self.optimized_param[5]], 
-                #                                                             locals()[self.optimized_param[6]], 
-                #                                                             IterTime, particleIdx)
             # first iteration
             if IterTime == 0:
                 particlePopulation = particlePopulation
@@ -511,23 +491,12 @@ class psoXGB:
             IterTime += 1
             
         # final iteration
-        # edit the part below when model is changed
         newFitness = np.zeros(len(particlePopulation))
         for particleIdx in range(len(particlePopulation)):
-            # for dnaIdx, dna in enumerate(self.optimized_param):
-            #     locals()[dna] = particlePopulation[particleIdx, dnaIdx]
+
             newFitness[particleIdx] = self.modelTraining(particlePopulation[particleIdx],
                                                                         IterTime, particleIdx,
                                                                         show_result_each_fold=False)
-            # newFitness[particleIdx] = self.modelTraining(locals()[self.optimized_param[0]], 
-            #                                                             locals()[self.optimized_param[1]], 
-            #                                                             locals()[self.optimized_param[2]], 
-            #                                                             locals()[self.optimized_param[3]], 
-            #                                                             locals()[self.optimized_param[4]], 
-            #                                                             locals()[self.optimized_param[5]], 
-            #                                                             locals()[self.optimized_param[6]], 
-            #                                                             IterTime, particleIdx, '(Last)', 'Best',
-            #                                                             show_result_each_fold=True)
   
         for particleIdx in range(particleAmount):
             if newFitness[particleIdx] < bestPopulationFitness[particleIdx]:
