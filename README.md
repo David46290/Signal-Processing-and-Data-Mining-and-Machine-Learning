@@ -1,4 +1,12 @@
-# Data mining with time series
+<br />
+<div align="center">
+  <h1 align="center">Data mining with time series</h1>
+  <h2 align="center">The current repository is still in progress and the contents may change!</h2>
+  <h3 align="center">
+    A combination of signal analysis and machine-learning algorithms.
+    <br />
+  </p>
+</div>
 I originally made this repo. to deal with a cooperative education program I participated in during my study. This Python library contains .py files to perform signal processing, constructing machine learning algorithms, and plotting signal spectra. These files helped me a lot, and hopefully, they may be found useful in your projects as well.
 
 In this repo., one data and a folder are examples of how to use the .py files contained. For a better understanding, I am gonna make an imaginary scenario in which these example files originate.
