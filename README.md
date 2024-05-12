@@ -3,3 +3,5 @@ I originally made this repo. to deal with a cooperative education program I part
 
 In this repo., one data and a folder serve as an example of how to use the .py contained. For a better understanding, I am gonna make an imaginary scenario in which these example files originate.
 ## Imaging a machining process that can be monitored by working conditions such as vibrations, temperature, or any other signals. The goal is to predict the resultant quality of the process w/ the captured signals
+
+So first, the example files, which are 'demo_y.csv' and 
