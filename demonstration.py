@@ -2,6 +2,8 @@ import numpy as np
 from scipy import signal as scisig
 from matplotlib import pyplot as plt
 import math
+from sklearn import linear_model
+from sklearn import svm
 
 import featureExtraction as feaext
 import signal_processing as sigpro
@@ -12,6 +14,7 @@ import autoencoder as ae
 from classPSO_kNN import psokNN
 from classPSO_XGB import psoXGB
 from classPSO_RF import psoRF
+from stackingModel import stackingModel
 
 def signal_processing_demo(plot_run_signals=False, plot_resize=False, plot_fft=False, plot_enve=False, plot_band_pass=False, plot_difference=False, plot_cwt=False, plot_gaf=False):   
     if plot_run_signals: 
@@ -159,8 +162,16 @@ if __name__ == '__main__':
     # cross_validate_1DCNN_demo()
     features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
     domain_energy = features_freq.domain_energy
-    pso_prepare = psoRF(domain_energy, y[:, y_idx_demo], f'Y{y_idx_demo}', y_boundary=[22, 39])
-    model, history = pso_prepare.pso(particleAmount=2, maxIterTime=3)
+    # pso_prepare = psoRF(domain_energy, y[:, y_idx_demo], f'Y{y_idx_demo}', y_boundary=[22, 39])
+    # model, history = pso_prepare.pso(particleAmount=2, maxIterTime=3)
+    # stack = stackingModel([linear_model.LinearRegression(), linear_model.Ridge(), linear_model.Lasso()],
+    #               ['LeastSquares', 'Ridge', 'Lasso'], final_estimator=svm.SVR(), final_estimator_name='SVR')
+    # stack.fit(domain_energy, y[:, y_idx_demo])
+    cv_prepare = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+    trained_stack = cv_prepare.cross_validate_stacking(model_name_lst=['least_squares', 'ridge', 'lasso', 'svr'])
+    cv_prepare.model_testing(trained_stack, 'Stacking')
+    
+    print()
     
     
     
