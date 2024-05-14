@@ -3,9 +3,11 @@ from matplotlib import pyplot as plt
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squared_error, mean_absolute_error
 from sklearn.svm import SVR
+from sklearn import linear_model
 from xgboost import XGBRegressor
 import sklearn as sk
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor
 from sklearn.utils import shuffle
 from sklearn.model_selection import KFold
 # from plot_histogram import draw_histo
@@ -15,6 +17,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, MaxPooling1D, Flatten, Convolution1D, LSTM, Activation
 from keras.layers import Conv2D, MaxPooling2D, BatchNormalization
 from keras.callbacks import EarlyStopping
+from stackingModel import stackingModel
 
 def cleanOutlier(x, y):
     # Gid rid of y values exceeding 2 std value
@@ -75,6 +78,7 @@ def normalizationY(array_):
     array = (array - mini) / (maxi - mini)
         
     return array, mini, maxi
+
 
 def datasetCreating(x_, y_):
     xTrain, xTest, yTrain, yTest = train_test_split(x_, y_, test_size=0.1, random_state=75)
@@ -156,7 +160,7 @@ def show_train_history_NN_onlyTrain(history_, loss, metric_name_tr, fold_idx):
     plt.close()
 
 class cross_validate:
-    def __init__(self, x, y, qualityKind='Y', normalized=None, y_value_boundary=[]):
+    def __init__(self, x, y, qualityKind='Y', normalized='', y_value_boundary=[]):
         
         self.qualityKind = qualityKind
         self.normalized = normalized
@@ -166,17 +170,16 @@ class cross_validate:
         else:
             self.y_boundary = y_value_boundary
         
-        if self.normalized == 'xy':
+        self.xMin, self.xMax, self.yMin, self.yMax = None, None, None, None
+        
+        if 'x' in self.normalized or 'X' in self.normalized:
             self.x, self.xMin, self.xMax = normalizationX(self.x)
+            
+        if 'y' in self.normalized or 'Y' in self.normalized:
             self.y, self.yMin, self.yMax = normalizationY(self.y)
-            self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
+            # print('y normalized')
 
-        elif self.normalized == 'x':
-            self.x, self.xMin, self.xMax = normalizationX(self.x)
-            self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
-
-        else:
-            self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
+        self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
 
         
         self.kfold_num = 5
@@ -286,10 +289,15 @@ class cross_validate:
             model.fit(x_train, y_train, eval_set=evalset, verbose=False)
             model_state.append(model.get_xgb_params())
             model.save_model(f".//modelWeights//xgb_{idx}.json")
+            yTrainPredicted = model.predict(x_train)
             yValPredicted = model.predict(x_val)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
             results = model.evals_result()
             self.show_train_history(results, metrics, idx)
-            yTrainPredicted = model.predict(x_train)
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
             train_metric_lst[idx] = (np.array([mape_train, r2_train]))
@@ -300,7 +308,7 @@ class cross_validate:
             # draw_histo(y_val, f'Histogram of Output in Fold {idx+1}', 'seagreen', 0)
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
         # https://xgboost.readthedocs.io/en/stable/python/examples/continuation.html
         if param_setting != None:
             new_model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
@@ -310,10 +318,10 @@ class cross_validate:
                                  disable_default_eval_metric=True, n_estimators=100, random_state=75)
         
         best_model = XGBRegressor()
-        best_model.load_model(f".//modelWeights//xgb_{hiest_r2_idx}.json")
+        best_model.load_model(f".//modelWeights//xgb_{highest_r2_idx}.json")
         # fine tuning
         # best_model = xgb.train(params=model.get_params(), dtrain=xgb.DMatrix(self.xTrain, label=self.yTrain),
-        #                        xgb_model=f".//modelWeights//xgb_{hiest_r2_idx }.json",
+        #                        xgb_model=f".//modelWeights//xgb_{highest_r2_idx }.json",
         #                        evals_result=model.evals_result(), num_boost_round=100)
         new_model.fit(self.xTrain, self.yTrain, xgb_model=best_model, eval_set=[(self.xTrain, self.yTrain)], verbose=False)
         results_tune = new_model.evals_result()
@@ -337,8 +345,13 @@ class cross_validate:
             y_val = yTrain[val_idx]
             model.fit(x_train, y_train)
             model_lst.append(model)
-            yValPredicted = model.predict(x_val)
             yTrainPredicted = model.predict(x_train)
+            yValPredicted = model.predict(x_val)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
             train_metric_lst[idx] = (np.array([mape_train, r2_train]))
@@ -348,9 +361,56 @@ class cross_validate:
             val_metric_lst[idx] = np.array([mape_val, r2_val])
 
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        best_model = model_lst[hiest_r2_idx]
+        highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        best_model = model_lst[highest_r2_idx]
         return best_model
+    
+    def cross_validate_stacking(self, model_name_lst, param_setting_lst=None):
+        # least_squares, ridge, lasso, svr, knn, xgb, rf, ada
+        model_dict = {'least_squares':linear_model.LinearRegression(), 'ridge':linear_model.Ridge(),
+                      'lasso':linear_model.Lasso(), 'svr':SVR(), 'knn':KNeighborsRegressor(n_neighbors=2),
+                      'xgb':XGBRegressor(), 'rf':RandomForestRegressor(), 'ada':AdaBoostRegressor()}
+        model_lst = []
+        for name in model_name_lst:
+            if name not in model_dict:
+                raise ValueError(f'The required model ({name}) is not in built-in dictionary, please update the dictionary manually\n(Built in models: {model_dict.keys()})')
+            model_lst.append(model_dict[name])
+        
+        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
+        kf = KFold(n_splits=self.kfold_num)
+        train_metric_lst = np.zeros((self.kfold_num, 2))
+        val_metric_lst = np.zeros((self.kfold_num, 2))
+        stack_lst = []
+        for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
+            # metrics = [mean_absolute_percentage_error, r2_score]
+            stack = stackingModel(model_lst=model_lst[:-1], name_lst=model_name_lst[:-1], final_estimator=model_lst[-1], final_estimator_name=model_name_lst[-1])
+            x_train = xTrain[train_idx]
+            y_train = yTrain[train_idx]
+            x_val = xTrain[val_idx]
+            y_val = yTrain[val_idx]
+            stack.fit(x_train, y_train)
+            stack_lst.append(stack)
+            yTrainPredicted = stack.predict(x_train)
+            yValPredicted = stack.predict(x_val)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
+                
+            r2_train = r2_score(y_train, yTrainPredicted)
+            mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
+            train_metric_lst[idx] = (np.array([mape_train, r2_train]))
+    
+            r2_val = r2_score(y_val, yValPredicted)
+            mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
+            val_metric_lst[idx] = np.array([mape_val, r2_val])
+            
+        self.plot_metrics_folds(train_metric_lst, val_metric_lst)
+        highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        best_stack = stack_lst[highest_r2_idx]
+        return best_stack
+    
     
     def cross_validate_test(self, param_setting=None):
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
@@ -359,9 +419,9 @@ class cross_validate:
         val_metric_lst = np.zeros((self.kfold_num, 2))
         model_lst = []
         if param_setting != None:
-            model = sk.linear_model.ElasticNet(**param_setting)
+            model = sk.linear_model.LinearRegression(**param_setting)
         else:
-            model = sk.linear_model.ElasticNet()
+            model = sk.linear_model.LinearRegression()
             
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             x_train = xTrain[train_idx]
@@ -370,8 +430,14 @@ class cross_validate:
             y_val = yTrain[val_idx]
             model.fit(x_train, y_train)
             model_lst.append(model)
-            yValPredicted = model.predict(x_val)
             yTrainPredicted = model.predict(x_train)
+            yValPredicted = model.predict(x_val)
+            # if self.yMin != None and self.yMax != None:
+            #     yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+            #     yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+            #     y_train = y_train * (self.yMax-self.yMin) + self.yMin
+            #     y_val = y_val * (self.yMax-self.yMin) + self.yMin
+                # print('y denormalized')
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
             train_metric_lst[idx] = (np.array([mape_train, r2_train]))
@@ -381,8 +447,8 @@ class cross_validate:
             val_metric_lst[idx] = np.array([mape_val, r2_val])
 
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        best_model = model_lst[hiest_r2_idx]
+        highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        best_model = model_lst[highest_r2_idx]
         best_model.fit(self.xTrain, self.yTrain)
         return best_model
 
@@ -428,18 +494,24 @@ class cross_validate:
             model.save_weights(f'./modelWeights/ANN{idx}.h5')  
             show_train_history_NN(history, loss, f'{metric}', f'val_{metric}', idx)
             yTrainPredicted = model.predict(x_train)
+            yValPredicted = model.predict(x_val)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
+                
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
             train_metric_lst[idx] = (np.array([mape_train, r2_train]))
-            yValPredicted = model.predict(x_val)
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
             model.load_weights('./modelWeights/ANN_initial.h5')
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        model.load_weights(f'./modelWeights/ANN{hiest_r2_idx}.h5')
+        highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        model.load_weights(f'./modelWeights/ANN{highest_r2_idx}.h5')
         return model
     
     def cross_validate_DNN(self, dense_coeff=8):
@@ -462,31 +534,38 @@ class cross_validate:
             model.save_weights(f'./modelWeights/DNN{idx}.h5')  
             show_train_history_NN(history, loss, metric, 'val_'+metric, idx)
             yTrainPredicted = model.predict(x_train)
+            yValPredicted = model.predict(x_val)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
+                
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
             train_metric_lst[idx] = (np.array([mape_train, r2_train]))
-            yValPredicted = model.predict(x_val)
+            
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
             model.load_weights('./modelWeights/DNN_initial.h5')
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        model.load_weights(f'./modelWeights/DNN{hiest_r2_idx}.h5')
+        highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        model.load_weights(f'./modelWeights/DNN{highest_r2_idx}.h5')
         return model
     
     
     def model_testing(self, model_, category):
         model = model_
         yTestPredicted = model.predict(self.xTest)
-        # draw_histo(self.yTest, 'Test', 'royalblue', range_std=2)
+        if self.yMin != None and self.yMax != None:
+            yTestPredicted = yTestPredicted * (self.yMax-self.yMin) + self.yMin
+            self.yTest = self.yTest * (self.yMax-self.yMin) + self.yMin
+            # print('y denormalized')
         self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
         
     def plotTrueAndPredicted(self, x, YT, YP, category):
         bottomValue, topValue = self.y_boundary[0], self.y_boundary[1]
-        if self.normalized == 'xy':
-            YT = (self.yMax - self.yMin) * YT + self.yMin
-            YP = (self.yMax - self.yMin) * YP + self.yMin
         # rmse = np.sqrt(mean_squared_error(YT, YP))
         r2 = r2_score(YT, YP)
         mape = mean_absolute_percentage_error(YT, YP) * 100
@@ -525,17 +604,15 @@ class cross_validate_signal:
         else:
             self.y_boundary = y_value_boundary
         
-        if self.normalized == 'xy':
-            self.x, self.xMin, self.xMax = normalization_signal(self.x)
+        self.xMin, self.xMax, self.yMin, self.yMax = None, None, None, None
+        
+        if 'x' in self.normalized or 'X' in self.normalized:
+            self.x, self.xMin, self.xMax = normalizationX(self.x)
+            
+        if 'y' in self.normalized or 'Y' in self.normalized:
             self.y, self.yMin, self.yMax = normalizationY(self.y)
-            self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
-    
-        elif self.normalized == 'x':
-            self.x, self.xMin, self.xMax = normalization_signal(self.x)
-            self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
-    
-        else:
-            self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
+
+        self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
     
         
         self.kfold_num = 5      
@@ -582,11 +659,18 @@ class cross_validate_signal:
             history = model.fit(x_train, y_train, validation_data = (x_val, y_val),
                                 epochs=30, batch_size=5, verbose=1, callbacks=[callback])
             model.save_weights(f'./modelWeights/1DCNN{idx}.h5')  
-            yTrainPredicted = model.predict(x_train, verbose=0)
+            yTrainPredicted = model.predict(x_train)
+            yValPredicted = model.predict(x_val)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
+            
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
             train_metric_lst[idx] = (np.array([mape_train, r2_train]))
-            yValPredicted = model.predict(x_val)
+            
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
@@ -596,8 +680,8 @@ class cross_validate_signal:
 
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        model.load_weights(f'./modelWeights/1DCNN{hiest_r2_idx}.h5')
+        highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        model.load_weights(f'./modelWeights/1DCNN{highest_r2_idx}.h5')
         return model
     
     def build_LSTM(self, loss, metrics, cell_num=1):
@@ -638,11 +722,18 @@ class cross_validate_signal:
             history = model.fit(x_train, y_train, validation_data = (x_val, y_val),
                                 epochs=30, batch_size=10, verbose=0, callbacks=[callback])
             model.save_weights(f'./modelWeights/LSTM{idx}.h5')  
-            yTrainPredicted = model.predict(x_train, verbose=0)
+            yTrainPredicted = model.predict(x_train)
+            yValPredicted = model.predict(x_val)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
+
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
             train_metric_lst[idx] = (np.array([mape_train, r2_train]))
-            yValPredicted = model.predict(x_val)
+
             self.plotTrueAndPredicted(x_train, y_train, yTrainPredicted, "(LSTM) [Train]")
             self.plotTrueAndPredicted(x_val, y_val, yValPredicted, "(LSTM) [Validate]")
             r2_val = r2_score(y_val, yValPredicted)
@@ -653,14 +744,17 @@ class cross_validate_signal:
 
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        model.load_weights(f'./modelWeights/LSTM{hiest_r2_idx}.h5')
+        highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        model.load_weights(f'./modelWeights/LSTM{highest_r2_idx}.h5')
         return model
     
     def model_testing(self, model_, category):
         model = model_
         model.fit(self.xTrain, self.yTrain)
         yTestPredicted = model.predict(self.xTest)
+        if self.yMin != None and self.yMax != None:
+            yTestPredicted = yTestPredicted * (self.yMax-self.yMin) + self.yMin
+            self.yTest = self.yTest * (self.yMax-self.yMin) + self.yMin
         self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
     
     def plot_metrics_folds(self, train_lst, val_lst):
@@ -691,9 +785,6 @@ class cross_validate_signal:
     
     def plotTrueAndPredicted(self, x, YT, YP, category):
         bottomValue, topValue = self.y_boundary[0], self.y_boundary[1]
-        if self.normalized == 'xy':
-            YT = (self.yMax - self.yMin) * YT + self.yMin
-            YP = (self.yMax - self.yMin) * YP + self.yMin
         # rmse = np.sqrt(mean_squared_error(YT, YP))
         r2 = r2_score(YT, YP)
         mape = mean_absolute_percentage_error(YT, YP) * 100
@@ -734,17 +825,15 @@ class cross_validate_image:
         else:
             self.y_boundary = y_value_boundary
         
-        if self.normalized == 'xy':
-            self.x, self.xMin, self.xMax = normalization_signal(self.x)
+        self.xMin, self.xMax, self.yMin, self.yMax = None, None, None, None
+        
+        if 'x' in self.normalized or 'X' in self.normalized:
+            self.x, self.xMin, self.xMax = normalizationX(self.x)
+            
+        if 'y' in self.normalized or 'Y' in self.normalized:
             self.y, self.yMin, self.yMax = normalizationY(self.y)
-            self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
-    
-        elif self.normalized == 'x':
-            self.x, self.xMin, self.xMax = normalization_signal(self.x)
-            self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
-    
-        else:
-            self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
+
+        self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
     
         
         self.kfold_num = 5      
@@ -794,11 +883,18 @@ class cross_validate_image:
             history = model.fit(x_train, y_train, validation_data = (x_val, y_val),
                                 epochs=120, batch_size=5, verbose=1, callbacks=[callback])
             model.save_weights(f'./modelWeights/2DCNN{idx}.h5')           
-            yTrainPredicted = model.predict(x_train, verbose=0)
+            yTrainPredicted = model.predict(x_train)
+            yValPredicted = model.predict(x_val)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
+                
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
             train_metric_lst[idx] = (np.array([mape_train, r2_train]))
-            yValPredicted = model.predict(x_val)
+
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
@@ -807,8 +903,8 @@ class cross_validate_image:
             model.load_weights('./modelWeights/2DCNN_initial.h5')
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        hiest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        model.load_weights(f'./modelWeights/2DCNN{hiest_r2_idx}.h5')
+        highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        model.load_weights(f'./modelWeights/2DCNN{highest_r2_idx}.h5')
         return model
     
     
@@ -816,6 +912,10 @@ class cross_validate_image:
         model = model_
         model.fit(self.xTrain, self.yTrain)
         yTestPredicted = model.predict(self.xTest)
+        if self.yMin != None and self.yMax != None:
+            yTestPredicted = yTestPredicted * (self.yMax-self.yMin) + self.yMin
+            self.yTest = self.yTest * (self.yMax-self.yMin) + self.yMin
+        
         self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
         keras.backend.clear_session()
     
@@ -847,9 +947,6 @@ class cross_validate_image:
     
     def plotTrueAndPredicted(self, x, YT, YP, category):
         bottomValue, topValue = self.y_boundary[0], self.y_boundary[1]
-        if self.normalized == 'xy':
-            YT = (self.yMax - self.yMin) * YT + self.yMin
-            YP = (self.yMax - self.yMin) * YP + self.yMin
         # rmse = np.sqrt(mean_squared_error(YT, YP))
         r2 = r2_score(YT, YP)
         mape = mean_absolute_percentage_error(YT, YP) * 100
