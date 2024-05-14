@@ -161,7 +161,7 @@ def show_train_history_NN_onlyTrain(history_, loss, metric_name_tr, fold_idx):
 
 class cross_validate:
     def __init__(self, x, y, qualityKind='Y', normalized='', y_value_boundary=[]):
-        
+        y = y.ravel()
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
@@ -330,7 +330,7 @@ class cross_validate:
     
         return new_model
     
-    def cross_validate_kNN(self):
+    def cross_validate_kNN(self, param_setting=None):
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
         kf = KFold(n_splits=self.kfold_num)
         train_metric_lst = np.zeros((self.kfold_num, 2))
@@ -365,11 +365,128 @@ class cross_validate:
         best_model = model_lst[highest_r2_idx]
         return best_model
     
+    def cross_validate_RF(self, param_setting=None):
+        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
+        kf = KFold(n_splits=self.kfold_num)
+        train_metric_lst = np.zeros((self.kfold_num, 2))
+        val_metric_lst = np.zeros((self.kfold_num, 2))
+        if param_setting != None:
+            model = RandomForestRegressor(**param_setting)
+        else:
+            model = RandomForestRegressor(random_state=75)
+        model_lst = []
+        for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
+            # metrics = [mean_absolute_percentage_error, r2_score]
+            x_train = xTrain[train_idx]
+            y_train = yTrain[train_idx]
+            x_val = xTrain[val_idx]
+            y_val = yTrain[val_idx]
+            model.fit(x_train, y_train)
+            model_lst.append(model)
+            yTrainPredicted = model.predict(x_train)
+            yValPredicted = model.predict(x_val)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
+            r2_train = r2_score(y_train, yTrainPredicted)
+            mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
+            train_metric_lst[idx] = (np.array([mape_train, r2_train]))
+    
+            r2_val = r2_score(y_val, yValPredicted)
+            mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
+            val_metric_lst[idx] = np.array([mape_val, r2_val])
+
+        self.plot_metrics_folds(train_metric_lst, val_metric_lst)
+        highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        best_model = model_lst[highest_r2_idx]
+        best_model.fit(xTrain, yTrain)
+        return best_model
+    
+    def cross_validate_ADA(self, param_setting=None):
+        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
+        kf = KFold(n_splits=self.kfold_num)
+        train_metric_lst = np.zeros((self.kfold_num, 2))
+        val_metric_lst = np.zeros((self.kfold_num, 2))
+        model_lst = []
+        if param_setting != None:
+            model = AdaBoostRegressor(**param_setting)
+        else:
+            model = AdaBoostRegressor(random_state=75)
+        for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
+            # metrics = [mean_absolute_percentage_error, r2_score]
+            x_train = xTrain[train_idx]
+            y_train = yTrain[train_idx]
+            x_val = xTrain[val_idx]
+            y_val = yTrain[val_idx]
+            model.fit(x_train, y_train)
+            model_lst.append(model)
+            yTrainPredicted = model.predict(x_train)
+            yValPredicted = model.predict(x_val)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
+            r2_train = r2_score(y_train, yTrainPredicted)
+            mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
+            train_metric_lst[idx] = (np.array([mape_train, r2_train]))
+    
+            r2_val = r2_score(y_val, yValPredicted)
+            mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
+            val_metric_lst[idx] = np.array([mape_val, r2_val])
+
+        self.plot_metrics_folds(train_metric_lst, val_metric_lst)
+        highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        best_model = model_lst[highest_r2_idx]
+        best_model.fit(xTrain, yTrain)
+        return best_model
+    
+    def cross_validate_SVR(self, param_setting=None):
+        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
+        kf = KFold(n_splits=self.kfold_num)
+        train_metric_lst = np.zeros((self.kfold_num, 2))
+        val_metric_lst = np.zeros((self.kfold_num, 2))
+        if param_setting != None:
+            model = SVR(**param_setting)
+        else:
+            model = SVR()
+        model_lst = []
+        for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
+            # metrics = [mean_absolute_percentage_error, r2_score]
+            x_train = xTrain[train_idx]
+            y_train = yTrain[train_idx]
+            x_val = xTrain[val_idx]
+            y_val = yTrain[val_idx]
+            model.fit(x_train, y_train)
+            model_lst.append(model)
+            yTrainPredicted = model.predict(x_train)
+            yValPredicted = model.predict(x_val)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
+            r2_train = r2_score(y_train, yTrainPredicted)
+            mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
+            train_metric_lst[idx] = (np.array([mape_train, r2_train]))
+    
+            r2_val = r2_score(y_val, yValPredicted)
+            mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
+            val_metric_lst[idx] = np.array([mape_val, r2_val])
+
+        self.plot_metrics_folds(train_metric_lst, val_metric_lst)
+        highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
+        best_model = model_lst[highest_r2_idx]
+        best_model.fit(xTrain, yTrain)
+        return best_model
+    
     def cross_validate_stacking(self, model_name_lst, param_setting_lst=None):
         # least_squares, ridge, lasso, svr, knn, xgb, rf, ada
         model_dict = {'least_squares':linear_model.LinearRegression(), 'ridge':linear_model.Ridge(),
                       'lasso':linear_model.Lasso(), 'svr':SVR(), 'knn':KNeighborsRegressor(n_neighbors=2),
-                      'xgb':XGBRegressor(), 'rf':RandomForestRegressor(), 'ada':AdaBoostRegressor()}
+                      'xgb':XGBRegressor(random_state=75), 'rf':RandomForestRegressor(random_state=75), 'ada':AdaBoostRegressor(random_state=75)}
         model_lst = []
         for name in model_name_lst:
             if name not in model_dict:
