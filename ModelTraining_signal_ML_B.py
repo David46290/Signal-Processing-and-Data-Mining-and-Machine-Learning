@@ -1,10 +1,9 @@
 import numpy as np
-from featureExtraction import features_of_signal
+import featureExtraction as feaext
 import signal_processing as sigpro
 import qualityExtractionLoc as QEL
 from locIntegration import locIntegrate
-# import pandas as pd
-from cross_validation import cross_validate
+import cross_validation as cv
 from classPSO_kNN import psokNN
 
 if __name__ == '__main__':
@@ -76,7 +75,7 @@ if __name__ == '__main__':
     """
     Feature
     """
-    f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=2, gau_rad=4, w_size=3)
+    f_outlet = feaext.features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=2, gau_rad=4, w_size=3)
     ingot_len = QEL.get_ingot_length(".\\quality_2022_B.csv", methodIdx_lst[paramSet_num-1], isDifferentParamSets)
     ingot_len = np.array(ingot_len).reshape(-1, 1)
     ingot_len = sigpro.pick_run_data(ingot_len, valid_run_idx)
@@ -113,10 +112,10 @@ if __name__ == '__main__':
     """
     Cross Validation
     """
-    cv_ttv = cross_validate(x, y_ttv, 'TTV (datasetB)', normalized='', y_value_boundary=[5.5, 17])
-    cv_warp = cross_validate(x, y_warp, 'Warp (datasetB)', normalized='', y_value_boundary=[3, 18])
-    cv_wavi = cross_validate(x, y_wavi, 'Waviness (datasetB)', normalized='', y_value_boundary=[0, 2.7])
-    cv_bow = cross_validate(x, y_bow, 'BOW (datasetB)', normalized='', y_value_boundary=[-5, 4])
+    cv_ttv = cv.cross_validate(x, y_ttv, 'TTV (datasetB)', normalized='', y_value_boundary=[5.5, 17])
+    cv_warp = cv.cross_validate(x, y_warp, 'Warp (datasetB)', normalized='', y_value_boundary=[3, 18])
+    cv_wavi = cv.cross_validate(x, y_wavi, 'Waviness (datasetB)', normalized='', y_value_boundary=[0, 2.7])
+    cv_bow = cv.cross_validate(x, y_bow, 'BOW (datasetB)', normalized='', y_value_boundary=[-5, 4])
     
     param_setting = {'eta':0.3, 'gamma':0.01, 'max_depth':6, 'subsample':0.8, 'lambda':50, 'random_state':75}
     model_ttv = cv_ttv.cross_validate_XGB(param_setting)

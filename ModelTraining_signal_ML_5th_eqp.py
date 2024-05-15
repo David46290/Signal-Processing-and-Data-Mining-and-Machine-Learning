@@ -1,28 +1,11 @@
 import numpy as np
-import os, glob
-from matplotlib import pyplot as plt
-from featureExtraction import features_of_signal
+import featureExtraction as feaext
 import signal_processing as sigpro
 import qualityExtractionLoc as QEL
 from locIntegration import locIntegrate
-from classPSO_XGB import psoXGB
-# import pandas as pd
-from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squared_error, mean_absolute_error
-from sklearn.model_selection import train_test_split
-from cross_validation import cross_validate, cross_validate_signal, cross_validate_image
 from classPSO_kNN import psokNN
-import autoencoder as AE
-from PIL import Image 
-from keras.callbacks import EarlyStopping
+import cross_validate as cv
 
-
-
-def quick_check_extremes(signal_lst, alarm_values):
-    for signal in signal_lst:
-        if signal.min() < alarm_values[0]:
-            print(f'min: {signal.min()}')
-        if signal.max() > alarm_values[1]:
-            print(f'max: {signal.max()}')
 
 if __name__ == '__main__':
     dataset_idx = 0 # 0(60s/sample), 1(10s/sample), 2(4s/sample)
@@ -97,7 +80,7 @@ if __name__ == '__main__':
     ingot_len = np.array(ingot_len).reshape(-1, 1)
     ingot_len = sigpro.pick_run_data(ingot_len, valid_run_idx)
     ingot_len = sigpro.pick_run_data(ingot_len, general_run_idx)
-    f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
+    f_outlet = feaext.features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
     f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
     # f_combine = np.concatenate((encoded_outlet_diff, ingot_len), axis=1)
 
@@ -132,10 +115,10 @@ if __name__ == '__main__':
     """
     Cross Validation
     """
-    cv_ttv = cross_validate(x, y_ttv, f'TTV (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[5.5, 17])
-    cv_warp = cross_validate(x, y_warp, f'Warp (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[3, 18])
-    cv_wavi = cross_validate(x, y_wavi, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[0, 2.7])
-    cv_bow = cross_validate(x, y_bow, f'BOW (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[-5, 4])
+    cv_ttv = cv.cross_validate(x, y_ttv, f'TTV (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[5.5, 17])
+    cv_warp = cv.cross_validate(x, y_warp, f'Warp (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[3, 18])
+    cv_wavi = cv.cross_validate(x, y_wavi, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[0, 2.7])
+    cv_bow = cv.cross_validate(x, y_bow, f'BOW (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[-5, 4])
 
     
     param_setting = {'eta':0.3, 'gamma':0.01, 'max_depth':6, 'subsample':0.8, 'lambda':50, 'random_state':75}

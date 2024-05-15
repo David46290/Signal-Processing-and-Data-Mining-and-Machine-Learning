@@ -1,10 +1,10 @@
 import numpy as np
-from featureExtraction import features_of_signal
+import featureExtraction as feaext
 import signal_processing as sigpro
 import qualityExtractionLoc as QEL
 from locIntegration import locIntegrate
 # import pandas as pd
-from cross_validation import cross_validate
+import cross_validation as cv
 from classPSO_kNN import psokNN 
 
 if __name__ == '__main__':
@@ -82,7 +82,7 @@ if __name__ == '__main__':
     ingot_len = np.array(ingot_len_23 + ingot_len_22).reshape(-1, 1)
     ingot_len = sigpro.pick_run_data(ingot_len, valid_run_idx)
     ingot_len = sigpro.pick_run_data(ingot_len, general_run_idx)
-    f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined)
+    f_outlet = feaext.features_of_signal(progress, outlet_diff, isEnveCombined)
     f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
 
     """
@@ -100,25 +100,25 @@ if __name__ == '__main__':
     """
     PSO
     """
-    psoModelTTV = psokNN(x, y_ttv, 'TTV (datasetA)', normalized='', y_boundary=[5.5, 17])
-    psoModelWarp = psokNN(x, y_warp, 'Warp (datasetA)', normalized='', y_boundary=[3, 18])
-    psoModelWavi = psokNN(x, y_wavi, 'Waviness (datasetA)', normalized='', y_boundary=[0, 2.7])
-    psoModelBOW = psokNN(x, y_bow, 'BOW (datasetA)', normalized='', y_boundary=[-5, 4])
+    # psoModelTTV = psokNN(x, y_ttv, 'TTV (datasetA)', normalized='', y_boundary=[5.5, 17])
+    # psoModelWarp = psokNN(x, y_warp, 'Warp (datasetA)', normalized='', y_boundary=[3, 18])
+    # psoModelWavi = psokNN(x, y_wavi, 'Waviness (datasetA)', normalized='', y_boundary=[0, 2.7])
+    # psoModelBOW = psokNN(x, y_bow, 'BOW (datasetA)', normalized='', y_boundary=[-5, 4])
 
 
-    model_ttv, fitnessHistory_ttv = psoModelTTV.pso(particleAmount=20, maxIterTime=10)
-    model_warp, fitnessHistory_warp = psoModelWarp.pso(particleAmount=20, maxIterTime=10)
-    model_wavi, fitnessHistory_wavi = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
-    model_bow, fitnessHistory_bow = psoModelBOW.pso(particleAmount=20, maxIterTime=10)
+    # model_ttv, fitnessHistory_ttv = psoModelTTV.pso(particleAmount=20, maxIterTime=10)
+    # model_warp, fitnessHistory_warp = psoModelWarp.pso(particleAmount=20, maxIterTime=10)
+    # model_wavi, fitnessHistory_wavi = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
+    # model_bow, fitnessHistory_bow = psoModelBOW.pso(particleAmount=20, maxIterTime=10)
 
 
     """
     Cross Validation
     """
-    cv_ttv = cross_validate(x, y_ttv, 'TTV (datasetA)', normalized='', y_value_boundary=[5.5, 17])
-    cv_warp = cross_validate(x, y_warp, 'Warp (datasetA)', normalized='', y_value_boundary=[3, 18])
-    cv_wavi = cross_validate(x, y_wavi, 'Waviness (datasetA)', normalized='', y_value_boundary=[0, 2.7])
-    cv_bow = cross_validate(x, y_bow, 'BOW (datasetA)', normalized='', y_value_boundary=[-5, 4])
+    cv_ttv = cv.cross_validate(x, y_ttv, 'TTV (datasetA)', normalized='', y_value_boundary=[5.5, 17])
+    cv_warp = cv.cross_validate(x, y_warp, 'Warp (datasetA)', normalized='', y_value_boundary=[3, 18])
+    cv_wavi = cv.cross_validate(x, y_wavi, 'Waviness (datasetA)', normalized='', y_value_boundary=[0, 2.7])
+    cv_bow = cv.cross_validate(x, y_bow, 'BOW (datasetA)', normalized='', y_value_boundary=[-5, 4])
     
     param_setting = {'eta':0.3, 'gamma':0.01, 'max_depth':6, 'subsample':0.8, 'lambda':50, 'random_state':75}
     model_ttv = cv_ttv.cross_validate_XGB(param_setting)

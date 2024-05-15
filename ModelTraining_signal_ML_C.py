@@ -1,9 +1,9 @@
 import numpy as np
-from featureExtraction import features_of_signal
+import featureExtraction as feaext
 import signal_processing as sigpro
 import qualityExtractionLoc as QEL
 from locIntegration import locIntegrate
-from cross_validation import cross_validate
+import cross_validate as cv
 from classPSO_kNN import psokNN
 from processing_2023_07_12 import get_parameter_set
 
@@ -96,7 +96,7 @@ if __name__ == '__main__':
     """
     Feature
     """ 
-    f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
+    f_outlet = feaext.features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
     f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
 
     """
@@ -130,10 +130,10 @@ if __name__ == '__main__':
     """
     Cross Validation
     """
-    cv_ttv = cross_validate(x, y_ttv, 'TTV (datasetC)', normalized='', y_value_boundary=[5.5, 17])
-    cv_warp = cross_validate(x, y_warp, 'Warp (datasetC)', normalized='', y_value_boundary=[3, 18])
-    cv_wavi = cross_validate(x, y_wavi, 'Waviness (datasetC)', normalized='', y_value_boundary=[0, 2.7])
-    cv_bow = cross_validate(x, y_bow, 'BOW (datasetC)', normalized='', y_value_boundary=[-5, 4])
+    cv_ttv = cv.cross_validate(x, y_ttv, 'TTV (datasetC)', normalized='', y_value_boundary=[5.5, 17])
+    cv_warp = cv.cross_validate(x, y_warp, 'Warp (datasetC)', normalized='', y_value_boundary=[3, 18])
+    cv_wavi = cv.cross_validate(x, y_wavi, 'Waviness (datasetC)', normalized='', y_value_boundary=[0, 2.7])
+    cv_bow = cv.cross_validate(x, y_bow, 'BOW (datasetC)', normalized='', y_value_boundary=[-5, 4])
 
     
     param_setting = {'eta':0.3, 'gamma':0.01, 'max_depth':6, 'subsample':0.8, 'lambda':50, 'random_state':75}
