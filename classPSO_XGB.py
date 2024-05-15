@@ -465,7 +465,8 @@ class psoXGB:
             # print(f'minimum fitness: {min(fitness_best_population )}')
             # print(f'average fitness: {np.mean(fitness_best_population )}\n')
     
-            if abs(np.mean(fitness_best_population )-min(fitness_best_population )) < 0.01: #convergent criterion
+            if abs(np.mean(fitness_best_population)-min(fitness_best_population)) < 1: #convergent criterion
+                print('PSO is ended because of convergence')
                 break
     
             r1 = np.zeros((particleAmount, DNA_amount))
