@@ -530,7 +530,7 @@ class psoXGB:
         
         particle_best_dict = {}
         if len(self.optimized_param) > 1:
-            for param_idx, param_name in self.optimized_param[:]:
+            for param_idx, param_name in enumerate(self.optimized_param[:]):
                 particle_best_dict.update({self.optimized_param[param_idx]:particle_best[param_idx]})
         
         return optimal_model, fitnestHistory, particle_best_dict
