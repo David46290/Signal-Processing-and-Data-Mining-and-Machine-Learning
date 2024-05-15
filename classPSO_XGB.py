@@ -429,7 +429,7 @@ class psoXGB:
         c2 = 2
         IterTime = 0
         # iteration for best particle
-        while IterTime < maxIterTime:
+        while IterTime < maxIterTime-1:
             print(f'Iteration {IterTime + 1}')
             newFitness = np.zeros(len(population_current))
             for particleIdx in range(len(population_current)):

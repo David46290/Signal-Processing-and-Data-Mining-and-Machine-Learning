@@ -316,7 +316,7 @@ class psokNN:
         if self.yMin != None and self.yMax != None:
             yTestPredicted = yTestPredicted * (self.yMax-self.yMin) + self.yMin
             self.yTest = self.yTest * (self.yMax-self.yMin) + self.yMin
-        draw_histo(self.yTest, 'Histogram of Output in Test', 'royalblue', 0)
+        # draw_histo(self.yTest, 'Histogram of Output in Test', 'royalblue', 0)
         self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
         
     def bestModel(self, metricHistory, Gbest):    # To see the performance of the best model
@@ -410,7 +410,7 @@ class psokNN:
         # edit the part below when model is changed
         dna_kind = ['k', 'RandomSeedNum']
         # iteration for best particle
-        while IterTime < maxIterTime:
+        while IterTime < maxIterTime-1:
             print(f'Iteration {IterTime + 1}')
             fitness_current_population = np.zeros(len(population_current))
             for particleIdx, particle in enumerate(population_current):
