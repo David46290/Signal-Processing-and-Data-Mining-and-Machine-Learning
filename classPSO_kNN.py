@@ -436,7 +436,7 @@ class psokNN:
             fitnessHistory0.append(min(fitness_best_population))
             fitnessHistory1.append(np.mean(fitness_best_population))
             
-            if abs(np.mean(fitness_best_population)-min(fitness_best_population)) < 2: #convergent criterion
+            if abs(np.mean(fitness_best_population)-min(fitness_best_population)) < 1: #convergent criterion
                 print('PSO is ended because of convergence')
                 break
             # https://towardsdatascience.com/particle-swarm-optimization-visually-explained-46289eeb2e14
