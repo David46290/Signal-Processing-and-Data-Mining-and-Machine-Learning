@@ -449,7 +449,8 @@ class psoRF:
                     population_curent[particleIdx, dnaIdx] = self.roundUpInt(population_curent[particleIdx, dnaIdx])         
             IterTime += 1
             
-        
+        idx_best_particle = self.findIdxOfparticle_best(fitness_best_population)                
+        particle_best = population_best[idx_best_particle,:]
         fitnessHistory0 = np.array(fitnessHistory0)
         fitnessHistory1 = np.array(fitnessHistory1)
         fitnestHistory = np.hstack((fitnessHistory0, fitnessHistory1))
