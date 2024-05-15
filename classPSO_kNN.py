@@ -370,6 +370,7 @@ class psokNN:
             print(val_metric_lst[:, 1])
             highest_valR2_idx = 0
         best_model = model_lst[highest_valR2_idx]
+        best_model.fit(self.xTrain, self.yTrain)
         self.model_testing(best_model, 'kNN_PSO')
         
         return best_model
