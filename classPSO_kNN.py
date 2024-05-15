@@ -222,11 +222,11 @@ class psokNN:
                 
             yTrainPredicted = model.predict(x_train)
             yValPredicted = model.predict(x_val)
-            # if self.yMin != None and self.yMax != None:
-            #     yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
-            #     yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
-            #     y_train = y_train * (self.yMax-self.yMin) + self.yMin
-            #     y_val = y_val * (self.yMax-self.yMin) + self.yMin
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
                 
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
