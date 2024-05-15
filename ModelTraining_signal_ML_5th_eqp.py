@@ -1,13 +1,12 @@
 import numpy as np
 import os, glob
 from matplotlib import pyplot as plt
-from featureExtraction import features_from_signal, features_of_signal
+from featureExtraction import features_of_signal
 import signal_processing as sigpro
 import qualityExtractionLoc as QEL
 from locIntegration import locIntegrate
 from classPSO_XGB import psoXGB
 # import pandas as pd
-from correlation_analysis import corr_features_vs_quality, corr_filter
 from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split
 from cross_validation import cross_validate, cross_validate_signal, cross_validate_image
@@ -80,12 +79,8 @@ if __name__ == '__main__':
     """
     Signal preprocessing
     """
-    signals = signals_resize
+    # signals = signals_resize
     signals = sigpro.pick_run_data(signals, general_run_idx)
-    ingot_len = QEL.get_ingot_length(".//5th_eqp//quality_determined.csv")
-    ingot_len = np.array(ingot_len).reshape(-1, 1)
-    ingot_len = sigpro.pick_run_data(ingot_len, valid_run_idx)
-    ingot_len = sigpro.pick_run_data(ingot_len, general_run_idx)
     progress = sigpro.pick_one_signal(signals, signal_idx=0)
     outlet = sigpro.pick_one_signal(signals, signal_idx=1)
     outlet_diff = sigpro.subtract_initial_value(outlet)
@@ -94,22 +89,14 @@ if __name__ == '__main__':
     for run_idx, run_pro in enumerate(progress):
         if np.where(np.diff(run_pro)<0)[0].shape[0] > 0:
             print(f'Run {valid_run_idx[general_run_idx[run_idx]]} got fucked up progress\nplease try to fix it manually')
-            
-    """
-    AE
-    """
-    # loss = 'mean_absolute_error'
-    # metric = "cosine_similarity"
-    # callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
-    # ae_model = AE.build_AE(np.array(outlet_diff), loss, metric)
-    # history = ae_model.fit(np.array(outlet_diff), np.array(outlet_diff),
-    #             epochs=1000, batch_size=10,
-    #             shuffle=True, verbose=0, callbacks=[callback])
-    # encoded_outlet_diff = ae_model.encoder(np.array(outlet_diff)).numpy()
     
     """
     Feature
     """ 
+    ingot_len = QEL.get_ingot_length(".//5th_eqp//quality_determined.csv")
+    ingot_len = np.array(ingot_len).reshape(-1, 1)
+    ingot_len = sigpro.pick_run_data(ingot_len, valid_run_idx)
+    ingot_len = sigpro.pick_run_data(ingot_len, general_run_idx)
     f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
     f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
     # f_combine = np.concatenate((encoded_outlet_diff, ingot_len), axis=1)
@@ -119,53 +106,49 @@ if __name__ == '__main__':
     """
     y_lot1, run_idx_lot1 = QEL.pick_one_lot(waviness, lot, target_lot=1)
     x_lot1 = f_combine[run_idx_lot1]
-    # importance = resultOfRandomForest(x_lot1, y_lot1, 'squared_error')
-    # importance_threshold = 1 / importance.shape[0]
-    # important_feature_idx = np.where(importance >= importance_threshold)[0]
-    # x_lot1 = x_lot1[:, important_feature_idx]
-    # f_combine = f_combine[:, important_feature_idx] # important features
     
-    locPrepare = locIntegrate([waviness], position)
+    locPrepare = locIntegrate([ttv, warp, waviness, bow], position)
     x, y = locPrepare.mixFeatureAndQuality(f_combine)
-    # x_signal, y = locPrepare.mixFeatureAndQuality_signal(signals_resize)  
-    # y = np.array([max(values) for values in y])
+    y_ttv = y[:, 0]
+    y_warp = y[:, 0]
+    y_wavi = y[:, 0]
+    y_bow = y[:, 0]
+
     
     """
     PSO
     """
-    # psoModelTTV = psokNN(x, y[:, 0], 'TTV (datasetC)', normalized='')
-    # psoModelWarp = psokNN(x, y[:, 1], 'Warp (datasetC)', normalized='')
-    # psoModelWavi = psokNN(x, y, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='')
-    # psoModelBOW = psokNN(x, y[:, 3], 'BOW (datasetC)', normalized='')
-    # psoModelWavi = psokNN(x_lot1, y_lot1, 'Waviness (datasetC)', normalized='')
+    psoModelTTV = psokNN(x, y_ttv, f'TTV (dataset{dataset_dict[dataset_idx]})', normalized='', y_boundary=[5.5, 17])
+    psoModelWarp = psokNN(x, y_warp, f'Warp (dataset{dataset_dict[dataset_idx]})', normalized='', y_boundary=[3, 18])
+    psoModelWavi = psokNN(x, y_wavi, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='', y_boundary=[0, 2.7])
+    psoModelBOW = psokNN(x, y_bow, f'Bow (dataset{dataset_dict[dataset_idx]})', normalized='', y_boundary=[-5, 4])
 
-    # psoModelTTV.pso(particleAmount=20, maxIterTime=10)
-    # psoModelWarp.pso(particleAmount=20, maxIterTime=10)
-    # model, fitnessHistory = psoModelWavi.pso(particleAmount=30, maxIterTime=20)
-    # print('K =', model.n_neighbors)
-    # psoModelBOW.pso(particleAmount=20, maxIterTime=10)
+    model_ttv, fitnessHistory_ttv = psoModelTTV.pso(particleAmount=20, maxIterTime=10)
+    model_warp, fitnessHistory_warp = psoModelWarp.pso(particleAmount=20, maxIterTime=10)
+    model_wavi, fitnessHistory_wavi = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
+    model_bow, fitnessHistory_bow = psoModelBOW.pso(particleAmount=20, maxIterTime=10)
 
 
     """
     Cross Validation
     """
-    # cvWarp = cross_validate(x, y[:, 1], 'Warp (datasetC)', normalized='')
-    # cvWavi_signal = cross_validate_signal(torque_resize, waviness2, 'Waviness (datasetC)', normalized='')
-    # cvWavi_image = cross_validate_image(np.expand_dims(torque_imgs_resize, axis=3), waviness2, 'Waviness (datasetC)', normalized='')
-    cvWavi = cross_validate(x, y, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='')
+    cv_ttv = cross_validate(x, y_ttv, f'TTV (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[5.5, 17])
+    cv_warp = cross_validate(x, y_warp, f'Warp (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[3, 18])
+    cv_wavi = cross_validate(x, y_wavi, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[0, 2.7])
+    cv_bow = cross_validate(x, y_bow, f'BOW (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[-5, 4])
 
     
-    # model_C_warp = cvWarp.cross_validate_kNN()
-    # model_C_wavi = cvWavi_signal.cross_validate_1DCNN()
-    # model_C_wavi = cvWavi_image.cross_validate_2DCNN()
-    param_setting = {'eta':0.3, 'gamma':0, 'max_depth':6, 'subsample':1, 'lambda':50, 'random_state':75}
-    model_C_wavi = cvWavi.cross_validate_XGB(param_setting=param_setting)
-    # test = model_C_wavi.get_xgb_params()
-    
-    # cvWarp.model_testing(model_C_warp, 'kNN')
-    # cvWavi_signal.model_testing(model_C_wavi, '1D-CNN')
-    # cvWavi_image.model_testing(model_C_wavi, '2D-CNN')
-    cvWavi.model_testing(model_C_wavi, 'XGB')
+    param_setting = {'eta':0.3, 'gamma':0.01, 'max_depth':6, 'subsample':0.8, 'lambda':50, 'random_state':75}
+    model_ttv = cv_ttv.cross_validate_XGB(param_setting)
+    model_warp = cv_warp.cross_validate_XGB(param_setting)
+    model_wavi = cv_wavi.cross_validate_XGB(param_setting)
+    model_bow = cv_bow.cross_validate_XGB(param_setting)
+
+
+    cv_ttv.model_testing(model_ttv, 'XGB')
+    cv_warp.model_testing(model_warp, 'XGB')
+    cv_wavi.model_testing(model_wavi, 'XGB')
+    cv_bow.model_testing(model_bow, 'XGB')
     
 
 

@@ -2,23 +2,10 @@ import numpy as np
 from featureExtraction import features_of_signal
 import signal_processing as sigpro
 import qualityExtractionLoc as QEL
-# from classImportance_single_output import importanceAnalysis
-
 from locIntegration import locIntegrate
-from classPSO_XGB import psoXGB
-from classPSO_RF import psoRF
 # import pandas as pd
-from correlation_analysis import corr_features_vs_quality, corr_filter
-from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squared_error, mean_absolute_error
-from sklearn.model_selection import train_test_split
-from cross_validation import cross_validate, cross_validate_signal, cross_validate_image
-# from cross_validation_classification import cross_validate, cross_validate_signal, cross_validate_image
+from cross_validation import cross_validate
 from classPSO_kNN import psokNN 
-from plot_signals import plot_2d_array
-from PIL import Image 
-from class_importance_analysis import resultOfRandomForest, result_cosine_similarity, result_pearson
-from correlation_analysis import plot_corr, get_corr_value_2variables
-from plot_histogram import draw_histo
 
 if __name__ == '__main__':
     isDifferentParamSets = True
@@ -44,7 +31,6 @@ if __name__ == '__main__':
     signals = signals_23 + signals_22
     shortest_length = min([run.shape[1] for run in signals])
     og_num_run = len(signals)
-    # signals_new = time_series_resize(signals, 890)
     progress = sigpro.pick_one_signal(signals, signal_idx=0)
     valid_run_idx = sigpro.non_discontinuous_runs(progress, 0, 306, 1)
     signals = sigpro.pick_run_data(signals, valid_run_idx)
@@ -78,100 +64,73 @@ if __name__ == '__main__':
     position = sigpro.pick_run_data(position, general_run_idx)
     lot = sigpro.pick_run_data(lot, general_run_idx)
     waviness_3 = sigpro.pick_run_data(waviness_3, general_run_idx)
-    
-    # waviness_label = quality_labeling(waviness, [1, 1.2, 1.5, 2])
 
-     
     """
     Signal preprocessing
     """
     # signals = signals_resize
     signals = sigpro.pick_run_data(signals, general_run_idx)
-    progress = sigpro.pick_one_signal(signals, signal_idx=0)
+    progress = sigpro.pick_one_signal(signals, signal_idx=0) 
     outlet = sigpro.pick_one_signal(signals, signal_idx=2)
-    torque = sigpro.pick_one_signal(signals, signal_idx=3)
-    bear_diff = sigpro.subtraction_2signals(list(zip(sigpro.addition_2signals(sigpro.pick_specific_signals(signals, signal_idx_lst=[4, 5])),
-                                              sigpro.addition_2signals(sigpro.pick_specific_signals(signals, signal_idx_lst=[6, 7])))))
-    progress_t, torque_cleaned = sigpro.variation_erase(progress, torque)
     outlet_diff = sigpro.subtract_initial_value(outlet)
-    driver_current = sigpro.pick_one_signal(signals, signal_idx=8)
-    clamp_pressure = sigpro.pick_one_signal(signals, signal_idx=9)
+    
+    """
+    Feature
+    """  
     ingot_len_23 = QEL.get_ingot_length(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets)
     ingot_len_22 = QEL.get_ingot_length(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
     ingot_len = np.array(ingot_len_23 + ingot_len_22).reshape(-1, 1)
     ingot_len = sigpro.pick_run_data(ingot_len, valid_run_idx)
     ingot_len = sigpro.pick_run_data(ingot_len, general_run_idx)
-    
-    """
-    Feature
-    """  
     f_outlet = features_of_signal(progress, outlet_diff, isEnveCombined)
-    # f_torque = features_of_signal(progress_t, torque_cleaned, isEnveCombined_=False)
-    # f_torque = features_of_signal(progress, torque, isEnveCombined)
-    # f_bear = features_of_signal(progress, bear_diff, isEnveCombined)
-    # f_driver = features_of_signal(progress, driver_current, isEnveCombined)
-    # f_pressure = features_of_signal(progress, clamp_pressure, isEnveCombined_=True)
-
-    
-    # f_combine = np.concatenate((f_outlet, f_torque, f_bear, f_driver, ingot_len), axis=1)
     f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
 
-    # enve_outlet_up, enve_outlet_low = get_envelope_lst(outlet_diff, progress, isInterpolated=False, isDifferenced=True)
-    # enve_combine = np.concatenate((enve_outlet_up, enve_outlet_low), axis=1)
     """
     Feature Analysis 
     """
     # y_lot1, run_idx_lot1 = pick_one_lot(waviness, lot, target_lot=1)
     # x_lot1 = f_combine[run_idx_lot1]
-    # importance = resultOfRandomForest(x_lot1, y_lot1, 'squared_error')
-    # importance_threshold = 1 / importance.shape[0]
-    # important_feature_idx = np.where(importance >= importance_threshold)[0]
-    # x_lot1 = f_combine[:, important_feature_idx] # important features
-    # f_combine = f_combine[:, important_feature_idx] # important features
-    
-    locPrepare = locIntegrate([waviness], position)
+    locPrepare = locIntegrate([ttv, warp, waviness, bow], position)
     x, y = locPrepare.mixFeatureAndQuality(f_combine)
-    # x_signal, y = locPrepare.mixFeatureAndQuality_signal(signals_resize)  
-    # y = np.array([max(values) for values in y])
+    y_ttv = y[:, 0]
+    y_warp = y[:, 1]
+    y_wavi = y[:, 2]
+    y_bow = y[:, 3]
     
     """
     PSO
     """
-    # psoModelTTV = psokNN(x, y[:, 0], 'TTV (datasetA)', normalized='')
-    # psoModelWarp = psokNN(x, y[:, 1], 'Warp (datasetA)', normalized='')
-    # psoModelWavi = psokNN(x, y, 'Waviness (datasetA)', normalized='')
-    # psoModelBOW = psokNN(x, y[:, 3], 'BOW (datasetA)', normalized='')
-    # psoModelWavi = psokNN(x_lot1, y_lot1, 'Waviness (datasetA)', normalized='')
+    psoModelTTV = psokNN(x, y_ttv, 'TTV (datasetA)', normalized='', y_boundary=[5.5, 17])
+    psoModelWarp = psokNN(x, y_warp, 'Warp (datasetA)', normalized='', y_boundary=[3, 18])
+    psoModelWavi = psokNN(x, y_wavi, 'Waviness (datasetA)', normalized='', y_boundary=[0, 2.7])
+    psoModelBOW = psokNN(x, y_bow, 'BOW (datasetA)', normalized='', y_boundary=[-5, 4])
 
-    # psoModelTTV.pso(particleAmount=20, maxIterTime=10)
-    # psoModelWarp.pso(particleAmount=20, maxIterTime=10)
-    # model, fitnessHistory = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
-    # print('K =', model.n_neighbors)
-    # psoModelBOW.pso(particleAmount=20, maxIterTime=10)
+
+    model_ttv, fitnessHistory_ttv = psoModelTTV.pso(particleAmount=20, maxIterTime=10)
+    model_warp, fitnessHistory_warp = psoModelWarp.pso(particleAmount=20, maxIterTime=10)
+    model_wavi, fitnessHistory_wavi = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
+    model_bow, fitnessHistory_bow = psoModelBOW.pso(particleAmount=20, maxIterTime=10)
 
 
     """
     Cross Validation
     """
-    # cvWarp = cross_validate(x, y[:, 1], 'Warp (datasetA)', y_thresholds=[1,1.2,1.5,2], normalized='')
-    # cvWavi_signal = cross_validate_signal(x_signal[:, :, [0, 2, -1]], y, 'Waviness (datasetA)', normalized='x')
-    # cvWavi_image = cross_validate_image(np.expand_dims(outlet_img, axis=3), y_lot1, 'Waviness (datasetA)', normalized='')
-    cvWavi = cross_validate(x, y, 'Waviness (datasetA)', normalized='')
+    cv_ttv = cross_validate(x, y_ttv, 'TTV (datasetA)', normalized='', y_value_boundary=[5.5, 17])
+    cv_warp = cross_validate(x, y_warp, 'Warp (datasetA)', normalized='', y_value_boundary=[3, 18])
+    cv_wavi = cross_validate(x, y_wavi, 'Waviness (datasetA)', normalized='', y_value_boundary=[0, 2.7])
+    cv_bow = cross_validate(x, y_bow, 'BOW (datasetA)', normalized='', y_value_boundary=[-5, 4])
     
-    # model_A_warp = cvWarp.cross_validate_kNN()
-    # model_A_wavi = cvWavi_signal.cross_validate_LSTM()
-    # model_A_wavi = cvWavi_image.cross_validate_2DCNN()
-    param_setting = {'eta':0.3, 'gamma':0, 'max_depth':6, 'subsample':1, 'lambda':1, 'random_state':75}
-    model_A_wavi = cvWavi.cross_validate_XGB(param_setting)
+    param_setting = {'eta':0.3, 'gamma':0.01, 'max_depth':6, 'subsample':0.8, 'lambda':50, 'random_state':75}
+    model_ttv = cv_ttv.cross_validate_XGB(param_setting)
+    model_warp = cv_warp.cross_validate_XGB(param_setting)
+    model_wavi = cv_wavi.cross_validate_XGB(param_setting)
+    model_bow = cv_bow.cross_validate_XGB(param_setting)
 
-    # cvWarp.model_testing(model_A_warp, 'kNN')
-    cvWavi.model_testing(model_A_wavi, 'XGB')
-    # cvWavi_signal.model_testing(model_A_wavi, 'LSTM')
-    # cvWavi_image.model_testing(model_A_wavi, '2D-CNN')
-    # print()
-    # draw_histo(y[:, 0], 'TTV', 'tab:blue', 1)
-    # draw_histo(y[:, 1], 'Warp', 'tab:orange', 1)
-    # draw_histo(y[:, 2], 'Waviness', 'tab:green', 1)
-    # draw_histo(y[:, 3], 'BOW', 'tab:red', 1)
+
+    cv_ttv.model_testing(model_ttv, 'XGB')
+    cv_warp.model_testing(model_warp, 'XGB')
+    cv_wavi.model_testing(model_wavi, 'XGB')
+    cv_bow.model_testing(model_bow, 'XGB')
+
     
 
