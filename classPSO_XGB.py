@@ -27,17 +27,15 @@ class psoXGB:
         else:
             self.y_boundary = y_boundary
         
-        if self.normalized == 'xy':
+        self.xMin, self.xMax, self.yMin, self.yMax = None, None, None, None
+        
+        if 'x' in self.normalized or 'X' in self.normalized:
             self.x, self.xMin, self.xMax = self.normalizationX(self.x)
+            
+        if 'y' in self.normalized or 'Y' in self.normalized:
             self.y, self.yMin, self.yMax = self.normalizationY(self.y)
-            self.xTrain, self.yTrain, self.xTest, self.yTest = self.datasetCreating(self.x, self.y)
 
-        elif self.normalized == 'x':
-            self.x, self.xMin, self.xMax = self.normalizationX(self.x)
-            self.xTrain, self.yTrain, self.xTest, self.yTest = self.datasetCreating(self.x, self.y)
-
-        else:
-            self.xTrain, self.yTrain, self.xTest, self.yTest = self.datasetCreating(self.x, self.y)
+        self.xTrain, self.yTrain, self.xTest, self.yTest = self.datasetCreating(self.x, self.y)
 
     def class_labeling(self, y_thresholds):
         y_class = np.copy(self.y)
@@ -90,15 +88,12 @@ class psoXGB:
         # array should be 1-D array
         # array.shape: amount of samples
         array = np.copy(array_)
-        minValue = []
-        maxValue = []
-        mini = min(array)
-        maxi = max(array)
-        minValue.append(mini)
-        maxValue.append(maxi)
+        mini = np.amin(array)
+        maxi = np.amax(array)
+    
         array = (array - mini) / (maxi - mini)
-        
-        return array, np.array(minValue), np.array(maxValue)
+            
+        return array, mini, maxi
     
     def datasetCreating(self, x_, y_):
         xTrain, xTest, yTrain, yTest = train_test_split(x_, y_, test_size=0.1, random_state=75)
@@ -106,9 +101,6 @@ class psoXGB:
                 
     def plotTrueAndPredicted(self, x, YT, YP, category):
         plot = True
-        if self.normalized == 'xy':
-            YT = (self.yMax - self.yMin) * YT + self.yMin
-            YP = (self.yMax - self.yMin) * YP + self.yMin
         rmse = np.sqrt(mean_squared_error(YT, YP))
         r2 = r2_score(YT, YP)
         mape = mean_absolute_percentage_error(YT, YP) * 100
@@ -235,7 +227,13 @@ class psoXGB:
             y_val = yTrain[val_idx]
             evalset = [(x_train, y_train), (x_val, y_val)]
             model.fit(x_train, y_train, eval_set=evalset, verbose=False)
+            yTrainPredicted = model.predict(x_train)
             yValPredicted = model.predict(x_val)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
@@ -245,8 +243,8 @@ class psoXGB:
             if show_result_each_fold:
                 results = model.evals_result()
                 self.show_train_history(results, metrics, iter_idx, particle_idx)
-                r2_train = r2_score(y_train, model.predict(x_train))
-                mape_train = mean_absolute_percentage_error(y_train, model.predict(x_train)) * 100
+                r2_train = r2_score(y_train, yTrainPredicted)
+                mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
                 train_metric_lst[idx] = (np.array([mape_train, r2_train]))
                 print(f'\tTrain MAPE: {mape_train:.2f} Val. MAPE: {mape_val:.2f}')
                 print(f'\tTrain R2:   {r2_train:.2f}   Val. R2:   {r2_val:.2f}\n')
@@ -356,6 +354,9 @@ class psoXGB:
     
     def model_testing(self, model_, category):
         yTestPredicted = model_.predict(self.xTest)
+        if self.yMin != None and self.yMax != None:
+            yTestPredicted = yTestPredicted * (self.yMax-self.yMin) + self.yMin
+            self.yTest = self.yTest * (self.yMax-self.yMin) + self.yMin
         self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
         
     def bestModel(self, Gbest):    # See the performance of the best model
@@ -382,6 +383,11 @@ class psoXGB:
             results = model.evals_result()
             self.show_train_history(results, metrics, idx)
             yTrainPredicted = model.predict(x_train)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
             train_metric_lst[idx] = (np.array([mape_train, r2_train]))
@@ -423,7 +429,7 @@ class psoXGB:
         c2 = 2
         IterTime = 0
         # iteration for best particle
-        while IterTime < maxIterTime:
+        while IterTime < maxIterTime-1:
             print(f'Iteration {IterTime + 1}')
             newFitness = np.zeros(len(population_current))
             for particleIdx in range(len(population_current)):

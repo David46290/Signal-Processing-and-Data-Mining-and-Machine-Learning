@@ -1,40 +1,29 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squared_error, mean_absolute_error
+# from keras import optimizers as opti
 from sklearn.model_selection import train_test_split
+# from tensorflow.keras.models import model_from_json
 import random
+# import datetime
 import copy
+# import os
+# from tensorflow_addons.metrics import r_square
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_val_score
 from sklearn.utils import shuffle
 
 # edit the part below when model is changed
 class psoRF:
-    def __init__(self, x, y, qualityKind, normalized=None, y_boundary=[]):
+    def __init__(self, x, y, qualityKind, normalized=False):
         self.qualityKind = qualityKind
         self.isMultiStacking = True
         self.normalized = normalized
-        self.dna_amount = 6+1
+        self.dna_amount = 6
         self.x = x
         self.y = y
         self.x, self.y = self.cleanOutlier(x, y)
-        self.kfold_num = 5
-        self.optimized_param = ['n_estimators', 'min_samples_split', 'min_samples_leaf', 'max_depth', 'max_features', 'random_state', 'RSN']
-        
-        if len(y_boundary) == 0:
-            self.y_boundary = [np.amin(self.y)-1, np.amax(self.y)+1]
-        else:
-            self.y_boundary = y_boundary
-        
-        self.xMin, self.xMax, self.yMin, self.yMax = None, None, None, None
-        
-        if 'x' in self.normalized or 'X' in self.normalized:
-            self.x, self.xMin, self.xMax = self.normalizationX(self.x)
-            
-        if 'y' in self.normalized or 'Y' in self.normalized:
-            self.y, self.yMin, self.yMax = self.normalizationY(self.y)
 
-        self.xTrain, self.yTrain, self.xTest, self.yTest = self.datasetCreating(self.x, self.y)
 
     def class_labeling(self, y_thresholds):
         y_class = np.copy(self.y)
@@ -54,6 +43,10 @@ class psoRF:
         # Gid rid of y values exceeding 2 std value
         y_std = np.std(y)
         y_median = np.median(y)
+        # quartile_1 = np.round(np.quantile(y, 0.25), 2)
+        # quartile_3 = np.round(np.quantile(y, 0.75), 2)
+        # # Interquartile range
+        # iqr = np.round(quartile_3 - quartile_1, 2)
         range_ = 2
         up_boundary = np.mean(y) + range_ * y_std 
         low_boundary = np.mean(y) - range_ * y_std 
@@ -66,41 +59,15 @@ class psoRF:
         x_new2 = x_new[remaining2]
     
         return x_new2, y_new2
-        
-    def normalizationX(self, array_):
-        # array should be 2-D array
-        # array.shape[0]: amount of samples
-        # array.shape[1]: amount of features
-        array_feature = np.copy(array_).T # array_feature: [n_feature, n_sample]
-        minValue = []
-        maxValue = []
-        new_array_ = []
-        for featureIdx, feature in enumerate(array_feature):
-            mini = np.amin(feature)
-            maxi = np.amax(feature)
-            minValue.append(mini)
-            maxValue.append(maxi)
-            new_array_.append((feature - mini) / (maxi - mini))
-        new_array_ = np.array(new_array_).T # [n_feature, n_sample] => [n_sample, n_feature]
-        return new_array_, np.array(minValue), np.array(maxValue)
-    
-    def normalizationY(self, array_):
-        # array should be 1-D array
-        # array.shape: amount of samples
-        array = np.copy(array_)
-        mini = np.amin(array)
-        maxi = np.amax(array)
-
-        array = (array - mini) / (maxi - mini)
-            
-        return array, mini, maxi
     
     def datasetCreating(self, x_, y_):
         xTrain, xTest, yTrain, yTest = train_test_split(x_, y_, test_size=0.1, random_state=75)
         return xTrain, yTrain, xTest, yTest
                 
-    def plotTrueAndPredicted(self, x, YT, YP, category, plot=True):
-        rmse = np.sqrt(mean_squared_error(YT, YP))
+    def plotTrueAndPredicted(self, x, YT, YP, category, plot = True):
+        if self.normalized == 'xy':
+            YT = (self.yMax - self.yMin) * YT + self.yMin
+            YP = (self.yMax - self.yMin) * YP + self.yMin
         r2 = r2_score(YT, YP)
         mape = mean_absolute_percentage_error(YT, YP) * 100
         mae = mean_absolute_error(YT, YP)
@@ -110,10 +77,14 @@ class psoRF:
             plt.figure(figsize=(12, 9))
             plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
             plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
+            topValue = (max(YT) if max(YT) > max(YP) else max(YP))
+            topValue = topValue * 1.1 if topValue > 0 else topValue * 0.9
+            bottomValue = (min(YT) if min(YT) < min(YP) else min(YP))
+            bottomValue = bottomValue * 0.9 if topValue > 0 else topValue * 1.1
             plt.ylabel("Predicted Value", fontsize=24)
             plt.xlabel("True Value", fontsize=24)
-            bottomValue = self.y_boundary[0]
-            topValue = self.y_boundary[1]
+            bottomValue = 0
+            topValue = 2.7
             plt.ylim([bottomValue, topValue])
             plt.xlim([bottomValue, topValue])
             plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
@@ -146,81 +117,25 @@ class psoRF:
         plt.legend(['train'], fontsize=20)
         plt.grid(True)  
     
-    def plot_metrics_folds(self, train_lst, val_lst):
-        train_lst, val_lst = train_lst.T, val_lst.T
-        x = np.arange(1, self.kfold_num+1, 1)
-        plt.figure(figsize=(16, 6))
-        ax1 = plt.subplot(121)
-        ax1.plot(x, train_lst[0], '-o', label='train', lw=5, color='seagreen')
-        ax1.plot(x, val_lst[0], '-o', label='val', lw=5, color='brown')
-        ax1.set_ylabel('MAPE (%)', fontsize=24)
-        ax1.set_xlabel('Fold', fontsize=24)
-        ax1.tick_params(axis='both', which='major', labelsize=20)
-        ax1.legend(loc='best', fontsize=20)
-        ax1.grid(True)
-        ax1.set_ylim((0, 40))
-        
-        ax2 = plt.subplot(122)
-        ax2.plot(x, train_lst[1], '-o', label='train', lw=5, color='seagreen')
-        ax2.plot(x, val_lst[1], '-o', label='val', lw=5, color='brown')
-        ax2.set_ylabel('R2', fontsize=24)
-        ax2.set_xlabel('Fold', fontsize=24)
-        ax2.tick_params(axis='both', which='major', labelsize=20)
-        ax2.grid(True)
-        ax2.legend(loc='best', fontsize=20)
-        ax2.set_ylim((0, 1.1))
-        plt.suptitle('best particle', fontsize=26)
-        plt.tight_layout()
-        plt.subplots_adjust(top=0.88)
-        plt.show()
-        plt.close()
-    
     # edit the part below when model is changed
-    def modelTraining(self, particle, iter_idx=0, particle_idx=0, show_result_each_fold=False):
-        # ['n_estimators', 'min_samples_split', 'min_samples_leaf', 'max_depth', 'max_features', 'random_state', 'RSN']
+    def modelTraining(self, n_esti_, split_, leaf_, depth_, features_, RSN, metricHistory):
         # model building
-        param_setting = {'n_estimators':int(particle[0]), 'min_samples_split':int(particle[1]), 'min_samples_leaf':int(particle[2]),
-                         'max_depth':int(particle[3]), 'max_features':int(particle[4]), 'random_state':int(particle[5])}
-        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=int(particle[-1]))
-        kf = KFold(n_splits=self.kfold_num)
-        fitness_lst = []
-        train_metric_lst = np.zeros((self.kfold_num, 2))
-        val_metric_lst = np.zeros((self.kfold_num, 2))
-        metrics = ['mape', 'rmse']
-        model = RandomForestRegressor(**param_setting)
+        model = RandomForestRegressor(n_estimators=n_esti_,
+                                        min_samples_split=split_,
+                                        min_samples_leaf=leaf_,
+                                        max_depth=depth_,
+                                        max_features=features_,
+                                        random_state=RSN,
+                                        oob_score=True,# default out-of-bag score: r2
+                                        n_jobs=5) 
 
-        for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
-            x_train = xTrain[train_idx]
-            y_train = yTrain[train_idx]
-            x_val = xTrain[val_idx]
-            y_val = yTrain[val_idx]
-            model.fit(x_train, y_train)
-            yTrainPredicted = model.predict(x_train)
-            yValPredicted = model.predict(x_val)
-            if self.yMin != None and self.yMax != None:
-                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
-                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
-                y_train = y_train * (self.yMax-self.yMin) + self.yMin
-                y_val = y_val * (self.yMax-self.yMin) + self.yMin
-            r2_val = r2_score(y_val, yValPredicted)
-            mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
-            val_metric_lst[idx] = np.array([mape_val, r2_val])
-            # fitness_lst.append(1 - r2_val)
-            fitness_lst.append(mape_val)
-            
-            if show_result_each_fold:
-                r2_train = r2_score(y_train, yTrainPredicted)
-                mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
-                train_metric_lst[idx] = (np.array([mape_train, r2_train]))
-                print(f'\tTrain MAPE: {mape_train:.2f} Val. MAPE: {mape_val:.2f}')
-                print(f'\tTrain R2:   {r2_train:.2f}   Val. R2:   {r2_val:.2f}\n')
+        model.fit(self.x, self.y)
+        fitness = model.oob_score_
+
+        if fitness < min(metricHistory):
+            metricHistory.append(fitness)
                 
-        if show_result_each_fold:       
-            self.plot_metrics_folds(train_metric_lst, val_metric_lst, iter_idx, particle_idx)
-            
-        fitness = np.array(fitness_lst).mean()
-
-        return fitness
+        return fitness, metricHistory
     
     """
     Handling position of particle population
@@ -232,19 +147,7 @@ class psoRF:
     #     return round(base * round(float(x)/base), prec)   
 
     def population_curentInitialize(self, particleAmount):
-        """
-        n_estimators: number of decision trees
-        min_samples_split: least amount of samples to split a node
-        min_samples_leaf: least amount of samples that can form a leaf
-        max_depth: max. depth of decision trees
-        max_features: max. number of features to fit the model
-        random state: coefficient to initialize model
-        RSN: random seed number to shuffle dataset
-        
-        optimized_param = ['eta','gamma', 'max_depth', 'subsample', 'lambda', 'random_state', 'RSN']
-        """
-        # ['n_estimators', 'min_samples_split', 'min_samples_leaf', 'max_depth', 'max_features', 'random_state', 'RSN']
-        initialPosition = np.zeros((particleAmount, self.dna_amount))
+        initialPosition = np.zeros((particleAmount, self.dna_amount)) # +1 for Random Seed Number
         n_esti_min = 100
         n_esti_max = 1000
         split_min = 4
@@ -255,12 +158,10 @@ class psoRF:
         depth_max = 15
         max_features_min = np.sqrt(self.x.shape[1]).astype(int)
         max_features_max = self.x.shape[1]
-        random_state_min = 0
-        random_state_max = 5
         RSN_min = 0
         RSN_max = 10
-        param_min_lst = [n_esti_min, split_min, leaf_min, depth_min, max_features_min, random_state_min, RSN_min]
-        param_max_lst = [n_esti_max, split_max, leaf_max, depth_max, max_features_max, random_state_max, RSN_max]
+        param_min_lst = [n_esti_min, split_min, leaf_min, depth_min, max_features_min , RSN_min]
+        param_max_lst = [n_esti_max, split_max, leaf_max, depth_max, max_features_max, RSN_max]
         # edit the part below when model is changed
         for particleIdx in range(particleAmount):
             for dnaIdx in range(self.dna_amount):
@@ -280,12 +181,10 @@ class psoRF:
         depth_max = 15
         max_features_min = np.sqrt(self.x.shape[1]).astype(int)
         max_features_max = self.x.shape[1]
-        random_state_min = 0
-        random_state_max = 5
         RSN_min = 0
         RSN_max = 10
-        param_min_lst = [n_esti_min, split_min, leaf_min, depth_min, max_features_min, random_state_min, RSN_min]
-        param_max_lst = [n_esti_max, split_max, leaf_max, depth_max, max_features_max, random_state_max, RSN_max]
+        param_min_lst = [n_esti_min, split_min, leaf_min, depth_min, max_features_min , RSN_min]
+        param_max_lst = [n_esti_max, split_max, leaf_max, depth_max, max_features_max, RSN_max]
         for particleIdx, particle in enumerate(population_curent):
             for dnaIdx, dnaData in enumerate(particle):
                 if population_curent[particleIdx, dnaIdx] < param_min_lst[dnaIdx]:
@@ -305,54 +204,21 @@ class psoRF:
                 break
         return idx
   
-    def model_testing(self, model_, category):
-        yTestPredicted = model_.predict(self.xTest)
-        if self.yMin != None and self.yMax != None:
-            yTestPredicted = yTestPredicted * (self.yMax-self.yMin) + self.yMin
-            self.yTest = self.yTest * (self.yMax-self.yMin) + self.yMin
-        self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
-          
-  
-    def bestModel(self, Gbest):
-        # ['n_estimators', 'split', 'min_samples_leaf', 'max_depth', 'max_features', 'random_state', 'RSN']
+    def bestModel(self, metricHistory, Gbest):
         # edit the part below when model is changed
-        param_setting = {'n_estimators':int(Gbest[0]), 'min_samples_split':int(Gbest[1]), 'min_samples_leaf':int(Gbest[2]),
-                         'max_depth':int(Gbest[3]), 'max_features':int(Gbest[4]), 'random_state':int(Gbest[5])}
-        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=int(Gbest[6]))
-        kf = KFold(n_splits=self.kfold_num)
-        train_metric_lst = np.zeros((self.kfold_num, 2))
-        val_metric_lst = np.zeros((self.kfold_num, 2))
-        metrics = ['mape', 'rmse']
-        model_lst = []
-        model = RandomForestRegressor(**param_setting)
-        for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
-            x_train = xTrain[train_idx]
-            y_train = yTrain[train_idx]
-            x_val = xTrain[val_idx]
-            y_val = yTrain[val_idx]
-            model.fit(x_train, y_train)
-            model_lst.append(model)
-            yValPredicted = model.predict(x_val)
-            yTrainPredicted = model.predict(x_train)
-            if self.yMin != None and self.yMax != None:
-                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
-                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
-                y_train = y_train * (self.yMax-self.yMin) + self.yMin
-                y_val = y_val * (self.yMax-self.yMin) + self.yMin
-            r2_train = r2_score(y_train, yTrainPredicted)
-            mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
-            train_metric_lst[idx] = (np.array([mape_train, r2_train]))
-    
-            r2_val = r2_score(y_val, yValPredicted)
-            mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
-            val_metric_lst[idx] = np.array([mape_val, r2_val])
-            # draw_histo(y_val, f'Histogram of Output in Fold {idx+1}', 'seagreen', 0)
-                    
-        self.plot_metrics_folds(train_metric_lst, val_metric_lst)
-        highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        best_model = model_lst[highest_valR2_idx]
-        self.model_testing(best_model, 'RF_PSO')
-        return best_model
+        model = RandomForestRegressor(n_estimators=Gbest[0],
+                                        min_samples_split=Gbest[1],
+                                        min_samples_leaf=Gbest[2],
+                                        max_depth=Gbest[3],
+                                        random_state=Gbest[-1],
+                                        oob_score=True,
+                                        n_jobs=5) # default out-of-bag score: r2
+        model.fit(self.x, self.y)
+        yPredicted = model.predict(self.x)
+        self.plotTrueAndPredicted(self.x, self.y, yPredicted, "(RF_importance_analysis)")
+        print(f'Out-Of-Bag score: {model.oob_score_}')
+        
+        return model
     
     def plot_fitness(self, fit_history):
         plt.figure(figsize=(10, 7), dpi=300)
@@ -371,6 +237,9 @@ class psoRF:
     use this function only when performing pso
     """
     def pso(self, particleAmount, maxIterTime):
+        metricHistory = []
+        metricHistory.append(1000)
+
         DNA_amount = self.dna_amount
         fitnessHistory0 = []
         fitnessHistory1 = []
@@ -381,14 +250,19 @@ class psoRF:
         velocity = 0 * population_curent # Initial velocity
         newVelocity = np.zeros((particleAmount, DNA_amount))
         IterTime = 0
-
+        dna_kind = ['n_esti', 'split', 'leaf', 'depth', 'max_features', 'RandomSeedNum']
         # iteration for best particle
         while IterTime < maxIterTime-1:
             print(f'Iteration {IterTime + 1}')
+            # edit the part below when model is changed
             fitness_current = np.zeros(len(population_curent))
             for particleIdx in range(len(population_curent)):
+                for dnaIdx, dna in enumerate(dna_kind):
+                    locals()[dna] = population_curent[particleIdx, dnaIdx]
+
                 # training result of current particle
-                fitness_current[particleIdx] = self.modelTraining(population_curent[particleIdx])
+                # edit the part below when model is changed
+                fitness_current[particleIdx], metricHistory = self.modelTraining(locals()[dna_kind[0]], locals()[dna_kind[1]], locals()[dna_kind[2]], locals()[dna_kind[3]], locals()[dna_kind[4]], locals()[dna_kind[5]], metricHistory)
             
             # first iteration
             if IterTime == 0:
@@ -449,10 +323,11 @@ class psoRF:
             
         # final iteration
         # edit the part below when model is changed
-        print(f'Final Iteration')
         fitness_current = np.zeros(len(population_curent))
         for particleIdx in range(len(population_curent)):
-            fitness_current[particleIdx] = self.modelTraining(population_curent[particleIdx])
+            for dnaIdx, dna in enumerate(dna_kind):
+                locals()[dna] = population_curent[particleIdx, dnaIdx]
+                fitness_current[particleIdx], metricHistory = self.modelTraining(locals()[dna_kind[0]], locals()[dna_kind[1]], locals()[dna_kind[2]], locals()[dna_kind[3]], locals()[dna_kind[4]], locals()[dna_kind[5]], metricHistory)
                 
         for particleIdx in range(particleAmount):
             if fitness_current[particleIdx] < fitness_best_population[particleIdx]:
@@ -472,7 +347,14 @@ class psoRF:
         fitnestHistory = np.hstack((fitnessHistory0, fitnessHistory1))
         ll = float(len(fitnestHistory))/2
         fitnessHistory = fitnestHistory.reshape(int(ll), 2, order='F')
-
-        optimal_model = self.bestModel(bestParticle)
+        
+        history1 = []
+        
+        for i in range(len(metricHistory)):
+            if metricHistory[i] < 1000 and metricHistory[i] > min(metricHistory):
+                history1.append(metricHistory[i])
+    
+        
+        optimal_model = self.bestModel(metricHistory, bestParticle)
         self.plot_fitness(fitnessHistory)
         return optimal_model, fitnestHistory

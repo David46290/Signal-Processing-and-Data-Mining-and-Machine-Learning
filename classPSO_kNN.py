@@ -19,23 +19,20 @@ class psokNN:
         self.y = y
         self.x, self.y = self.cleanOutlier(x, y)
         self.kfold_num = 5
-        
         if len(y_boundary) == 0:
             self.y_boundary = [np.amin(self.y)-1, np.amax(self.y)+1]
         else:
-            self.y_boundary = y_boundary
+            self.y_boundary = y_boundary  
+        
+        self.xMin, self.xMax, self.yMin, self.yMax = None, None, None, None
+        
+        if 'x' in self.normalized or 'X' in self.normalized:
+            self.x, self.xMin, self.xMax = self.normalizationX(self.x)
             
-        if self.normalized == 'xy':
-            self.x, self.xMin, self.xMax = self.normalizationX(self.x)
+        if 'y' in self.normalized or 'Y' in self.normalized:
             self.y, self.yMin, self.yMax = self.normalizationY(self.y)
-            self.xTrain, self.yTrain, self.xTest, self.yTest = self.datasetCreating(self.x, self.y)
 
-        elif self.normalized == 'x':
-            self.x, self.xMin, self.xMax = self.normalizationX(self.x)
-            self.xTrain, self.yTrain, self.xTest, self.yTest = self.datasetCreating(self.x, self.y)
-
-        else:
-            self.xTrain, self.yTrain, self.xTest, self.yTest = self.datasetCreating(self.x, self.y)
+        self.xTrain, self.yTrain, self.xTest, self.yTest = self.datasetCreating(self.x, self.y)
             
     def class_labeling(self, y_thresholds):
         y_class = np.copy(self.y)
@@ -85,17 +82,15 @@ class psokNN:
         return new_array_, np.array(minValue), np.array(maxValue)
     
     def normalizationY(self, array_):
-        # array should be 1-D array: [n_samples,]
+        # array should be 1-D array
+        # array.shape: amount of samples
         array = np.copy(array_)
-        minValue = []
-        maxValue = []
-        mini = min(array)
-        maxi = max(array)
-        minValue.append(mini)
-        maxValue.append(maxi)
+        mini = np.amin(array)
+        maxi = np.amax(array)
+
         array = (array - mini) / (maxi - mini)
-        
-        return array, np.array(minValue), np.array(maxValue)
+            
+        return array, mini, maxi
     
     def datasetCreating(self, x_, y_):
         xTrain, xTest, yTrain, yTest = train_test_split(x_, y_, test_size=0.1, random_state=75)
@@ -104,9 +99,6 @@ class psokNN:
                 
     def plotTrueAndPredicted(self, x, YT, YP, category):
         plot = True
-        if self.normalized == 'xy':
-            YT = (self.yMax - self.yMin) * YT + self.yMin
-            YP = (self.yMax - self.yMin) * YP + self.yMin
         rmse = np.sqrt(mean_squared_error(YT, YP))
         r2 = r2_score(YT, YP)
         mape = mean_absolute_percentage_error(YT, YP) * 100
@@ -127,14 +119,14 @@ class psokNN:
             plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
             plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
                       , fontsize=26)
-            plt.axhline(y=1, color=color1[0])
-            plt.axhline(y=1.2, color=color1[1])
-            plt.axhline(y=1.5, color=color1[2])
-            plt.axhline(y=2, color=color1[3])
-            plt.axvline(x=1, color=color1[0])
-            plt.axvline(x=1.2, color=color1[1])
-            plt.axvline(x=1.5, color=color1[2])
-            plt.axvline(x=2, color=color1[3])
+            # plt.axhline(y=1, color=color1[0])
+            # plt.axhline(y=1.2, color=color1[1])
+            # plt.axhline(y=1.5, color=color1[2])
+            # plt.axhline(y=2, color=color1[3])
+            # plt.axvline(x=1, color=color1[0])
+            # plt.axvline(x=1.2, color=color1[1])
+            # plt.axvline(x=1.5, color=color1[2])
+            # plt.axvline(x=2, color=color1[3])
             plt.grid()
             plt.show()
         print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
@@ -215,7 +207,7 @@ class psokNN:
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
-            model = KNeighborsRegressor(n_neighbors=k)
+            model = KNeighborsRegressor(n_neighbors=k, algorithm='brute')
             x_train = xTrain[train_idx]
             y_train = yTrain[train_idx]
             x_val = xTrain[val_idx]
@@ -228,11 +220,16 @@ class psokNN:
                 model.fit(x_train, y_train)
                 yValPredicted = model.predict(x_val)
                 
-            # results = model.evals_result()
-            # if particle_idx == 0:
-            #     self.show_train_history(results, 'mape', iter_idx, particle_idx)
-            r2_train = r2_score(y_train, model.predict(x_train))
-            mape_train = mean_absolute_percentage_error(y_train, model.predict(x_train)) * 100
+            yTrainPredicted = model.predict(x_train)
+            yValPredicted = model.predict(x_val)
+            # if self.yMin != None and self.yMax != None:
+            #     yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+            #     yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+            #     y_train = y_train * (self.yMax-self.yMin) + self.yMin
+            #     y_val = y_val * (self.yMax-self.yMin) + self.yMin
+                
+            r2_train = r2_score(y_train, yTrainPredicted)
+            mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
             train_metric_lst[idx] = (np.array([mape_train, r2_train]))
     
             r2_val = r2_score(y_val, yValPredicted)
@@ -316,7 +313,10 @@ class psokNN:
         model = model_
         model.fit(self.xTrain, self.yTrain)
         yTestPredicted = model.predict(self.xTest)
-        draw_histo(self.yTest, 'Histogram of Output in Test', 'royalblue', 0)
+        if self.yMin != None and self.yMax != None:
+            yTestPredicted = yTestPredicted * (self.yMax-self.yMin) + self.yMin
+            self.yTest = self.yTest * (self.yMax-self.yMin) + self.yMin
+        # draw_histo(self.yTest, 'Histogram of Output in Test', 'royalblue', 0)
         self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
         
     def bestModel(self, metricHistory, Gbest):    # To see the performance of the best model
@@ -331,7 +331,7 @@ class psokNN:
                 val_metric_lst = np.zeros((self.kfold_num, 2))
                 model_lst = []
                 for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
-                    model = KNeighborsRegressor(n_neighbors=k)
+                    model = KNeighborsRegressor(n_neighbors=k, algorithm='brute')
                     x_train = xTrain[train_idx]
                     y_train = yTrain[train_idx]
                     x_val = xTrain[val_idx]
@@ -342,15 +342,22 @@ class psokNN:
                         model_lst.append(model)
                     except:
                         # when k > n_val
-                        model = KNeighborsRegressor(n_neighbors=x_val.shape[0])
+                        model = KNeighborsRegressor(n_neighbors=x_val.shape[0], algorithm='brute')
                         model.fit(x_train, y_train)
                         yValPredicted = model.predict(x_val)
                         model_lst.append(model)
                     yTrainPredicted = model.predict(x_train)
+                    if self.yMin != None and self.yMax != None:
+                        yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                        yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                        y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                        y_val = y_val * (self.yMax-self.yMin) + self.yMin
+                    
                     r2_train = r2_score(y_train, yTrainPredicted)
                     mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
                     train_metric_lst[idx] = (np.array([mape_train, r2_train]))
-            
+                    
+                    
                     r2_val = r2_score(y_val, yValPredicted)
                     mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
                     val_metric_lst[idx] = np.array([mape_val, r2_val])
@@ -403,7 +410,7 @@ class psokNN:
         # edit the part below when model is changed
         dna_kind = ['k', 'RandomSeedNum']
         # iteration for best particle
-        while IterTime < maxIterTime:
+        while IterTime < maxIterTime-1:
             print(f'Iteration {IterTime + 1}')
             fitness_current_population = np.zeros(len(population_current))
             for particleIdx, particle in enumerate(population_current):
