@@ -376,7 +376,7 @@ class psokNN:
         plt.grid()
         plt.xlabel('Iteration', fontsize=24)
         plt.ylabel('Fitness', fontsize=24)
-        plt.xlim((x_axis[0], x_axis[-1]))
+        plt.xlim(0, ((x_axis[-1]//5)+1)*5)
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=22)
         plt.legend(['Min. fitness', 'Average fitness'], fontsize=20)
@@ -402,7 +402,7 @@ class psokNN:
         # edit the part below when model is changed
         dna_kind = ['k', 'RandomSeedNum']
         # iteration for best particle
-        while IterTime < maxIterTime-1:
+        while IterTime < maxIterTime:
             print(f'Iteration {IterTime + 1}')
             fitness_current_population = np.zeros(len(population_current))
             for particleIdx, particle in enumerate(population_current):
@@ -472,34 +472,11 @@ class psokNN:
                 
             IterTime += 1
             
-        # final iteration
-        # edit the part below when model is changed
-        print(f'Final Iteration')
-        fitness_current_population = np.zeros(len(population_current))
-        for particleIdx in range(len(population_current)):
-            for dnaIdx, dna in enumerate(dna_kind):
-                locals()[dna] = population_current[particleIdx, dnaIdx]
-                fitness_current_population[particleIdx] = self.modelTraining(population_current[particleIdx], iter_idx=IterTime, particle_idx=particleIdx, show_result_each_fold=False)
-                
-        for particleIdx in range(particleAmount):
-            if fitness_current_population[particleIdx] < fitness_best_population[particleIdx]:
-                population_best[particleIdx, :] = copy.deepcopy(population_current[particleIdx, :])
-                fitness_best_population[particleIdx] = copy.deepcopy(fitness_current_population[particleIdx])
-            else:
-                population_best[particleIdx,:] = copy.deepcopy(population_best[particleIdx,:])
-                fitness_best_population[particleIdx] = copy.deepcopy(fitness_best_population[particleIdx])
-                
-        idx_best_particle = self.findIdxOfparticle_best(fitness_best_population)                
-        particle_best = population_best[idx_best_particle,:]
-                
-        fitnessHistory0.append(min(fitness_best_population))
-        fitnessHistory1.append(np.mean(fitness_best_population))
         fitnessHistory0 = np.array(fitnessHistory0)
         fitnessHistory1 = np.array(fitnessHistory1)
         fitnessHistory = np.hstack((fitnessHistory0, fitnessHistory1))
         ll = float(len(fitnessHistory))/2
         fitnessHistory = fitnessHistory.reshape(int(ll), 2, order='F')
-        history1 = []
 
         
         optimal_model = self.bestModel(particle_best)

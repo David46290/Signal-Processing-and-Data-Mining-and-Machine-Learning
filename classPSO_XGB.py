@@ -418,7 +418,7 @@ class psoXGB:
         plt.grid()
         plt.xlabel('Iteration', fontsize=24)
         plt.ylabel('Fitness', fontsize=24)
-        plt.xlim((x_axis[0], x_axis[-1]))
+        plt.xlim(0, ((x_axis[-1]//5)+1)*5)
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=22)
         plt.legend(['Min. fitness', 'Average fitness'], fontsize=20)
@@ -513,28 +513,7 @@ class psoXGB:
                 
             IterTime += 1
             
-        # final iteration
-        print(f'Final Iteration')
-        newFitness = np.zeros(len(population_current))
-        for particleIdx in range(len(population_current)):
-
-            newFitness[particleIdx] = self.modelTraining(population_current[particleIdx],
-                                                                        IterTime, particleIdx,
-                                                                        show_result_each_fold=False)
-  
-        for particleIdx in range(particleAmount):
-            if newFitness[particleIdx] < fitness_best_population [particleIdx]:
-                population_best [particleIdx, :] = copy.deepcopy(population_current[particleIdx, :])
-                fitness_best_population [particleIdx] = copy.deepcopy(newFitness[particleIdx])
-            else:
-                population_best [particleIdx,:] = copy.deepcopy(population_best [particleIdx,:])
-                fitness_best_population [particleIdx] = copy.deepcopy(fitness_best_population [particleIdx])
-                
-        idx_best_particle  = self.findIdxOfparticle_best(fitness_best_population )                
-        particle_best = population_best [idx_best_particle ,:]
-                
-        fitnessHistory0.append(min(fitness_best_population ))
-        fitnessHistory1.append(np.mean(fitness_best_population ))
+        
         fitnessHistory0 = np.array(fitnessHistory0)
         fitnessHistory1 = np.array(fitnessHistory1)
         fitnestHistory = np.hstack((fitnessHistory0, fitnessHistory1))
