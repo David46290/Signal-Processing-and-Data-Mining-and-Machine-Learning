@@ -410,6 +410,19 @@ class psoXGB:
         self.model_testing(best_model, 'XGB_PSO')
         return best_model
     
+    def plot_fitness(self, fit_history):
+        plt.figure(figsize=(10, 7), dpi=300)
+        x_axis = np.arange(1, fit_history.shape[0]+1, 1)
+        plt.plot(x_axis, fit_history[:, 0], '-o', lw=2)
+        plt.plot(x_axis, fit_history[:, 1], '-o', lw=2)
+        plt.grid()
+        plt.xlabel('Iteration', fontsize=24)
+        plt.ylabel('Fitness', fontsize=24)
+        plt.xlim((x_axis[0], x_axis[-1]))
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=22)
+        plt.legend(['Min. fitness', 'Average fitness'], fontsize=20)
+    
     """
     pso
     use this function only when performing pso
