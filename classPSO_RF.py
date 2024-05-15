@@ -362,7 +362,7 @@ class psoRF:
         plt.grid()
         plt.xlabel('Iteration', fontsize=24)
         plt.ylabel('Fitness', fontsize=24)
-        plt.xlim((x_axis[0], x_axis[-1]))
+        plt.xlim(0, ((x_axis[-1]//5)+1)*5)
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=22)
         plt.legend(['Min. fitness', 'Average fitness'], fontsize=20)
@@ -449,26 +449,7 @@ class psoRF:
                     population_curent[particleIdx, dnaIdx] = self.roundUpInt(population_curent[particleIdx, dnaIdx])         
             IterTime += 1
             
-        # final iteration
-        # edit the part below when model is changed
-        print('Final Iteration')
-        fitness_current = np.zeros(len(population_curent))
-        for particleIdx in range(len(population_curent)):
-            fitness_current[particleIdx] = self.modelTraining(population_curent[particleIdx])
-                
-        for particleIdx in range(particleAmount):
-            if fitness_current[particleIdx] < fitness_best_population[particleIdx]:
-                population_best[particleIdx, :] = copy.deepcopy(population_curent[particleIdx, :])
-                fitness_best_population[particleIdx] = copy.deepcopy(fitness_current[particleIdx])
-            else:
-                population_best[particleIdx,:] = copy.deepcopy(population_best[particleIdx,:])
-                fitness_best_population[particleIdx] = copy.deepcopy(fitness_best_population[particleIdx])
-                
-        idx_best_particle = self.findIdxOfparticle_best(fitness_best_population)                
-        particle_best = population_best[idx_best_particle,:]
-                
-        fitnessHistory0.append(min(fitness_best_population))
-        fitnessHistory1.append(np.mean(fitness_best_population))
+        
         fitnessHistory0 = np.array(fitnessHistory0)
         fitnessHistory1 = np.array(fitnessHistory1)
         fitnestHistory = np.hstack((fitnessHistory0, fitnessHistory1))
