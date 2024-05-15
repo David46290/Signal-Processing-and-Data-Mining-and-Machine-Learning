@@ -8,11 +8,11 @@ from PIL import Image
 from qualityExtractionLoc import get_mean_each_run, quality_labeling, high_similarity_runs, pick_one_lot, get_lot, get_ingot_length, qualities_from_dataset, qualities_from_dataset_edge, get_worst_value_each_run
 # from scipy.interpolate import LinearNDInterpolator
 
-def time_spectrum(param, progression, name, color_):
-    # idx_1 = np.where(progression >= 75)[0][0]
-    # idx_2 = np.where(progression >= 175)[0][0]
-    # idx_3 = np.where(progression >= 275)[0][0]
-    timeHour, timeMinute = get_process_time(param)
+def time_spectrum(signal, progression, name, color_='royalblue', xlabel='Working time (min)'):
+    idx_1 = np.where(progression >= 75)[0][0]
+    idx_2 = np.where(progression >= 175)[0][0]
+    idx_3 = np.where(progression >= 275)[0][0]
+    timeHour, timeMinute = get_process_time(signal)
     # depth_list = np.array([0.5, 5, 10, 15, 20, 25, 30, 35, 40, 45,
     #                        50, 55, 60, 65, 70, 75, 80, 85, 90, 95,
     #                        100, 105, 110, 115, 120, 125, 130, 140,
@@ -25,7 +25,7 @@ def time_spectrum(param, progression, name, color_):
     ax.figure.set_size_inches(20, 8)
     ax.set_ylabel(f'{name}', rotation='vertical', va="center", ha="center", labelpad=40, fontsize=24) 
     # newTime = timeMinute[:timeMinute.shape[0]-shift]
-    ax.plot(timeMinute, param, linestyle='-', color=color_)
+    ax.plot(timeMinute, signal, linestyle='-', color=color_)
     ax.tick_params(axis='both', which='major', labelsize=20)
     ax.tick_params(axis='both', which='minor', labelsize=20)
     # depth_idx = np.zeros(depth_list.shape[0])
@@ -35,9 +35,9 @@ def time_spectrum(param, progression, name, color_):
     #         ax.axvline(x=timeMinute[idx_], color='orange', lw=2)
     #     except:
     #         pass
-    # ax.axvline(x=timeHour[idx_1], color='red', lw=2)
-    # ax.axvline(x=timeHour[idx_2], color='red', lw=2)
-    # ax.axvline(x=timeHour[idx_3], color='red', lw=2)
+    ax.axvline(x=timeMinute[idx_1], color='red', lw=2)
+    ax.axvline(x=timeMinute[idx_2], color='red', lw=2)
+    ax.axvline(x=timeMinute[idx_3], color='red', lw=2)
     
     # for idx in depth_idx.astype(int):
     #     ax.axvline(x=timeHour[idx], color='peru', lw=2)
@@ -45,7 +45,7 @@ def time_spectrum(param, progression, name, color_):
     # ax.set_yticks(np.arange(22, 30, 1))
     ax.set_xticks(np.arange(0, 860, 50))
     ax.grid(True)
-    ax.set_xlabel('Cutting time (minute)', fontsize=24)
+    ax.set_xlabel('Time (min)', fontsize=24)
     return
 
 def time_spectrum_interval(signal_, interval, shift, name, color_):
@@ -75,7 +75,7 @@ def time_spectrum_interval(signal_, interval, shift, name, color_):
     ax.set_ylim(np.min(signal_)*0.98, np.max(signal_)*1.02)
     ax.set_xlim(interval[0]+1, interval[1]-1)
     ax.grid(True)
-    ax.set_xlabel('Cutting time (minute)', fontsize=24)
+    ax.set_xlabel('Working time (minute)', fontsize=24)
 
 def frequency_spectrum(freq_, fft_):
     """
@@ -522,7 +522,7 @@ if __name__ == '__main__':
         bear_diff = (bear1_float+bear1_fix) - (bear2_float+bear2_fix)
         driver_current = currentRun[36, :]
         
-        target = bear_diff
+        target = outlet_temp
         
         target_lst.append(target)
         progress_lst.append(progression)
@@ -542,8 +542,9 @@ if __name__ == '__main__':
     legend2 = [f'wavi. mean={quality_mean2[0]:.2f}', f'wavi. mean={quality_mean2[1]:.2f}']
     legend3 = [f'wavi. mean={quality_mean3[0]:.2f}', f'wavi. mean={quality_mean3[1]:.2f}']
     # kind = 'Driver Current (A)'
-    kind = 'Bearing temp. diff. btw 1&2 (℃)'
-    signal_progress_comparison_interval(signal_lst1, progress_lst1, [0, 310], legend1, kind, color = ['tab:blue', 'tab:orange'])
-    signal_progress_comparison_interval(signal_lst2, progress_lst2, [0, 310], legend2, kind, color = ['purple', 'olivedrab'])
-    signal_progress_comparison_interval(signal_lst3, progress_lst3, [0, 310], legend3, kind, color = ['teal', 'darkred'])
-            
+    # kind = 'Bearing temp. diff. btw 1&2 (℃)'
+    # signal_progress_comparison_interval(signal_lst1, progress_lst1, [0, 310], legend1, kind, color = ['tab:blue', 'tab:orange'])
+    # signal_progress_comparison_interval(signal_lst2, progress_lst2, [0, 310], legend2, kind, color = ['purple', 'olivedrab'])
+    # signal_progress_comparison_interval(signal_lst3, progress_lst3, [0, 310], legend3, kind, color = ['teal', 'darkred'])
+    idx = -3
+    time_spectrum(target_lst[idx] - target_lst[idx][0], progress_lst[idx], 'Temperature (℃)', color_='royalblue')

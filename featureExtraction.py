@@ -1,60 +1,80 @@
 import numpy as np
-import os, glob
+import os
 from scipy import signal as scisig
-from matplotlib import pyplot as plt
 import statistics
 from scipy import stats
 import math
-from plot_signals import time_series_downsampling
 from scipy.ndimage import gaussian_filter1d
 from scipy import signal as scisig
 import signal_processing as sigpro
 
 class FreqFeatures():
-    def __init__(self, signal_list, sample_rate):
+    def __init__(self, signal_list, sample_rate, num_wanted_freq=6):
         """
-        signal_list shape: (amount of signal categories, signal length)
+            signal_lst : list
+                [target_signal 1, target_signal 2, ...]; lenth: amount of runs (samples)
+                    target_signal: ndarray
+                        (signal_category, signal_length)
+            
+            sample_rate: int
+            
+            num_wanted_freq: int
+                number of dominating frequency features that are chosen
         """
-        self.signals = signal_list 
         self.sample_rate = sample_rate
-        self.domain_frequency, self.domain_energy = self.getFreqFeatures(self.FFT_all_signals())
+        self.num_wanted_freq = num_wanted_freq
+        self.domain_frequency, self.domain_energy, self.feature_name_freq, self.feature_name_energy = self.getFreqFeatures(self.FFT_all_signals(signal_list))
 
-    def FFT_all_signals(self):
+    def FFT_all_signals(self, signal_list):
         # signals_freq shape: (amount of signal categories, signal length//2)
         # freq_bands shape: (amount of signal categories, signal length//2)
         delta_time = 1 / self.sample_rate
         signals_freq = []
         freq_bands = []
-        for signal_idx, signal in enumerate(self.signals):
+        for signal_idx, signal in enumerate(signal_list):
             signal_length = signal.shape[0]
             signal_fft = np.abs(np.fft.fft(signal, signal_length))[1 : signal_length//2] * (2 / signal_length)
             freq_band = np.fft.fftfreq(signal_length, delta_time)[1 : signal_length//2]
             signals_freq.append(signal_fft)
             freq_bands.append(freq_band)
             
-        return signals_freq, freq_bands
+        return (signals_freq, freq_bands)
     
-    def getFreqFeatures(self, signals_freq, freq_bands):
-        main_freqs = []
-        main_energy = []
+    def getFreqFeatures(self, band_spectrum_tuple):
+        main_freqs_total = []
+        main_energy_total = []
+        freq_name_total = []
+        energy_name_total = []
+        signals_freq, freq_bands = band_spectrum_tuple[0], band_spectrum_tuple[1]
         for signal_idx, signal_spectrum in enumerate(signals_freq): 
-            # signal_fft_band: axis0 = frequency band; axis1 = energy value of corresponding frequency
+            main_freqs = []
+            main_energy = []
+            freq_name = []
+            energy_name = []
+            # band_spectrum: axis0 = frequency band; axis1 = energy value of corresponding frequency
             band_spectrum = np.concatenate((np.expand_dims(freq_bands[signal_idx], 1), (np.expand_dims(signal_spectrum, 1))), axis=1).T
             band_spectrum = band_spectrum[:, np.argsort(band_spectrum[1, :])[::-1]]
-            # self.plot_fft_decreasing_magnitude(signal_fft_band[0], signal_fft_band[1], signal_idx)
-            main_freqs.append(band_spectrum[0, :6])
-            main_energy.append(band_spectrum[1, :6])
-        main_freqs = np.array(main_freqs)
-        main_freqs.resize((main_freqs.shape[0] * main_freqs.shape[1]))
+            main_freqs.append(band_spectrum[0, :self.num_wanted_freq])
+            main_energy.append(band_spectrum[1, :self.num_wanted_freq])
+            freq_name.append(f'Top {self.num_wanted_freq} Frequencies of Signal {signal_idx}')
+            energy_name.append(f'Top {self.num_wanted_freq} Energies of Signal {signal_idx}')
+            
+            main_freqs_total.append(np.array(main_freqs).reshape(-1))
+            main_energy_total.append(np.array(main_energy).reshape(-1))
+            freq_name_total.append(freq_name)
+            energy_name_total.append(energy_name)
+            
+        main_freqs_total = np.array(main_freqs_total)
+        main_energy_total = np.array(main_energy_total) 
+        freq_name_total = np.array(freq_name_total)
+        energy_name_total = np.array(energy_name_total) 
         
-        main_energy = np.array(main_energy) 
-        main_energy.resize((main_energy.shape[0] * main_energy.shape[1]))
-        return main_freqs, main_energy
+        return main_freqs_total, main_energy_total, freq_name_total, energy_name_total
 
 class TimeFeatures():
     def __init__(self, signal_list, gau_sig=0.01, gau_rad=1, w_size=1, target_lst=['mean', 'kurtosis', 'skewness', 'variance', 'p2p']): 
       """
-          target_signal_lst : list
+          signal_lst : list
               [target_signal 1, target_signal 2, ...]; lenth: amount of runs (samples)
               target_signal: ndarray
                   (signal_category, signal_length)
@@ -71,11 +91,9 @@ class TimeFeatures():
       """
       self.gau_sig, self.gau_rad = gau_sig, gau_rad
       self.w_size = w_size
-      self.signals = signal_list 
-      # self.rms, self.kurtosis, self.skewness, self.variance, self.median, self.crest_f, self.p2p = self.getTimeFeatures()
-      self.features_all_signals = self.getTimeFeatures(target_lst)
-      
-      # print('Time Features Extracted')
+      self.target_lst = target_lst
+      self.features_all_signals, self.feature_names = self.getTimeFeatures(signal_list, target_lst)
+
     def get_max_p2p(self, signal_):
         target_filter1d = gaussian_filter1d(signal_, sigma=self.gau_sig, radius=self.gau_rad)
         up_idx = scisig.find_peaks(target_filter1d)[0]
@@ -123,7 +141,6 @@ class TimeFeatures():
         x_up = np.pad(x_up, (1, 1), 'constant', constant_values=(x_start, x_end))
         x_low = np.pad(x_low, (1, 1), 'constant', constant_values=(x_start, x_end))
         
-
         """
         Detection of P2P formed by
         1. peak and its adjacent valley
@@ -155,54 +172,78 @@ class TimeFeatures():
         # print(f'max in one {max(difference_pv)}\nmax in the other {max(difference_pv_anotherSide)}\ntotal max {max_p2p}')
         return max_p2p
     
-    def getTimeFeatures(self, target_lst):
+    def getTimeFeatures(self, signal_list, target_lst):
         features_all_signal = []
-        for signal_idx, signal in enumerate(self.signals): # signal_idx: index of signal
+        feature_name_all = []
+        for signal_idx, signal in enumerate(signal_list): # signal_idx: index of signal
             features_local_signal = []
+            feature_name = []
             if 'rms' in target_lst:
                 features_local_signal.append(math.sqrt(sum(x**2 for x in signal)/len(signal))) # RMS
+                feature_name.append('RMS')
             if 'mean' in target_lst:
                 features_local_signal.append(np.mean(signal))  # mean
+                feature_name.append('Mean')
             if 'median' in target_lst:
                 features_local_signal.append(statistics.median(signal)) # median
+                feature_name.append('Median')
             if 'kurtosis' in target_lst:
                 features_local_signal.append(stats.kurtosis(signal)) # kurtosis
+                feature_name.append('Kurtosis')
             if 'skewness' in target_lst:
                 features_local_signal.append(stats.skew(signal)) # skewness
+                feature_name.append('Skewness')
             if 'variance' in target_lst:
                 features_local_signal.append(statistics.variance(signal)) # variance
+                feature_name.append('Variance')
             if 'std' in target_lst:
                 features_local_signal.append(np.std(signal)) # STD
+                feature_name.append('STD')
             if 'crest' in target_lst:
                 features_local_signal.append(np.max(signal) / math.sqrt(sum(x**2 for x in signal)/len(signal))) # crest factor
+                feature_name.append('Crest Factor')
             if 'p2p' in target_lst:
                 features_local_signal.append(self.get_max_p2p(signal)) # max. P2P
+                feature_name.append('Max. P2P')
             
             features_all_signal.append(np.array(features_local_signal))
+            feature_name_all.append(np.array(feature_name))
               
-        return np.array(features_all_signal)
+        return np.array(features_all_signal), np.array(feature_name_all)
 
 def get3Dfeatures(signal3D, gau_sig=0.01, gau_rad=1, w_size=1): # gau_sig, gau_rad: Gaussian smooth param.; w_size: window size for peak searching
-    '''
-        signal3D shape: (amount of samples, amount of signal categories, signal length)
-        features_all_samples: (amount of samples, amount of signal categories, amount of feature categories)
-    '''
-    # allFeatures3D = FeaturesExtraction3D(signal3D)
+    """
+    
+    Parameters:
+        signal3D : list
+            [signals 1, signals 2, ...]; lenth: amount of runs (samples)
+            signals: ndarray
+                (number of signal channels, signal_length)
+                
+    Return:
+        features_all_samples:  ndarray
+            (amount of samples, amount of signal categories, amount of feature categories)
+    """    
+
     features_all_samples = []
     for sample_idx, signal_list in enumerate(signal3D):
         feature_per_experiment = TimeFeatures(signal_list, gau_sig, gau_rad, w_size)
         features_all_samples.append(feature_per_experiment.features_all_signals)
-
-    # allFeature = np.array([rmsList, kurtList, skewList, variList, medianList, crestList, p2pList])
     features_all_samples = np.array(features_all_samples)
-    # allFeatures3D = np.moveaxis(features_all_samples, [0, 1, 2], [2, 0, 1])
     return features_all_samples
 
 def get2Dfeatures(signal2D, gau_sig=0.01, gau_rad=1, w_size=1): # gau_sig, gau_rad: Gaussian smooth param.; w_size: window size for peak searching
-    '''
-        signal2D shape: (amount of signal categories, signal length))
-        allFeature shape: (amount of signal categories, amount of feature categories)
-    '''
+    """
+    
+    Parameters:
+        signal2D: ndarray
+            (number of signal channels, signal_length)
+                
+    Return:
+        features_all_samples:  ndarray
+            (amount of signal categories, amount of feature categories)
+    """      
+
     feature_per_experiment = TimeFeatures(signal2D, gau_sig, gau_rad, w_size)
     features_one_samples = feature_per_experiment.features_all_signals
 
@@ -228,8 +269,6 @@ def saveFeatures(direction, feature):
         with open(fileName, 'w') as file:
             np.savetxt(file, feature[run], delimiter=",")
         file.close()
-
-
 
 def pick_run_data(quality_, target_runIdx):
     quality_finale = []

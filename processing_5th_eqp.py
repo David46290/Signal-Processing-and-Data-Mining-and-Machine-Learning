@@ -44,7 +44,7 @@ if __name__ == '__main__':
     """
     selecting runs in selected dataset
     """
-    dataset_idx = 2 # 0(60s/sample), 1(10s/sample), 2(4s/sample)
+    dataset_idx = 0 # 0(60s/sample), 1(10s/sample), 2(4s/sample)
     dataset_dict = {0:'A', 1:'B', 2:'C'}
     length_criterion = [0, 5000, 13000, 16000]
     run_lst = run_lst[::-1] # from new to old
