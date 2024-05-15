@@ -376,7 +376,8 @@ class psokNN:
         plt.grid()
         plt.xlabel('Iteration', fontsize=24)
         plt.ylabel('Fitness', fontsize=24)
-        plt.xticks(x_axis, fontsize=16)
+        plt.xlim((x_axis[0], x_axis[-1]))
+        plt.xticks(fontsize=20)
         plt.yticks(fontsize=22)
         plt.legend(['Min. fitness', 'Average fitness'], fontsize=20)
     
