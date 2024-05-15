@@ -212,7 +212,7 @@ class psoXGB:
         # model building
         param_setting = {'eta':particle[0], 'gamma':int(particle[1]), 'max_depth':int(particle[2]),
                          'subsample':particle[3], 'lambda':int(particle[4]), 'random_state':int(particle[5])}
-        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=int(particle[6]))
+        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=int(particle[-1]))
         kf = KFold(n_splits=self.kfold_num)
         fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
@@ -528,4 +528,9 @@ class psoXGB:
         fitnestHistory = fitnestHistory.reshape(int(ll), 2, order='F')
         optimal_model = self.bestModel(particle_best)
         
-        return optimal_model, fitnestHistory
+        particle_best_dict = {}
+        if len(self.optimized_param) > 1:
+            for param_idx, param_name in self.optimized_param[:]:
+                particle_best_dict.update({self.optimized_param[param_idx]:particle_best[param_idx]})
+        
+        return optimal_model, fitnestHistory, particle_best_dict

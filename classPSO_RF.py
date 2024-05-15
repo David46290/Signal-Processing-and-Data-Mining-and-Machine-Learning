@@ -299,7 +299,7 @@ class psoRF:
     """
     find best fitness
     """
-    def findIdxOfBestParticle(self, fitness_best_population):
+    def findIdxOfparticle_best(self, fitness_best_population):
         for idx, best_particle_fitness in enumerate(fitness_best_population):
             if best_particle_fitness == min(fitness_best_population):
                 break
@@ -396,8 +396,8 @@ class psoRF:
                 velocity = velocity
                 population_best = copy.deepcopy(population_curent)
                 fitness_best_population = copy.deepcopy(fitness_current)
-                idx_best_particle = self.findIdxOfBestParticle(fitness_best_population)
-                bestParticle = population_best[idx_best_particle,:]
+                idx_best_particle = self.findIdxOfparticle_best(fitness_best_population)
+                particle_best = population_best[idx_best_particle,:]
             
             # rest iteration
             else:
@@ -409,8 +409,8 @@ class psoRF:
                         population_best[particleIdx,:] = copy.deepcopy(population_best[particleIdx,:])
                         fitness_best_population[particleIdx] = copy.deepcopy(fitness_best_population[particleIdx])
             
-            idx_best_particle = self.findIdxOfBestParticle(fitness_best_population)   
-            bestParticle = population_best[idx_best_particle,:]
+            idx_best_particle = self.findIdxOfparticle_best(fitness_best_population)   
+            particle_best = population_best[idx_best_particle,:]
             
             fitnessHistory0.append(min(fitness_best_population))
             fitnessHistory1.append(np.mean(fitness_best_population))
@@ -429,12 +429,12 @@ class psoRF:
                     r1[particleIdx, dnaIdx] = random.uniform(0, 1)
                     r2[particleIdx, dnaIdx] = random.uniform(0, 1)
                     
-            bestParticle = bestParticle.reshape(1, -1)
+            particle_best = particle_best.reshape(1, -1)
             
             # making new population
             for particleIdx in range(particleAmount):
                 for dnaIdx in range(DNA_amount):
-                    newVelocity[particleIdx, dnaIdx] = w * velocity[particleIdx, dnaIdx] + c1 * r1[particleIdx, dnaIdx] * (population_best[particleIdx, dnaIdx] - population_curent[particleIdx, dnaIdx]) + c2*r2[particleIdx, dnaIdx] * (bestParticle[0, dnaIdx] - population_curent[particleIdx, dnaIdx])
+                    newVelocity[particleIdx, dnaIdx] = w * velocity[particleIdx, dnaIdx] + c1 * r1[particleIdx, dnaIdx] * (population_best[particleIdx, dnaIdx] - population_curent[particleIdx, dnaIdx]) + c2*r2[particleIdx, dnaIdx] * (particle_best[0, dnaIdx] - population_curent[particleIdx, dnaIdx])
                     population_new[particleIdx, dnaIdx] = population_curent[particleIdx, dnaIdx] + newVelocity[particleIdx, dnaIdx]
             
             population_curent = copy.deepcopy(population_new)
@@ -449,7 +449,7 @@ class psoRF:
             
         # final iteration
         # edit the part below when model is changed
-        print(f'Final Iteration')
+        print('Final Iteration')
         fitness_current = np.zeros(len(population_curent))
         for particleIdx in range(len(population_curent)):
             fitness_current[particleIdx] = self.modelTraining(population_curent[particleIdx])
@@ -462,8 +462,8 @@ class psoRF:
                 population_best[particleIdx,:] = copy.deepcopy(population_best[particleIdx,:])
                 fitness_best_population[particleIdx] = copy.deepcopy(fitness_best_population[particleIdx])
                 
-        idx_best_particle = self.findIdxOfBestParticle(fitness_best_population)                
-        bestParticle = population_best[idx_best_particle,:]
+        idx_best_particle = self.findIdxOfparticle_best(fitness_best_population)                
+        particle_best = population_best[idx_best_particle,:]
                 
         fitnessHistory0.append(min(fitness_best_population))
         fitnessHistory1.append(np.mean(fitness_best_population))
@@ -473,6 +473,12 @@ class psoRF:
         ll = float(len(fitnestHistory))/2
         fitnessHistory = fitnestHistory.reshape(int(ll), 2, order='F')
 
-        optimal_model = self.bestModel(bestParticle)
+        optimal_model = self.bestModel(particle_best)
         self.plot_fitness(fitnessHistory)
-        return optimal_model, fitnestHistory
+        
+        particle_best_dict = {}
+        if len(self.optimized_param) > 1:
+            for param_idx, param_name in self.optimized_param[:]:
+                particle_best_dict.update({self.optimized_param[param_idx]:particle_best[param_idx]})
+        
+        return optimal_model, fitnestHistory, particle_best_dict

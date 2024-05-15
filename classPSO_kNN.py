@@ -15,6 +15,7 @@ class psokNN:
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.dna_amount = 2  # hyper_parameter num. + random seed
+        self.optimized_param = ['k', 'RSN']
         self.x = x
         self.y = y
         self.x, self.y = self.cleanOutlier(x, y)
@@ -197,17 +198,16 @@ class psokNN:
 
     
     # edit the part below when model is changed
-    def modelTraining(self, k, RSN, metricHistory, iter_idx, particle_idx):
+    def modelTraining(self, particle, iter_idx=0, particle_idx=0, show_result_each_fold=False):
         # model building
-        k = int(k)
-        RSN = int(RSN)
-        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=RSN)
+        param_setting = {'n_neighbors':int(particle[0]), 'algorithm':'brute'}
+        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=int(particle[-1]))
         kf = KFold(n_splits=self.kfold_num)
         fitness_lst = []
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
-            model = KNeighborsRegressor(n_neighbors=k, algorithm='brute')
+            model = KNeighborsRegressor(**param_setting)
             x_train = xTrain[train_idx]
             y_train = yTrain[train_idx]
             x_val = xTrain[val_idx]
@@ -241,11 +241,7 @@ class psokNN:
             # print(f'\tTrain R2:   {r2_train:.2f}   Val. R2:   {r2_val:.2f}\n')
         # self.plot_metrics_folds(train_metric_lst, val_metric_lst, iter_idx, particle_idx)
         fitness = np.array(fitness_lst).mean()
-        
-        if fitness < min(metricHistory):
-            metricHistory.append(fitness)
-
-        return fitness, metricHistory
+        return fitness
     
     """
     Handling position of particle population
@@ -319,49 +315,46 @@ class psokNN:
         # draw_histo(self.yTest, 'Histogram of Output in Test', 'royalblue', 0)
         self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
         
-    def bestModel(self, metricHistory, Gbest):    # To see the performance of the best model
-        for i in range(len(metricHistory)):
-            if metricHistory[i] == min(metricHistory):
-                # edit the part below when model is changed
-                RSN = int(Gbest[-1])
-                k = int(Gbest[0])
-                xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=RSN)
-                kf = KFold(n_splits=self.kfold_num)
-                train_metric_lst = np.zeros((self.kfold_num, 2))
-                val_metric_lst = np.zeros((self.kfold_num, 2))
-                model_lst = []
-                for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
-                    model = KNeighborsRegressor(n_neighbors=k, algorithm='brute')
-                    x_train = xTrain[train_idx]
-                    y_train = yTrain[train_idx]
-                    x_val = xTrain[val_idx]
-                    y_val = yTrain[val_idx]
-                    model.fit(x_train, y_train)
-                    try:
-                        yValPredicted = model.predict(x_val)
-                        model_lst.append(model)
-                    except:
-                        # when k > n_val
-                        model = KNeighborsRegressor(n_neighbors=x_val.shape[0], algorithm='brute')
-                        model.fit(x_train, y_train)
-                        yValPredicted = model.predict(x_val)
-                        model_lst.append(model)
-                    yTrainPredicted = model.predict(x_train)
-                    if self.yMin != None and self.yMax != None:
-                        yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
-                        yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
-                        y_train = y_train * (self.yMax-self.yMin) + self.yMin
-                        y_val = y_val * (self.yMax-self.yMin) + self.yMin
-                    
-                    r2_train = r2_score(y_train, yTrainPredicted)
-                    mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
-                    train_metric_lst[idx] = (np.array([mape_train, r2_train]))
-                    
-                    
-                    r2_val = r2_score(y_val, yValPredicted)
-                    mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
-                    val_metric_lst[idx] = np.array([mape_val, r2_val])
-                    # draw_histo(y_val, f'Histogram of Output in Fold {idx+1}', 'seagreen', 0)
+    def bestModel(self, Gbest):    # To see the performance of the best model
+        # edit the part below when model is changed
+        param_setting = {'n_neighbors':int(Gbest[0]), 'algorithm':'brute'}
+        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=int(Gbest[-1]))
+        kf = KFold(n_splits=self.kfold_num)
+        train_metric_lst = np.zeros((self.kfold_num, 2))
+        val_metric_lst = np.zeros((self.kfold_num, 2))
+        model_lst = []
+        for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
+            model = KNeighborsRegressor(**param_setting)
+            x_train = xTrain[train_idx]
+            y_train = yTrain[train_idx]
+            x_val = xTrain[val_idx]
+            y_val = yTrain[val_idx]
+            model.fit(x_train, y_train)
+            try:
+                yValPredicted = model.predict(x_val)
+                model_lst.append(model)
+            except:
+                # when k > n_val
+                model = KNeighborsRegressor(n_neighbors=x_val.shape[0], algorithm='brute')
+                model.fit(x_train, y_train)
+                yValPredicted = model.predict(x_val)
+                model_lst.append(model)
+            yTrainPredicted = model.predict(x_train)
+            if self.yMin != None and self.yMax != None:
+                yTrainPredicted = yTrainPredicted * (self.yMax-self.yMin) + self.yMin
+                yValPredicted = yValPredicted * (self.yMax-self.yMin) + self.yMin
+                y_train = y_train * (self.yMax-self.yMin) + self.yMin
+                y_val = y_val * (self.yMax-self.yMin) + self.yMin
+            
+            r2_train = r2_score(y_train, yTrainPredicted)
+            mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
+            train_metric_lst[idx] = (np.array([mape_train, r2_train]))
+            
+            
+            r2_val = r2_score(y_val, yValPredicted)
+            mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
+            val_metric_lst[idx] = np.array([mape_val, r2_val])
+            # draw_histo(y_val, f'Histogram of Output in Fold {idx+1}', 'seagreen', 0)
                     
         self.plot_metrics_folds(train_metric_lst, val_metric_lst, 'last', 'best')
         try:
@@ -392,9 +385,6 @@ class psokNN:
     use this function only when performing pso
     """
     def pso(self, particleAmount=10, maxIterTime=10):
-        metricHistory = []
-        metricHistory.append(1000)
-
         DNA_amount = self.dna_amount
         fitnessHistory0 = []
         fitnessHistory1 = []
@@ -416,12 +406,9 @@ class psokNN:
             fitness_current_population = np.zeros(len(population_current))
             for particleIdx, particle in enumerate(population_current):
                 # print(f'Particle: {particleIdx}')
-                for dnaIdx, dna in enumerate(dna_kind):
-                    locals()[dna] = particle[dnaIdx]
-
                 # training result of current particle
                 # edit the part below when model is changed
-                fitness_current_population[particleIdx], metricHistory = self.modelTraining(locals()[dna_kind[0]], locals()[dna_kind[1]], metricHistory, IterTime, particleIdx)
+                fitness_current_population[particleIdx] = self.modelTraining(population_current[particleIdx], iter_idx=IterTime, particle_idx=particleIdx, show_result_each_fold=False)
             
             # first iteration
             if IterTime == 0:
@@ -491,7 +478,7 @@ class psokNN:
         for particleIdx in range(len(population_current)):
             for dnaIdx, dna in enumerate(dna_kind):
                 locals()[dna] = population_current[particleIdx, dnaIdx]
-                fitness_current_population[particleIdx], metricHistory = self.modelTraining(locals()[dna_kind[0]], locals()[dna_kind[1]], metricHistory, '(Last)', 'Best')
+                fitness_current_population[particleIdx] = self.modelTraining(population_current[particleIdx], iter_idx=IterTime, particle_idx=particleIdx, show_result_each_fold=False)
                 
         for particleIdx in range(particleAmount):
             if fitness_current_population[particleIdx] < fitness_best_population[particleIdx]:
@@ -511,14 +498,15 @@ class psokNN:
         fitnessHistory = np.hstack((fitnessHistory0, fitnessHistory1))
         ll = float(len(fitnessHistory))/2
         fitnessHistory = fitnessHistory.reshape(int(ll), 2, order='F')
-        
         history1 = []
-        
-        for i in range(len(metricHistory)):
-            if metricHistory[i] < 1000 and metricHistory[i] > min(metricHistory):
-                history1.append(metricHistory[i])
 
         
-        optimal_model = self.bestModel(metricHistory, particle_best)
+        optimal_model = self.bestModel(particle_best)
         self.plot_fitness(fitnessHistory)
-        return optimal_model, fitnessHistory
+        
+        particle_best_dict = {}
+        if len(self.optimized_param) > 1:
+            for param_idx, param_name in self.optimized_param[:]:
+                particle_best_dict.update({self.optimized_param[param_idx]:particle_best[param_idx]})
+        
+        return optimal_model, fitnessHistory, particle_best_dict
