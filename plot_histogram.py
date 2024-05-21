@@ -21,11 +21,12 @@ def draw_histo(data, kind, color_, bins=None, range_std=2, value_boundary=[]):
     plt.xlabel('Value', fontsize=24)
     plt.ylabel('Counts', fontsize=24)
     plt.xlim(value_boundary[0], value_boundary[1])
-    plt.ylim(0, ((np.amax(counts)//5)+1)*5)
-    plt.xticks(x_tick, fontsize=22)
-    y_tick = np.linspace(0, ((np.amax(counts)//5)+1)*5, 10)
-    y_tick = np.array(['%.0f'%tick for tick in y_tick]).astype(float)
-    plt.yticks(fontsize=22)
+    # plt.ylim(0, ((np.amax(counts)//5)+1)*5)
+    plt.xticks(x_tick, fontsize=20)
+    step = np.amax(counts)//5 if np.amax(counts)//5!=0 else 1
+    y_tick = np.arange(0, ((np.amax(counts)//5)+1)*5+1, step).astype(int)
+    # y_tick = np.array(['%.0f'%tick for tick in y_tick]).astype(float)
+    plt.yticks(y_tick, fontsize=20)
     plt.grid()
     """
     draw average, std
