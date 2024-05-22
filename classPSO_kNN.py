@@ -107,7 +107,7 @@ class psokNN:
         
         if plot:
             color1 = ['slateblue', 'orange', 'firebrick', 'steelblue', 'purple', 'green']
-            plt.figure(figsize=(12, 9))
+            plt.figure(figsize=(12, 9), dpi=300)
             plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
             plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
             plt.ylabel("Predicted Value", fontsize=24)
@@ -118,13 +118,15 @@ class psokNN:
             plt.xlim([bottomValue, topValue])
             plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
             plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
-            plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
+            plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f}% | R^2={r2:.2f} | MAE={mae:.2f}"
                       , fontsize=26)
             # plt.axhline(y=1, color=color1[0])
             # plt.axhline(y=1.2, color=color1[1])
             # plt.axhline(y=1.5, color=color1[2])
             # plt.axhline(y=2, color=color1[3])
             # plt.axvline(x=1, color=color1[0])
+            plt.axhline(y=0, color='red')
+            plt.axvline(x=0, color='red')
             # plt.axvline(x=1.2, color=color1[1])
             # plt.axvline(x=1.5, color=color1[2])
             # plt.axvline(x=2, color=color1[3])
@@ -133,7 +135,7 @@ class psokNN:
         print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
         
     def show_train_history(self, history_, category, fold_idx):
-        plt.figure(figsize=(16, 6))
+        plt.figure(figsize=(16, 6), dpi=300)
         ax1 = plt.subplot(121)
         # category[0] = mape
         ax1.plot(history_['validation_0'][category[0]], lw=4, label='train')
@@ -165,30 +167,33 @@ class psokNN:
     def plot_metrics_folds(self, train_lst, val_lst, iter_idx, particle_idx):
         train_lst, val_lst = train_lst.T, val_lst.T
         x = np.arange(1, self.kfold_num+1, 1)
-        plt.figure(figsize=(16, 6))
+        plt.figure(figsize=(16, 6), dpi=300)
         ax1 = plt.subplot(121)
         ax1.plot(x, train_lst[0], '-o', label='train', lw=5, color='seagreen')
         ax1.plot(x, val_lst[0], '-o', label='val', lw=5, color='brown')
         ax1.set_ylabel('MAPE (%)', fontsize=24)
-        ax1.set_xlabel('Fold', fontsize=24)
+        ax1.set_xlabel('Iteration', fontsize=24)
         ax1.tick_params(axis='both', which='major', labelsize=20)
         # ax1.set_xticks(np.arange(1, self.kfold_num+1, 1), fontsize=22)
         # ax1.set_title(f'Iter. time: {iter_idx} of Particle {particle_idx}', fontsize=26)
         ax1.legend(loc='best', fontsize=20)
         ax1.grid(True)
-        ax1.set_ylim((0, 40))
+        # ax1.set_ylim((0, 40))
+        y_ticks = np.arange(0, 31, 5) if np.amax(val_lst[0]) < 30 else np.arange(0, 201, 20)
+        ax1.set_yticks(y_ticks)
         
         ax2 = plt.subplot(122)
         ax2.plot(x, train_lst[1], '-o', label='train', lw=5, color='seagreen')
         ax2.plot(x, val_lst[1], '-o', label='val', lw=5, color='brown')
         ax2.set_ylabel('R2', fontsize=24)
-        ax2.set_xlabel('Fold', fontsize=24)
+        ax2.set_xlabel('Iteration', fontsize=24)
         ax2.tick_params(axis='both', which='major', labelsize=20)
         # ax2.set_xticks(np.arange(1, self.kfold_num+1, 1), fontsize=22)
         # ax2.set_title(f'Iter. time: {iter_idx} of Particle {particle_idx}', fontsize=26)
         ax2.grid(True)
         ax2.legend(loc='best', fontsize=20)
-        ax2.set_ylim((0, 1.1))
+        y_ticks = np.arange(0, 1.1, 0.2) if np.amin(val_lst[1]) >= 0 else np.arange(-1.1, 1.1, 0.4)
+        ax2.set_yticks(y_ticks)
         # ax2.set_ylim((0, 1.1))
         plt.suptitle(f'Iteration: {iter_idx} | Particle: {particle_idx}', fontsize=26)
         plt.tight_layout()
@@ -471,8 +476,9 @@ class psokNN:
 
                 
             IterTime += 1
+        
         idx_best_particle = self.findIdxOfparticle_best(fitness_best_population)                
-        particle_best = population_best[idx_best_particle,:]  
+        particle_best = population_best[idx_best_particle,:]
         fitnessHistory0 = np.array(fitnessHistory0)
         fitnessHistory1 = np.array(fitnessHistory1)
         fitnessHistory = np.hstack((fitnessHistory0, fitnessHistory1))

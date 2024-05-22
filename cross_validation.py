@@ -18,12 +18,12 @@ from keras.layers import Dense, Dropout, MaxPooling1D, Flatten, Convolution1D, L
 from keras.layers import Conv2D, MaxPooling2D, BatchNormalization
 from keras.callbacks import EarlyStopping
 from stackingModel import stackingModel
+from plot_histogram import draw_histo
 
-def cleanOutlier(x, y):
+def cleanOutlier(x, y, range_ = 2):
     # Gid rid of y values exceeding 2 std value
     # ONLY WORKS ONE SINGLE OUTPUT
     y_std = np.std(y)
-    range_ = 2
     up_boundary = np.mean(y) + range_ * y_std 
     low_boundary = np.mean(y) - range_ * y_std 
     
@@ -185,63 +185,82 @@ class cross_validate:
         self.kfold_num = 5
     
     def show_train_history(self, history_, category, fold_idx=0, isValidated=True):
-        plt.figure(figsize=(16, 6))
-        if isValidated:
-            ax1 = plt.subplot(121)
-            # category[0]=mape
-            ax1.plot(history_['validation_0'][category[0]], lw=4, label='train')
-            ax1.plot(history_['validation_1'][category[0]], lw=4, label='val')
-            ax1.set_ylabel(f'{category[0]}', fontsize=24)
-            ax1.set_xlabel('Epoch', fontsize=24)
-            ax1.tick_params(axis='both', which='major', labelsize=20)
-            ax1.legend(loc='best', fontsize=20)
-            ax1.grid(True)
-            # ax1.set_ylim(-0.03, 0.32)
-    
-            
-            ax2 = plt.subplot(122)
-            ax2.plot(history_['validation_0'][category[1]], lw=4, label='train')
-            ax2.plot(history_['validation_1'][category[1]], lw=4, label='val')
-            ax2.set_ylabel(f'{category[1]}', fontsize=24)
-            ax2.set_xlabel('Epoch', fontsize=24)
-            ax2.tick_params(axis='both', which='major', labelsize=20)
-            ax2.legend(loc='best', fontsize=20)
-            ax2.grid(True)
-            # ax2.set_ylim(-0.03, 0.52)
-            plt.suptitle(f'Fold {fold_idx+1} Train History', fontsize=26)
-
+        if len(category) > 1:
+            plt.figure(figsize=(16, 6), dpi=300)
+            if isValidated:
+                ax1 = plt.subplot(121)
+                # category[0]=mape
+                ax1.plot(history_['validation_0'][category[0]], lw=4, label='train')
+                ax1.plot(history_['validation_1'][category[0]], lw=4, label='val')
+                ax1.set_ylabel(f'{category[0]}', fontsize=24)
+                ax1.set_xlabel('Epoch', fontsize=24)
+                ax1.tick_params(axis='both', which='major', labelsize=20)
+                ax1.legend(loc='best', fontsize=20)
+                ax1.grid(True)
+                # ax1.set_ylim(-0.03, 0.32)
         
-        else: # result of fine tune
-            ax1 = plt.subplot(121)
-            # category[0]=mape
-            ax1.plot(history_['validation_0'][category[0]], lw=4, label='train')
-            ax1.set_ylabel(f'{category[0]}', fontsize=24)
-            ax1.set_xlabel('Epoch', fontsize=24)
-            ax1.tick_params(axis='both', which='major', labelsize=20)
-            ax1.legend(loc='best', fontsize=20)
-            ax1.grid(True)
-            # ax1.set_ylim(-0.03, 0.32)
+                
+                ax2 = plt.subplot(122)
+                ax2.plot(history_['validation_0'][category[1]], lw=4, label='train')
+                ax2.plot(history_['validation_1'][category[1]], lw=4, label='val')
+                ax2.set_ylabel(f'{category[1]}', fontsize=26)
+                ax2.set_xlabel('Epoch', fontsize=24)
+                ax2.tick_params(axis='both', which='major', labelsize=20)
+                ax2.legend(loc='best', fontsize=20)
+                ax2.grid(True)
+                # ax2.set_ylim(-0.03, 0.52)
+                plt.suptitle(f'Fold {fold_idx+1} Train History', fontsize=26)
     
             
-            ax2 = plt.subplot(122)
-            ax2.plot(history_['validation_0'][category[1]], lw=4, label='train')
-            ax2.set_ylabel(f'{category[1]}', fontsize=24)
-            ax2.set_xlabel('Epoch', fontsize=24)
-            ax2.tick_params(axis='both', which='major', labelsize=20)
-            ax2.legend(loc='best', fontsize=20)
-            ax2.grid(True)
-            plt.suptitle('Fining Tuning Train History', fontsize=26)
+            else: # result of fine tune
+                ax1 = plt.subplot(121)
+                # category[0]=mape
+                ax1.plot(history_['validation_0'][category[0]], lw=4, label='train')
+                ax1.set_ylabel(f'{category[0]}', fontsize=24)
+                ax1.set_xlabel('Epoch', fontsize=24)
+                ax1.tick_params(axis='both', which='major', labelsize=20)
+                ax1.legend(loc='best', fontsize=20)
+                ax1.grid(True)
+                # ax1.set_ylim(-0.03, 0.32)
+        
+                
+                ax2 = plt.subplot(122)
+                ax2.plot(history_['validation_0'][category[1]], lw=4, label='train')
+                ax2.set_ylabel(f'{category[1]}', fontsize=24)
+                ax2.set_xlabel('Epoch', fontsize=24)
+                ax2.tick_params(axis='both', which='major', labelsize=20)
+                ax2.legend(loc='best', fontsize=20)
+                ax2.grid(True)
+                plt.suptitle('Fining Tuning Train History', fontsize=26)
+                
+            plt.tight_layout()
+            plt.subplots_adjust(top=0.88)
+            plt.show()
+            plt.close()
+        else:
+            plt.figure(figsize=(12, 9), dpi=300)
+            if isValidated:
+                plt.plot(history_['validation_0'][category[0]], lw=4, label='train')
+                plt.plot(history_['validation_1'][category[0]], lw=4, label='val')
+            else:
+                plt.plot(history_['validation_0'][category[0]], lw=4, label='train')
+            plt.ylabel(f'{category[0]}', fontsize=30)
+            plt.xlabel('Epoch', fontsize=26)
+            plt.legend(loc='best', fontsize=24)
+            if isValidated:
+                plt.title(f'Fold {fold_idx+1} Train History', fontsize=26)
+            else:
+                plt.title('Fining Tuning Train History', fontsize=26)
+            plt.xticks(fontsize=22)
+            plt.yticks(fontsize=22)
+            plt.grid()
             
-        plt.tight_layout()
-        plt.subplots_adjust(top=0.88)
-        plt.show()
-        plt.close()
         
     def plot_metrics_folds(self, train_lst, val_lst):
         x = np.arange(1, self.kfold_num+1, 1)
         train_lst, val_lst = train_lst.T, val_lst.T
         metrics = ['MAPE (%)', 'R2'] 
-        plt.figure(figsize=(16, 6))
+        plt.figure(figsize=(16, 6), dpi=300)
         ax1 = plt.subplot(121)
         ax1.plot(x, train_lst[0], '-o', label='train', lw=5, color='seagreen')
         ax1.plot(x, val_lst[0], '-o', label='val', lw=5, color='brown')
@@ -251,7 +270,9 @@ class cross_validate:
         ax1.legend(loc='best', fontsize=20)
         # ax1.set_title(f'{metrics[0]}', fontsize=26)
         ax1.grid(True)
-        ax1.set_ylim((0, 40))
+        y_ticks = np.arange(0, 31, 5) if np.amax(val_lst[0]) < 30 else np.arange(0, 201, 20)
+        ax1.set_yticks(y_ticks)
+        # ax1.set_ylim((0, 200))
         
         ax2 = plt.subplot(122)
         ax2.plot(x, train_lst[1], '-o', label='train', lw=5, color='seagreen')
@@ -262,7 +283,8 @@ class cross_validate:
         ax2.legend(loc='best', fontsize=20)
         # ax2.set_title(f'{metrics[1]}', fontsize=26)
         ax2.grid(True)
-        ax2.set_ylim((0, 1.1))
+        y_ticks = np.arange(0, 1.1, 0.2) if np.amin(val_lst[1]) >= 0 else np.arange(-1.1, 1.1, 0.4)
+        ax2.set_yticks(y_ticks)
         plt.suptitle('Cross Validation', fontsize=26)
     
     def cross_validate_XGB(self, param_setting=None):
@@ -271,7 +293,7 @@ class cross_validate:
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
         model_state = []
-        metrics = ['mape', 'rmse']
+        metrics = ['mae']
         # default setting: https://xgboost-readthedocs-io.translate.goog/en/stable/parameter.html?_x_tr_sl=en&_x_tr_tl=zh-TW&_x_tr_hl=zh-TW&_x_tr_pto=sc
         if param_setting != None:
             model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
@@ -297,7 +319,7 @@ class cross_validate:
                 y_train = y_train * (self.yMax-self.yMin) + self.yMin
                 y_val = y_val * (self.yMax-self.yMin) + self.yMin
             results = model.evals_result()
-            # self.show_train_history(results, metrics, idx)
+            self.show_train_history(results, metrics, idx)
             r2_train = r2_score(y_train, yTrainPredicted)
             mape_train = mean_absolute_percentage_error(y_train, yTrainPredicted) * 100
             train_metric_lst[idx] = (np.array([mape_train, r2_train]))
@@ -305,17 +327,17 @@ class cross_validate:
             r2_val = r2_score(y_val, yValPredicted)
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
-            # draw_histo(y_val, f'Histogram of Output in Fold {idx+1}', 'seagreen', 0)
+            # draw_histo(y_val, f'Histogram of Quality Index in Validation Fold {idx+1}', 'seagreen', 0, value_boundary=self.y_boundary)
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
         highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
         # https://xgboost.readthedocs.io/en/stable/python/examples/continuation.html
         if param_setting != None:
             new_model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
-                                 disable_default_eval_metric=True, n_estimators=100, random_state=75).set_params(**param_setting)
+                                 disable_default_eval_metric=True, n_estimators=300, random_state=75).set_params(**param_setting)
         else:
             new_model = XGBRegressor(eval_metric=metrics, importance_type='total_gain',
-                                 disable_default_eval_metric=True, n_estimators=100, random_state=75)
+                                 disable_default_eval_metric=True, n_estimators=300, random_state=75)
         
         best_model = XGBRegressor()
         best_model.load_model(f".//modelWeights//xgb_{highest_r2_idx}.json")
@@ -363,6 +385,7 @@ class cross_validate:
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
         highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
         best_model = model_lst[highest_r2_idx]
+        best_model.fit(self.xTrain, self.yTrain)
         return best_model
     
     def cross_validate_RF(self, param_setting=None):
@@ -679,6 +702,7 @@ class cross_validate:
             yTestPredicted = yTestPredicted * (self.yMax-self.yMin) + self.yMin
             self.yTest = self.yTest * (self.yMax-self.yMin) + self.yMin
             # print('y denormalized')
+        # draw_histo(self.yTest, 'Histogram of Quality Index in Testing Dataset', 'royalblue', 0, value_boundary=self.y_boundary)
         self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
         
     def plotTrueAndPredicted(self, x, YT, YP, category):
@@ -688,7 +712,7 @@ class cross_validate:
         mape = mean_absolute_percentage_error(YT, YP) * 100
         mae = mean_absolute_error(YT, YP)
         color1 = ['slateblue', 'orange', 'firebrick', 'steelblue', 'purple', 'green']
-        plt.figure(figsize=(12, 9))
+        plt.figure(figsize=(12, 9), dpi=300)
         plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
         plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
         plt.ylabel("Predicted Value", fontsize=24)
@@ -697,7 +721,7 @@ class cross_validate:
         plt.xlim([bottomValue, topValue])
         plt.xticks(fontsize=22)
         plt.yticks(fontsize=22)
-        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
+        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f}% | R^2={r2:.2f} | MAE={mae:.2f}"
                   , fontsize=26)
         # plt.axhline(y=1, color=color1[0])
         # plt.axhline(y=1.2, color=color1[1])
@@ -707,6 +731,8 @@ class cross_validate:
         # plt.axvline(x=1.2, color=color1[1])
         # plt.axvline(x=1.5, color=color1[2])
         # plt.axvline(x=2, color=color1[3])
+        plt.axhline(y=0, color='red')
+        plt.axvline(x=0, color='red')
         plt.grid()
         plt.show()
         print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
@@ -918,7 +944,7 @@ class cross_validate_signal:
         plt.xlim([bottomValue, topValue])
         plt.xticks(fontsize=22)
         plt.yticks(fontsize=22)
-        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
+        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f}% | R^2={r2:.2f} | MAE={mae:.2f}"
                   , fontsize=26)
         plt.axhline(y=1, color=color1[0])
         plt.axhline(y=1.2, color=color1[1])
@@ -1077,7 +1103,7 @@ class cross_validate_image:
         plt.xlim([bottomValue, topValue])
         plt.xticks(fontsize=22)
         plt.yticks(fontsize=22)
-        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
+        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f}% | R^2={r2:.2f} | MAE={mae:.2f}"
                   , fontsize=26)
         # plt.axhline(y=1, color=color1[0])
         # plt.axhline(y=1.2, color=color1[1])
