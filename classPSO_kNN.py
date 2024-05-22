@@ -192,7 +192,7 @@ class psokNN:
         # ax2.set_title(f'Iter. time: {iter_idx} of Particle {particle_idx}', fontsize=26)
         ax2.grid(True)
         ax2.legend(loc='best', fontsize=20)
-        y_ticks = np.arange(0, 1.1, 0.2) if np.amin(val_lst[1]) >= 0 else np.arange(-1.1, 1.1, 0.4)
+        y_ticks = np.arange(0, 1.3, 0.2) if np.amin(val_lst[1]) >= 0 else np.arange(-1.3, 1.3, 0.4)
         ax2.set_yticks(y_ticks)
         # ax2.set_ylim((0, 1.1))
         plt.suptitle(f'Iteration: {iter_idx} | Particle: {particle_idx}', fontsize=26)
@@ -360,7 +360,10 @@ class psokNN:
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
             # draw_histo(y_val, f'Histogram of Output in Fold {idx+1}', 'seagreen', 0)
-                    
+        with open(f'.//pso_histories//{self.qualityKind}_cv_train_folds.csv', 'w') as file:
+            np.savetxt(file, train_metric_lst, delimiter=',')
+        with open(f'.//pso_histories//{self.qualityKind}_cv_val_folds.csv', 'w') as file:
+            np.savetxt(file, val_metric_lst, delimiter=',')
         self.plot_metrics_folds(train_metric_lst, val_metric_lst, 'last', 'best')
         try:
             highest_valR2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
@@ -380,7 +383,7 @@ class psokNN:
         plt.plot(x_axis, fit_history[:, 1], '-o', lw=2)
         plt.grid()
         plt.xlabel('Iteration', fontsize=24)
-        plt.ylabel('Fitness', fontsize=24)
+        plt.ylabel('Fitness (%)', fontsize=24)
         plt.xlim(0, ((x_axis[-1]//5)+1)*5)
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=22)
@@ -484,9 +487,11 @@ class psokNN:
         fitnessHistory = np.hstack((fitnessHistory0, fitnessHistory1))
         ll = float(len(fitnessHistory))/2
         fitnessHistory = fitnessHistory.reshape(int(ll), 2, order='F')
-
+        
         
         optimal_model = self.bestModel(particle_best)
+        with open(f'.//pso_histories//{self.qualityKind}_fitness_history.csv', 'w') as file:
+            np.savetxt(file, fitnessHistory, delimiter=',')
         self.plot_fitness(fitnessHistory)
         
         particle_best_dict = {}
