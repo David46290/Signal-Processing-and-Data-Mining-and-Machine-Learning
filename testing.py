@@ -4,9 +4,9 @@ from matplotlib import pyplot as plt
 import pandas as pd
 from plot_histogram import draw_histo
 
-def plot_metrics_folds(self, train_lst, val_lst, iter_idx, particle_idx):
+def plot_metrics_folds(train_lst, val_lst, iter_idx, particle_idx):
     train_lst, val_lst = train_lst.T, val_lst.T
-    x = np.arange(1, self.kfold_num+1, 1)
+    x = np.arange(1, 5+1, 1)
     plt.figure(figsize=(16, 6), dpi=300)
     ax1 = plt.subplot(121)
     ax1.plot(x, train_lst[0], '-o', label='train', lw=5, color='seagreen')
@@ -46,11 +46,25 @@ if __name__ == '__main__':
     name_q = ['TTV', 'Warp', 'Waviness', 'BOW']
     name_rate = ['A', 'B', 'C']
     name_recipe = ['1', '2', '3']
+    total_train = []
+    total_val = []
+    total_name = []
     for q in name_q:
         for rate in name_rate:
             for recipe in name_recipe:
                 for data in glob.glob(os.path.join(directory, '*.csv')):
                     with open(data, 'r') as file:
                         if q in data and rate+recipe in data :
-                            print(data)
-                        # history = np.genfromtxt(file, delimiter=',')
+                            if 'cv_train' in data:
+                                # total_name.append(f'{q}_{rate+recipe}') 
+                                cv_train = np.genfromtxt(data, delimiter=',')
+                                total_train.append(cv_train)
+                                
+                            if 'cv_val' in data:
+                                total_name.append(f'{q}_{rate+recipe}') 
+                                cv_val = np.genfromtxt(data, delimiter=',')
+                                total_val.append(cv_val)
+                                
+    for idx_dataset, cv_scores in enumerate(total_train[:2]):
+        plot_metrics_folds(total_train[idx_dataset], total_val[idx_dataset], iter_idx='Final', particle_idx='Best')
+                              
