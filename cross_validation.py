@@ -160,7 +160,7 @@ def show_train_history_NN_onlyTrain(history_, loss, metric_name_tr, fold_idx):
     plt.close()
 
 class cross_validate:
-    def __init__(self, x, y, is_auto_split=True, k_fold_num=5, qualityKind='Y', normalized='', y_value_boundary=[]):
+    def __init__(self, x, y, qualityKind='Y', is_auto_split=True, k_fold_num=5, normalized='', y_value_boundary=[]):
         self.is_auto_split = is_auto_split
         self.qualityKind = qualityKind
         self.normalized = normalized
