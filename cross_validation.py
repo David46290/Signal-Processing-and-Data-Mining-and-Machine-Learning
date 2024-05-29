@@ -160,29 +160,33 @@ def show_train_history_NN_onlyTrain(history_, loss, metric_name_tr, fold_idx):
     plt.close()
 
 class cross_validate:
-    def __init__(self, x, y, qualityKind='Y', normalized='', y_value_boundary=[]):
-        y = y.ravel()
+    def __init__(self, x, y, is_auto_split=True, k_fold_num=5, qualityKind='Y', normalized='', y_value_boundary=[]):
+        self.is_auto_split = is_auto_split
         self.qualityKind = qualityKind
         self.normalized = normalized
+        self.kfold_num = k_fold_num
         self.x, self.y = cleanOutlier(x, y)
+        
         if len(y_value_boundary) == 0:
             self.y_boundary = [np.amin(self.y)-1, np.amax(self.y)+1]
         else:
             self.y_boundary = y_value_boundary
-        
         self.xMin, self.xMax, self.yMin, self.yMax = None, None, None, None
-        
+        y = y.ravel()
         if 'x' in self.normalized or 'X' in self.normalized:
             self.x, self.xMin, self.xMax = normalizationX(self.x)
             
         if 'y' in self.normalized or 'Y' in self.normalized:
             self.y, self.yMin, self.yMax = normalizationY(self.y)
             # print('y normalized')
-
-        self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
+            
+        if self.is_auto_split:
+            self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)    
+        else:
+            self.xTrain, self.yTrain, self.xTest, self.yTest = False, False, False, False
 
         
-        self.kfold_num = 5
+        
     
     def show_train_history(self, history_, category, fold_idx=0, isValidated=True):
         if len(category) > 1:
@@ -191,7 +195,7 @@ class cross_validate:
                 ax1 = plt.subplot(121)
                 # category[0]=mape
                 ax1.plot(history_['validation_0'][category[0]], lw=4, label='train')
-                ax1.plot(history_['validation_1'][category[0]], lw=4, label='val')
+                ax1.plot(history_['validation_1'][category[0]], lw=4, label='validation')
                 ax1.set_ylabel(f'{category[0]}', fontsize=24)
                 ax1.set_xlabel('Epoch', fontsize=24)
                 ax1.tick_params(axis='both', which='major', labelsize=20)
@@ -202,14 +206,14 @@ class cross_validate:
                 
                 ax2 = plt.subplot(122)
                 ax2.plot(history_['validation_0'][category[1]], lw=4, label='train')
-                ax2.plot(history_['validation_1'][category[1]], lw=4, label='val')
+                ax2.plot(history_['validation_1'][category[1]], lw=4, label='validation')
                 ax2.set_ylabel(f'{category[1]}', fontsize=26)
                 ax2.set_xlabel('Epoch', fontsize=24)
                 ax2.tick_params(axis='both', which='major', labelsize=20)
                 ax2.legend(loc='best', fontsize=20)
                 ax2.grid(True)
                 # ax2.set_ylim(-0.03, 0.52)
-                plt.suptitle(f'Fold {fold_idx+1} Train History', fontsize=26)
+                plt.suptitle(f'Run {fold_idx+1} Train History', fontsize=26)
     
             
             else: # result of fine tune
@@ -241,14 +245,14 @@ class cross_validate:
             plt.figure(figsize=(12, 9), dpi=300)
             if isValidated:
                 plt.plot(history_['validation_0'][category[0]], lw=4, label='train')
-                plt.plot(history_['validation_1'][category[0]], lw=4, label='val')
+                plt.plot(history_['validation_1'][category[0]], lw=4, label='validation')
             else:
                 plt.plot(history_['validation_0'][category[0]], lw=4, label='train')
             plt.ylabel(f'{category[0]}', fontsize=30)
             plt.xlabel('Epoch', fontsize=26)
             plt.legend(loc='best', fontsize=24)
             if isValidated:
-                plt.title(f'Fold {fold_idx+1} Train History', fontsize=26)
+                plt.title(f'Run {fold_idx+1} Train History', fontsize=26)
             else:
                 plt.title('Fining Tuning Train History', fontsize=26)
             plt.xticks(fontsize=22)
@@ -270,8 +274,8 @@ class cross_validate:
         ax1.legend(loc='best', fontsize=20)
         # ax1.set_title(f'{metrics[0]}', fontsize=26)
         ax1.grid(True)
-        y_ticks = np.arange(0, 31, 5) if np.amax(val_lst[0]) < 30 else np.arange(0, 201, 20)
-        ax1.set_yticks(y_ticks)
+        y_ticks = np.arange(0, 31, 5) if np.amax(val_lst[0]) < 30 else np.arange(0, 500, 50)
+        # ax1.set_yticks(y_ticks)
         # ax1.set_ylim((0, 200))
         
         ax2 = plt.subplot(122)
@@ -283,14 +287,19 @@ class cross_validate:
         ax2.legend(loc='best', fontsize=20)
         # ax2.set_title(f'{metrics[1]}', fontsize=26)
         ax2.grid(True)
-        y_ticks = np.arange(0, 1.3, 0.2) if np.amin(val_lst[1]) >= 0 else np.arange(-1.3, 1.3, 0.4)
-        ax2.set_yticks(y_ticks)
+        y_ticks = np.arange(0, 1.3, 0.2) if np.amin(val_lst[1]) >= 0 else np.arange(-4, 1.2, 0.4)
+        # ax2.set_yticks(y_ticks)
         plt.suptitle('Cross Validation', fontsize=26)
         plt.subplots_adjust(top=0.88)
         plt.tight_layout()
     
-    def cross_validate_XGB(self, param_setting=None):
-        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
+    def cross_validate_XGB(self, x=[], y=[], param_setting=None):
+        if self.is_auto_split:
+            xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
+        else:
+            if len(x)==0 or len(y)==0:
+                raise ValueError('No xTrain amd yTrain passed as arguments while is_auto_split is False')
+            xTrain, yTrain = shuffle(x, y, random_state=75)
         kf = KFold(n_splits=self.kfold_num)
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
@@ -332,6 +341,10 @@ class cross_validate:
             # draw_histo(y_val, f'Histogram of Quality Index in Validation Fold {idx+1}', 'seagreen', 0, value_boundary=self.y_boundary)
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
+        with open(f'.//xgb_history/{self.qualityKind}_cv_train_folds.csv', 'w') as file:
+            np.savetxt(file, train_metric_lst, delimiter=',')
+        with open(f'.//xgb_history//{self.qualityKind}_cv_val_folds.csv', 'w') as file:
+            np.savetxt(file, val_metric_lst, delimiter=',')
         highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
         # https://xgboost.readthedocs.io/en/stable/python/examples/continuation.html
         if param_setting != None:

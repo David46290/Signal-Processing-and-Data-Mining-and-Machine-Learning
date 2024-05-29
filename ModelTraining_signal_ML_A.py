@@ -9,7 +9,7 @@ from classPSO_kNN import psokNN
 
 if __name__ == '__main__':
     isDifferentParamSets = True
-    paramSet_num = 1
+    paramSet_num = 2
     differencing = False
     differencing = True
     isEnveCombined = False
@@ -43,6 +43,7 @@ if __name__ == '__main__':
     ttv = QEL.pick_certain_qualities(".\\quality_A.csv", ['TTV'], methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.pick_certain_qualities(".\\quality_2022_A.csv", ['TTV'], methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
     warp = QEL.pick_certain_qualities(".\\quality_A.csv", ['Warp'], methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.pick_certain_qualities(".\\quality_2022_A.csv", ['Warp'], methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
     waviness = QEL.pick_certain_qualities(".\\quality_A.csv", ['Wav ind'], methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.pick_certain_qualities(".\\quality_2022_A.csv", ['Wav ind'], methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
+    
     bow = QEL.pick_certain_qualities(".\\quality_A.csv", ['Bow'], methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.pick_certain_qualities(".\\quality_2022_A.csv", ['Bow'], methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
     position = QEL.get_wafer_position(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.get_wafer_position(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)  
     lot = QEL.get_lot(".\\quality_A.csv", methodIdx_lst_23[paramSet_num-1], isDifferentParamSets) + QEL.get_lot(".\\quality_2022_A.csv", methodIdx_lst_22[paramSet_num-1], isDifferentParamSets)
@@ -82,7 +83,7 @@ if __name__ == '__main__':
     ingot_len = np.array(ingot_len_23 + ingot_len_22).reshape(-1, 1)
     ingot_len = sigpro.pick_run_data(ingot_len, valid_run_idx)
     ingot_len = sigpro.pick_run_data(ingot_len, general_run_idx)
-    f_outlet = feaext.features_of_signal(progress, outlet_diff, isEnveCombined)
+    f_outlet = feaext.features_of_signal(progress, outlet_diff, isEnveCombined, head_tail_delete_x=[3, 297])
     f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
 
     """
@@ -92,6 +93,9 @@ if __name__ == '__main__':
     # x_lot1 = f_combine[run_idx_lot1]
     locPrepare = locIntegrate([ttv, warp, waviness, bow], position)
     x, y = locPrepare.mixFeatureAndQuality(f_combine)
+    feaext.saveFeatures('X_and_Y', f'f_A{paramSet_num}', x)
+    feaext.saveFeatures('X_and_Y', f'y_A{paramSet_num}', y)
+    
     y_ttv = y[:, 0]
     y_warp = y[:, 1]
     y_wavi = y[:, 2]
@@ -100,31 +104,34 @@ if __name__ == '__main__':
     """
     PSO
     """
-    psoModelTTV = psokNN(x, y_ttv, 'TTV (datasetA)', normalized='', y_boundary=[5.5, 17])
-    psoModelWarp = psokNN(x, y_warp, 'Warp (datasetA)', normalized='', y_boundary=[3, 18])
-    psoModelWavi = psokNN(x, y_wavi, 'Waviness (datasetA)', normalized='', y_boundary=[0, 2.7])
-    psoModelBOW = psokNN(x, y_bow, 'BOW (datasetA)', normalized='', y_boundary=[-5, 4])
+    # psoModelTTV = psokNN(x, y_ttv, f'TTV (dataset A{paramSet_num})', normalized='xy', y_boundary=[5.5, 17])
+    # psoModelWarp = psokNN(x, y_warp, f'Warp (dataset A{paramSet_num})', normalized='xy', y_boundary=[3, 18])
+    # psoModelWavi = psokNN(x, y_wavi, f'Waviness (dataset A{paramSet_num})', normalized='xy', y_boundary=[0, 2.7])
+    # psoModelBOW = psokNN(x, y_bow, f'BOW (dataset A{paramSet_num})', normalized='xy', y_boundary=[-5, 4])
 
 
-    model_ttv, fitnessHistory_ttv, best_particle_ttv = psoModelTTV.pso(particleAmount=20, maxIterTime=10)
-    # model_warp, fitnessHistory_warp, best_particle_warp = psoModelWarp.pso(particleAmount=20, maxIterTime=10)
-    # model_wavi, fitnessHistory_wavi, best_particle_wavi = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
-    # model_bow, fitnessHistory_bow, best_particle_bow = psoModelBOW.pso(particleAmount=20, maxIterTime=10)
+    # model_ttv, fitnessHistory_ttv, best_particle_ttv = psoModelTTV.pso(particleAmount=20, maxIterTime=100)
+    # model_warp, fitnessHistory_warp, best_particle_warp = psoModelWarp.pso(particleAmount=20, maxIterTime=100)
+    # model_wavi, fitnessHistory_wavi, best_particle_wavi = psoModelWavi.pso(particleAmount=20, maxIterTime=100)
+    # model_bow, fitnessHistory_bow, best_particle_bow = psoModelBOW.pso(particleAmount=20, maxIterTime=100)
 
 
     """
     Cross Validation
     """
-    # cv_ttv = cv.cross_validate(x, y_ttv, 'TTV (datasetA)', normalized='', y_value_boundary=[5.5, 17])
-    # cv_warp = cv.cross_validate(x, y_warp, 'Warp (datasetA)', normalized='', y_value_boundary=[3, 18])
-    # cv_wavi = cv.cross_validate(x, y_wavi, 'Waviness (datasetA)', normalized='', y_value_boundary=[0, 2.7])
-    # cv_bow = cv.cross_validate(x, y_bow, 'BOW (datasetA)', normalized='', y_value_boundary=[-5, 4])
+    cv_ttv = cv.cross_validate(x, y_ttv, f'TTV (dataset A{paramSet_num})', normalized='xy', y_value_boundary=[5.5, 17])
+    cv_warp = cv.cross_validate(x, y_warp, f'Warp (dataset A{paramSet_num})', normalized='xy', y_value_boundary=[3, 18])
+    cv_wavi = cv.cross_validate(x, y_wavi, f'Waviness (dataset A{paramSet_num})', normalized='xy', y_value_boundary=[0, 2.7])
+    cv_bow = cv.cross_validate(x, y_bow, f'BOW (dataset A{paramSet_num})', normalized='xy', y_value_boundary=[-5, 4])
     
     # param_setting = {'eta':0.3, 'gamma':0.01, 'max_depth':6, 'subsample':0.8, 'lambda':50, 'random_state':75}
-    # model_ttv = cv_ttv.cross_validate_XGB(param_setting)
-    # model_warp = cv_warp.cross_validate_XGB(param_setting)
-    # model_wavi = cv_wavi.cross_validate_XGB(param_setting)
-    # model_bow = cv_bow.cross_validate_XGB(param_setting)
+    # param_setting = {'n_neighbors':2}
+    param_setting = {'random_state':75}
+    # model_ttv = cv_ttv.cross_validate_XGB(param_setting=param_setting)
+    # model_warp = cv_warp.cross_validate_XGB(param_setting=param_setting)
+    # model_wavi = cv_wavi.cross_validate_XGB(param_setting=param_setting)
+    # model_wavi = cv_wavi.cross_validate_stacking(model_name_lst=['rf', 'knn', 'ada', 'xgb'])
+    # model_bow = cv_bow.cross_validate_XGB(param_setting=param_setting)
 
 
     # cv_ttv.model_testing(model_ttv, 'XGB')
