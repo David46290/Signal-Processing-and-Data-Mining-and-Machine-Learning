@@ -165,21 +165,26 @@ class cross_validate:
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.kfold_num = k_fold_num
-        self.x, self.y = cleanOutlier(x, y)
         
-        if len(y_value_boundary) == 0:
-            self.y_boundary = [np.amin(self.y)-1, np.amax(self.y)+1]
+        if self.is_auto_split:
+            y = y.ravel()
+            self.x, self.y = cleanOutlier(x, y)  
         else:
-            self.y_boundary = y_value_boundary
+            self.x, self.y = x, y
+            
         self.xMin, self.xMax, self.yMin, self.yMax = None, None, None, None
-        y = y.ravel()
         if 'x' in self.normalized or 'X' in self.normalized:
             self.x, self.xMin, self.xMax = normalizationX(self.x)
             
         if 'y' in self.normalized or 'Y' in self.normalized:
             self.y, self.yMin, self.yMax = normalizationY(self.y)
-            # print('y normalized')
-            
+
+        
+        if len(y_value_boundary) == 0:
+            self.y_boundary = [np.amin(self.y)-1, np.amax(self.y)+1]
+        else:
+            self.y_boundary = y_value_boundary
+             
         if self.is_auto_split:
             self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)    
         else:
@@ -293,13 +298,21 @@ class cross_validate:
         plt.subplots_adjust(top=0.88)
         plt.tight_layout()
     
-    def cross_validate_XGB(self, x=[], y=[], param_setting=None):
+    def cross_validate_XGB(self, x_train=[], y_train=[], param_setting=None):
         if self.is_auto_split:
             xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
         else:
-            if len(x)==0 or len(y)==0:
-                raise ValueError('No xTrain amd yTrain passed as arguments while is_auto_split is False')
-            xTrain, yTrain = shuffle(x, y, random_state=75)
+            if len(x_train)==0 or len(y_train)==0:
+                raise ValueError('No x_train amd y_train passed as arguments while is_auto_split is False')
+            xTrain, yTrain = shuffle(x_train, y_train, random_state=75)
+            if 'x' in self.normalized or 'X' in self.normalized:
+                self.xMin = np.pad(self.xMin, (0, 1), 'constant', constant_values=(0, 0))
+                self.xMax = np.pad(self.xMax, (0, 1), 'constant', constant_values=(0, 1))
+                xTrain = (xTrain - self.xMin) / (self.xMax - self.xMin)
+                
+            if 'y' in self.normalized or 'Y' in self.normalized:
+                yTrain = (yTrain - self.yMin) / (self.yMax - self.yMin)
+            
         kf = KFold(n_splits=self.kfold_num)
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
@@ -360,7 +373,8 @@ class cross_validate:
         # best_model = xgb.train(params=model.get_params(), dtrain=xgb.DMatrix(self.xTrain, label=self.yTrain),
         #                        xgb_model=f".//modelWeights//xgb_{highest_r2_idx }.json",
         #                        evals_result=model.evals_result(), num_boost_round=100)
-        new_model.fit(self.xTrain, self.yTrain, xgb_model=best_model, eval_set=[(self.xTrain, self.yTrain)], verbose=False)
+
+        new_model.fit(xTrain, yTrain, xgb_model=best_model, eval_set=[(xTrain, yTrain)], verbose=False)
         results_tune = new_model.evals_result()
         # self.show_train_history(results_tune, metrics, isValidated=False)
         # model_state.append(new_model.get_xgb_params())
@@ -710,15 +724,27 @@ class cross_validate:
         return model
     
     
-    def model_testing(self, model_, category):
+    def model_testing(self, model_, category, x_test=[], y_test=[]):
         model = model_
-        yTestPredicted = model.predict(self.xTest)
+        if self.is_auto_split:
+            xTest, yTest = self.xTest, self.yTest
+        else:
+            if len(x_test)==0 or len(y_test)==0:
+                raise ValueError('No x_test amd y_test passed as arguments while is_auto_split is False')
+            xTest, yTest = x_test, y_test
+            if 'x' in self.normalized or 'X' in self.normalized:
+                xTest = (xTest - self.xMin) / (self.xMax - self.xMin)
+                
+            if 'y' in self.normalized or 'Y' in self.normalized:
+                yTest = (yTest - self.yMin) / (self.yMax - self.yMin)
+            
+        yTestPredicted = model.predict(xTest)
         if self.yMin != None and self.yMax != None:
             yTestPredicted = yTestPredicted * (self.yMax-self.yMin) + self.yMin
-            self.yTest = self.yTest * (self.yMax-self.yMin) + self.yMin
+            yTest = yTest * (self.yMax-self.yMin) + self.yMin
             # print('y denormalized')
         # draw_histo(self.yTest, 'Histogram of Quality Index in Testing Dataset', 'royalblue', 0, value_boundary=self.y_boundary)
-        self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
+        self.plotTrueAndPredicted(xTest, yTest, yTestPredicted, f"({category}) [Test]")
         
     def plotTrueAndPredicted(self, x, YT, YP, category):
         bottomValue, topValue = self.y_boundary[0], self.y_boundary[1]
