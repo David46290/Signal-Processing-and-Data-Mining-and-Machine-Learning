@@ -160,38 +160,29 @@ def show_train_history_NN_onlyTrain(history_, loss, metric_name_tr, fold_idx):
     plt.close()
 
 class cross_validate:
-    def __init__(self, x, y, qualityKind='Y', is_auto_split=True, k_fold_num=5, normalized='', y_value_boundary=[]):
-        self.is_auto_split = is_auto_split
+    def __init__(self, x, y, qualityKind='Y', normalized='', y_value_boundary=[]):
+        y = y.ravel()
         self.qualityKind = qualityKind
         self.normalized = normalized
-        self.kfold_num = k_fold_num
-        
-        if self.is_auto_split:
-            y = y.ravel()
-            self.x, self.y = cleanOutlier(x, y)  
+        self.x, self.y = cleanOutlier(x, y)
+        if len(y_value_boundary) == 0:
+            self.y_boundary = [np.amin(self.y)-1, np.amax(self.y)+1]
         else:
-            self.x, self.y = x, y
-            
+            self.y_boundary = y_value_boundary
+        
         self.xMin, self.xMax, self.yMin, self.yMax = None, None, None, None
+        
         if 'x' in self.normalized or 'X' in self.normalized:
             self.x, self.xMin, self.xMax = normalizationX(self.x)
             
         if 'y' in self.normalized or 'Y' in self.normalized:
             self.y, self.yMin, self.yMax = normalizationY(self.y)
+            # print('y normalized')
+
+        self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
 
         
-        if len(y_value_boundary) == 0:
-            self.y_boundary = [np.amin(self.y)-1, np.amax(self.y)+1]
-        else:
-            self.y_boundary = y_value_boundary
-             
-        if self.is_auto_split:
-            self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)    
-        else:
-            self.xTrain, self.yTrain, self.xTest, self.yTest = False, False, False, False
-
-        
-        
+        self.kfold_num = 5
     
     def show_train_history(self, history_, category, fold_idx=0, isValidated=True):
         if len(category) > 1:
@@ -200,7 +191,7 @@ class cross_validate:
                 ax1 = plt.subplot(121)
                 # category[0]=mape
                 ax1.plot(history_['validation_0'][category[0]], lw=4, label='train')
-                ax1.plot(history_['validation_1'][category[0]], lw=4, label='validation')
+                ax1.plot(history_['validation_1'][category[0]], lw=4, label='val')
                 ax1.set_ylabel(f'{category[0]}', fontsize=24)
                 ax1.set_xlabel('Epoch', fontsize=24)
                 ax1.tick_params(axis='both', which='major', labelsize=20)
@@ -211,14 +202,14 @@ class cross_validate:
                 
                 ax2 = plt.subplot(122)
                 ax2.plot(history_['validation_0'][category[1]], lw=4, label='train')
-                ax2.plot(history_['validation_1'][category[1]], lw=4, label='validation')
+                ax2.plot(history_['validation_1'][category[1]], lw=4, label='val')
                 ax2.set_ylabel(f'{category[1]}', fontsize=26)
                 ax2.set_xlabel('Epoch', fontsize=24)
                 ax2.tick_params(axis='both', which='major', labelsize=20)
                 ax2.legend(loc='best', fontsize=20)
                 ax2.grid(True)
                 # ax2.set_ylim(-0.03, 0.52)
-                plt.suptitle(f'Run {fold_idx+1} Train History', fontsize=26)
+                plt.suptitle(f'Fold {fold_idx+1} Train History', fontsize=26)
     
             
             else: # result of fine tune
@@ -250,14 +241,14 @@ class cross_validate:
             plt.figure(figsize=(12, 9), dpi=300)
             if isValidated:
                 plt.plot(history_['validation_0'][category[0]], lw=4, label='train')
-                plt.plot(history_['validation_1'][category[0]], lw=4, label='validation')
+                plt.plot(history_['validation_1'][category[0]], lw=4, label='val')
             else:
                 plt.plot(history_['validation_0'][category[0]], lw=4, label='train')
             plt.ylabel(f'{category[0]}', fontsize=30)
             plt.xlabel('Epoch', fontsize=26)
             plt.legend(loc='best', fontsize=24)
             if isValidated:
-                plt.title(f'Run {fold_idx+1} Train History', fontsize=26)
+                plt.title(f'Fold {fold_idx+1} Train History', fontsize=26)
             else:
                 plt.title('Fining Tuning Train History', fontsize=26)
             plt.xticks(fontsize=22)
@@ -298,21 +289,8 @@ class cross_validate:
         plt.subplots_adjust(top=0.88)
         plt.tight_layout()
     
-    def cross_validate_XGB(self, x_train=[], y_train=[], param_setting=None):
-        if self.is_auto_split:
-            xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
-        else:
-            if len(x_train)==0 or len(y_train)==0:
-                raise ValueError('No x_train amd y_train passed as arguments while is_auto_split is False')
-            xTrain, yTrain = shuffle(x_train, y_train, random_state=75)
-            if 'x' in self.normalized or 'X' in self.normalized:
-                self.xMin = np.pad(self.xMin, (0, 1), 'constant', constant_values=(0, 0))
-                self.xMax = np.pad(self.xMax, (0, 1), 'constant', constant_values=(0, 1))
-                xTrain = (xTrain - self.xMin) / (self.xMax - self.xMin)
-                
-            if 'y' in self.normalized or 'Y' in self.normalized:
-                yTrain = (yTrain - self.yMin) / (self.yMax - self.yMin)
-            
+    def cross_validate_XGB(self, param_setting=None):
+        xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=75)
         kf = KFold(n_splits=self.kfold_num)
         train_metric_lst = np.zeros((self.kfold_num, 2))
         val_metric_lst = np.zeros((self.kfold_num, 2))
@@ -373,8 +351,7 @@ class cross_validate:
         # best_model = xgb.train(params=model.get_params(), dtrain=xgb.DMatrix(self.xTrain, label=self.yTrain),
         #                        xgb_model=f".//modelWeights//xgb_{highest_r2_idx }.json",
         #                        evals_result=model.evals_result(), num_boost_round=100)
-
-        new_model.fit(xTrain, yTrain, xgb_model=best_model, eval_set=[(xTrain, yTrain)], verbose=False)
+        new_model.fit(self.xTrain, self.yTrain, xgb_model=best_model, eval_set=[(self.xTrain, self.yTrain)], verbose=False)
         results_tune = new_model.evals_result()
         # self.show_train_history(results_tune, metrics, isValidated=False)
         # model_state.append(new_model.get_xgb_params())
@@ -724,27 +701,15 @@ class cross_validate:
         return model
     
     
-    def model_testing(self, model_, category, x_test=[], y_test=[]):
+    def model_testing(self, model_, category):
         model = model_
-        if self.is_auto_split:
-            xTest, yTest = self.xTest, self.yTest
-        else:
-            if len(x_test)==0 or len(y_test)==0:
-                raise ValueError('No x_test amd y_test passed as arguments while is_auto_split is False')
-            xTest, yTest = x_test, y_test
-            if 'x' in self.normalized or 'X' in self.normalized:
-                xTest = (xTest - self.xMin) / (self.xMax - self.xMin)
-                
-            if 'y' in self.normalized or 'Y' in self.normalized:
-                yTest = (yTest - self.yMin) / (self.yMax - self.yMin)
-            
-        yTestPredicted = model.predict(xTest)
+        yTestPredicted = model.predict(self.xTest)
         if self.yMin != None and self.yMax != None:
             yTestPredicted = yTestPredicted * (self.yMax-self.yMin) + self.yMin
-            yTest = yTest * (self.yMax-self.yMin) + self.yMin
+            self.yTest = self.yTest * (self.yMax-self.yMin) + self.yMin
             # print('y denormalized')
         # draw_histo(self.yTest, 'Histogram of Quality Index in Testing Dataset', 'royalblue', 0, value_boundary=self.y_boundary)
-        self.plotTrueAndPredicted(xTest, yTest, yTestPredicted, f"({category}) [Test]")
+        self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
         
     def plotTrueAndPredicted(self, x, YT, YP, category):
         bottomValue, topValue = self.y_boundary[0], self.y_boundary[1]
