@@ -9,7 +9,7 @@ from classPSO_kNN import psokNN
 
 if __name__ == '__main__':
     isDifferentParamSets = True
-    paramSet_num = 2
+    paramSet_num = 1
     differencing = False
     differencing = True
     isEnveCombined = False
@@ -106,15 +106,16 @@ if __name__ == '__main__':
     """
     # psoModelTTV = psokNN(x, y_ttv, f'TTV (dataset A{paramSet_num})', normalized='xy', y_boundary=[5.5, 17])
     # psoModelWarp = psokNN(x, y_warp, f'Warp (dataset A{paramSet_num})', normalized='xy', y_boundary=[3, 18])
-    # psoModelWavi = psokNN(x, y_wavi, f'Waviness (dataset A{paramSet_num})', normalized='xy', y_boundary=[0, 2.7])
+    psoModelWavi = psokNN(x, y_wavi, f'Waviness (dataset A{paramSet_num})', normalized='xy', y_boundary=[0, 2.7])
     # psoModelBOW = psokNN(x, y_bow, f'BOW (dataset A{paramSet_num})', normalized='xy', y_boundary=[-5, 4])
 
 
     # model_ttv, fitnessHistory_ttv, best_particle_ttv = psoModelTTV.pso(particleAmount=20, maxIterTime=100)
     # model_warp, fitnessHistory_warp, best_particle_warp = psoModelWarp.pso(particleAmount=20, maxIterTime=100)
-    # model_wavi, fitnessHistory_wavi, best_particle_wavi = psoModelWavi.pso(particleAmount=20, maxIterTime=100)
+    # model_wavi, fitnessHistory_wavi, best_particle_wavi = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
     # model_bow, fitnessHistory_bow, best_particle_bow = psoModelBOW.pso(particleAmount=20, maxIterTime=100)
-
+    # psoModelWavi.model_testing(model_wavi, 'kNN_PSO')
+    
 
     """
     Cross Validation
@@ -129,14 +130,14 @@ if __name__ == '__main__':
     param_setting = {'random_state':75}
     # model_ttv = cv_ttv.cross_validate_XGB(param_setting=param_setting)
     # model_warp = cv_warp.cross_validate_XGB(param_setting=param_setting)
-    # model_wavi = cv_wavi.cross_validate_XGB(param_setting=param_setting)
+    model_wavi = cv_wavi.cross_validate_XGB(param_setting=param_setting)
     # model_wavi = cv_wavi.cross_validate_stacking(model_name_lst=['rf', 'knn', 'ada', 'xgb'])
     # model_bow = cv_bow.cross_validate_XGB(param_setting=param_setting)
 
 
     # cv_ttv.model_testing(model_ttv, 'XGB')
     # cv_warp.model_testing(model_warp, 'XGB')
-    # cv_wavi.model_testing(model_wavi, 'XGB')
+    cv_wavi.model_testing(model_wavi, 'XGB')
     # cv_bow.model_testing(model_bow, 'XGB')
 
     
