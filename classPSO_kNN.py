@@ -11,21 +11,26 @@ from plot_histogram import draw_histo
 
 # edit the part below when model is changed
 class psokNN:
-    def __init__(self, x, y, qualityKind, normalized=None, y_boundary=[]):
+    def __init__(self, x, y, qualityKind='Y', is_auto_split=True, k_fold_num=5, normalized=None, y_boundary=[]):
+        self.is_auto_split = is_auto_split
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.dna_amount = 2  # hyper_parameter num. + random seed
         self.optimized_param = ['k', 'RSN']
-        self.x = x
-        self.y = y
-        self.x, self.y = self.cleanOutlier(x, y)
-        self.kfold_num = 5
+        self.kfold_num = k_fold_num
+        self.xMin, self.xMax, self.yMin, self.yMax = None, None, None, None
+        
+        if self.is_auto_split:
+            y = y.ravel()
+            self.x, self.y = self.cleanOutlier(x, y)  
+        else:
+            self.x, self.y = x, y
+        
         if len(y_boundary) == 0:
             self.y_boundary = [np.amin(self.y)-1, np.amax(self.y)+1]
         else:
             self.y_boundary = y_boundary  
         
-        self.xMin, self.xMax, self.yMin, self.yMax = None, None, None, None
         
         if 'x' in self.normalized or 'X' in self.normalized:
             self.x, self.xMin, self.xMax = self.normalizationX(self.x)
@@ -33,7 +38,10 @@ class psokNN:
         if 'y' in self.normalized or 'Y' in self.normalized:
             self.y, self.yMin, self.yMax = self.normalizationY(self.y)
 
-        self.xTrain, self.yTrain, self.xTest, self.yTest = self.datasetCreating(self.x, self.y)
+        if self.is_auto_split:
+            self.xTrain, self.yTrain, self.xTest, self.yTest = self.datasetCreating(self.x, self.y)    
+        else:
+            self.xTrain, self.yTrain, self.xTest, self.yTest = False, False, False, False
             
     def class_labeling(self, y_thresholds):
         y_class = np.copy(self.y)
@@ -74,6 +82,7 @@ class psokNN:
         maxValue = []
         new_array_ = []
         for featureIdx, feature in enumerate(array_feature):
+            
             mini = np.amin(feature)
             maxi = np.amax(feature)
             minValue.append(mini)
@@ -172,21 +181,21 @@ class psokNN:
         ax1.plot(x, train_lst[0], '-o', label='train', lw=5, color='seagreen')
         ax1.plot(x, val_lst[0], '-o', label='val', lw=5, color='brown')
         ax1.set_ylabel('MAPE (%)', fontsize=24)
-        ax1.set_xlabel('Iteration', fontsize=24)
+        ax1.set_xlabel('Run', fontsize=24)
         ax1.tick_params(axis='both', which='major', labelsize=20)
         # ax1.set_xticks(np.arange(1, self.kfold_num+1, 1), fontsize=22)
         # ax1.set_title(f'Iter. time: {iter_idx} of Particle {particle_idx}', fontsize=26)
         ax1.legend(loc='best', fontsize=20)
         ax1.grid(True)
         # ax1.set_ylim((0, 40))
-        y_ticks = np.arange(0, 31, 5) if np.amax(val_lst[0]) < 30 else np.arange(0, 201, 20)
+        y_ticks = np.arange(0, 31, 5) if np.amax(val_lst[0]) < 30 else np.arange(0, 450, 50)
         ax1.set_yticks(y_ticks)
         
         ax2 = plt.subplot(122)
         ax2.plot(x, train_lst[1], '-o', label='train', lw=5, color='seagreen')
         ax2.plot(x, val_lst[1], '-o', label='val', lw=5, color='brown')
         ax2.set_ylabel('R2', fontsize=24)
-        ax2.set_xlabel('Iteration', fontsize=24)
+        ax2.set_xlabel('Run', fontsize=24)
         ax2.tick_params(axis='both', which='major', labelsize=20)
         # ax2.set_xticks(np.arange(1, self.kfold_num+1, 1), fontsize=22)
         # ax2.set_title(f'Iter. time: {iter_idx} of Particle {particle_idx}', fontsize=26)
@@ -195,7 +204,7 @@ class psokNN:
         y_ticks = np.arange(0, 1.3, 0.2) if np.amin(val_lst[1]) >= 0 else np.arange(-1.3, 1.3, 0.4)
         ax2.set_yticks(y_ticks)
         # ax2.set_ylim((0, 1.1))
-        plt.suptitle(f'Iteration: {iter_idx} | Particle: {particle_idx}', fontsize=26)
+        plt.suptitle(f'Cross Validation of Iteration: {iter_idx} | Particle: {particle_idx}', fontsize=26)
         plt.tight_layout()
         plt.subplots_adjust(top=0.88)
         plt.show()
@@ -203,7 +212,7 @@ class psokNN:
 
     
     # edit the part below when model is changed
-    def modelTraining(self, particle, iter_idx=0, particle_idx=0, show_result_each_fold=False):
+    def modelTraining(self, particle, iter_idx=0, particle_idx=0, x_train=[], y_train=[], show_result_each_fold=False):
         # model building
         param_setting = {'n_neighbors':int(particle[0]), 'algorithm':'brute'}
         xTrain, yTrain = shuffle(self.xTrain, self.yTrain, random_state=int(particle[-1]))
@@ -310,15 +319,7 @@ class psokNN:
                 break
         return idx
     
-    def model_testing(self, model_, category):
-        model = model_
-        model.fit(self.xTrain, self.yTrain)
-        yTestPredicted = model.predict(self.xTest)
-        if self.yMin != None and self.yMax != None:
-            yTestPredicted = yTestPredicted * (self.yMax-self.yMin) + self.yMin
-            self.yTest = self.yTest * (self.yMax-self.yMin) + self.yMin
-        # draw_histo(self.yTest, 'Histogram of Output in Test', 'royalblue', 0)
-        self.plotTrueAndPredicted(self.xTest, self.yTest, yTestPredicted, f"({category}) [Test]")
+    
         
     def bestModel(self, Gbest):    # To see the performance of the best model
         # edit the part below when model is changed
@@ -372,8 +373,6 @@ class psokNN:
             highest_valR2_idx = 0
         best_model = model_lst[highest_valR2_idx]
         best_model.fit(self.xTrain, self.yTrain)
-        self.model_testing(best_model, 'kNN_PSO')
-        
         return best_model
     
     def plot_fitness(self, fit_history):
@@ -393,7 +392,19 @@ class psokNN:
     pso
     use this function only when performing pso
     """
-    def pso(self, particleAmount=10, maxIterTime=10):
+    def pso(self, x_train=[], y_train=[], particleAmount=10, maxIterTime=10):
+        if self.is_auto_split:
+            pass
+        else:
+            if len(x_train)==0 or len(y_train)==0:
+                raise ValueError('No x_train amd y_train passed as arguments while is_auto_split is False')
+            self.xTrain, self.yTrain = x_train, y_train
+            if 'x' in self.normalized or 'X' in self.normalized:
+                self.xTrain = (self.xTrain - self.xMin) / (self.xMax - self.xMin)
+                
+            if 'y' in self.normalized or 'Y' in self.normalized:
+                self.yTrain = (self.yTrain - self.yMin) / (self.yMax - self.yMin)
+        
         DNA_amount = self.dna_amount
         fitnessHistory0 = []
         fitnessHistory1 = []
@@ -411,7 +422,7 @@ class psokNN:
         dna_kind = ['k', 'RandomSeedNum']
         # iteration for best particle
         while IterTime < maxIterTime:
-            print(f'Iteration {IterTime + 1}')
+            # print(f'Iteration {IterTime + 1}')
             fitness_current_population = np.zeros(len(population_current))
             for particleIdx, particle in enumerate(population_current):
                 # print(f'Particle: {particleIdx}')
@@ -445,8 +456,8 @@ class psokNN:
             fitnessHistory0.append(min(fitness_best_population))
             fitnessHistory1.append(np.mean(fitness_best_population))
             
-            if abs(np.mean(fitness_best_population)-min(fitness_best_population)) < 1: #convergent criterion
-                print('PSO is ended because of convergence')
+            if abs(np.mean(fitness_best_population)-min(fitness_best_population)) < 1 and IterTime >= 10: #convergent criterion
+                # print('PSO is ended because of convergence')
                 break
             # https://towardsdatascience.com/particle-swarm-optimization-visually-explained-46289eeb2e14
             w = 0.4*(IterTime-particleAmount)/particleAmount**2 + 0.4
@@ -500,3 +511,25 @@ class psokNN:
                 particle_best_dict.update({self.optimized_param[param_idx]:particle_best[param_idx]})
         
         return optimal_model, fitnessHistory, particle_best_dict
+    
+    def model_testing(self, model_, category, x_test=[], y_test=[]):
+        model = model_
+        if self.is_auto_split:
+            xTest, yTest = self.xTest, self.yTest
+        else:
+            if len(x_test)==0 or len(y_test)==0:
+                raise ValueError('No x_test amd y_test passed as arguments while is_auto_split is False')
+            xTest, yTest = x_test, y_test
+            if 'x' in self.normalized or 'X' in self.normalized:
+                xTest = (xTest - self.xMin) / (self.xMax - self.xMin)
+                
+            if 'y' in self.normalized or 'Y' in self.normalized:
+                yTest = (yTest - self.yMin) / (self.yMax - self.yMin)
+        
+        yTestPredicted = model.predict(xTest)
+        if self.yMin != None and self.yMax != None:
+            yTestPredicted = yTestPredicted * (self.yMax-self.yMin) + self.yMin
+            yTest = yTest * (self.yMax-self.yMin) + self.yMin
+        # draw_histo(self.yTest, 'Histogram of Output in Test', 'royalblue', 0)
+        self.plotTrueAndPredicted(xTest, yTest, yTestPredicted, f"({category}) [Test]")
+    
