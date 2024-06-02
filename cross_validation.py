@@ -106,8 +106,8 @@ def show_train_history_NN(history_, loss, metric_name_tr, metric_name_val, fold_
     metric_val = history_.history[metric_name_val]
     plt.figure(figsize=(16, 6))
     ax1 = plt.subplot(121)
-    ax1.plot(loss_tr, '-o', label='train', lw=5)
-    ax1.plot(loss_val, '-o', label='val', lw=5)
+    ax1.plot(loss_tr, '-o', label='Training', lw=5)
+    ax1.plot(loss_val, '-o', label='Validation', lw=5)
     ax1.set_ylabel(f'{loss}', fontsize=24)
     ax1.set_xlabel('Epoch', fontsize=24)
     ax1.tick_params(axis='both', which='major', labelsize=20)
@@ -117,15 +117,15 @@ def show_train_history_NN(history_, loss, metric_name_tr, metric_name_val, fold_
 
     
     ax2 = plt.subplot(122)
-    ax2.plot(metric_tr, '-o', label='train', lw=5)
-    ax2.plot(metric_val, '-o', label='val', lw=5)
+    ax2.plot(metric_tr, '-o', label='Training', lw=5)
+    ax2.plot(metric_val, '-o', label='Validation', lw=5)
     ax2.set_ylabel(f'{metric_name_tr}', fontsize=24)
     ax2.set_xlabel('Epoch', fontsize=24)
     ax2.tick_params(axis='both', which='major', labelsize=20)
     ax2.grid(True)
     ax2.legend(loc='best', fontsize=20)
     # ax2.set_ylim((0, 10))
-    plt.suptitle(f'fold {fold_idx+1} Train History', fontsize=26)
+    # plt.suptitle(f'fold {fold_idx+1} Train History', fontsize=26)
     plt.tight_layout()
     plt.subplots_adjust(top=0.88)
     plt.show()
@@ -202,7 +202,7 @@ class cross_validate:
                 ax1.plot(history_['validation_0'][category[0]], lw=4, label='train')
                 ax1.plot(history_['validation_1'][category[0]], lw=4, label='validation')
                 ax1.set_ylabel(f'{category[0]}', fontsize=24)
-                ax1.set_xlabel('Epoch', fontsize=24)
+                ax1.set_xlabel('Iteration', fontsize=24)
                 ax1.tick_params(axis='both', which='major', labelsize=20)
                 ax1.legend(loc='best', fontsize=20)
                 ax1.grid(True)
@@ -213,7 +213,7 @@ class cross_validate:
                 ax2.plot(history_['validation_0'][category[1]], lw=4, label='train')
                 ax2.plot(history_['validation_1'][category[1]], lw=4, label='validation')
                 ax2.set_ylabel(f'{category[1]}', fontsize=26)
-                ax2.set_xlabel('Epoch', fontsize=24)
+                ax2.set_xlabel('Iteration', fontsize=24)
                 ax2.tick_params(axis='both', which='major', labelsize=20)
                 ax2.legend(loc='best', fontsize=20)
                 ax2.grid(True)
@@ -226,7 +226,7 @@ class cross_validate:
                 # category[0]=mape
                 ax1.plot(history_['validation_0'][category[0]], lw=4, label='train')
                 ax1.set_ylabel(f'{category[0]}', fontsize=24)
-                ax1.set_xlabel('Epoch', fontsize=24)
+                ax1.set_xlabel('Iteration', fontsize=24)
                 ax1.tick_params(axis='both', which='major', labelsize=20)
                 ax1.legend(loc='best', fontsize=20)
                 ax1.grid(True)
@@ -249,17 +249,18 @@ class cross_validate:
         else:
             plt.figure(figsize=(12, 9), dpi=300)
             if isValidated:
-                plt.plot(history_['validation_0'][category[0]], lw=4, label='train')
-                plt.plot(history_['validation_1'][category[0]], lw=4, label='validation')
+                plt.plot(history_['validation_0'][category[0]], lw=4, label='Training')
+                plt.plot(history_['validation_1'][category[0]], lw=4, label='Validation')
             else:
-                plt.plot(history_['validation_0'][category[0]], lw=4, label='train')
-            plt.ylabel(f'{category[0]}', fontsize=30)
-            plt.xlabel('Epoch', fontsize=26)
+                plt.plot(history_['validation_0'][category[0]], lw=4, label='Training')
+            # plt.ylabel(f'{category[0]}', fontsize=30)
+            plt.ylabel(f'MAE', fontsize=26)
+            plt.xlabel('Iteration', fontsize=26)
             plt.legend(loc='best', fontsize=24)
-            if isValidated:
-                plt.title(f'Run {fold_idx+1} Train History', fontsize=26)
-            else:
-                plt.title('Fining Tuning Train History', fontsize=26)
+            # if isValidated:
+            #     plt.title(f'Run {fold_idx+1} Train History', fontsize=26)
+            # else:
+            #     plt.title('Fining Tuning Train History', fontsize=26)
             plt.xticks(fontsize=22)
             plt.yticks(fontsize=22)
             plt.grid()
@@ -268,11 +269,11 @@ class cross_validate:
     def plot_metrics_folds(self, train_lst, val_lst):
         x = np.arange(1, self.kfold_num+1, 1)
         train_lst, val_lst = train_lst.T, val_lst.T
-        metrics = ['MAPE (%)', 'R2'] 
+        metrics = ['MAPE (%)', '$R^2$'] 
         plt.figure(figsize=(16, 6), dpi=300)
         ax1 = plt.subplot(121)
-        ax1.plot(x, train_lst[0], '-o', label='train', lw=5, color='seagreen')
-        ax1.plot(x, val_lst[0], '-o', label='val', lw=5, color='brown')
+        ax1.plot(x, train_lst[0], '-o', label='Training', lw=5, color='seagreen')
+        ax1.plot(x, val_lst[0], '-o', label='Validation', lw=5, color='brown')
         ax1.set_ylabel(f'{metrics[0]}', fontsize=24)
         ax1.set_xlabel('Run', fontsize=24)
         ax1.tick_params(axis='both', which='major', labelsize=20)
@@ -280,12 +281,12 @@ class cross_validate:
         # ax1.set_title(f'{metrics[0]}', fontsize=26)
         ax1.grid(True)
         y_ticks = np.arange(0, 31, 5) if np.amax(val_lst[0]) < 30 else np.arange(0, 500, 50)
-        # ax1.set_yticks(y_ticks)
+        ax1.set_yticks(y_ticks)
         # ax1.set_ylim((0, 200))
         
         ax2 = plt.subplot(122)
-        ax2.plot(x, train_lst[1], '-o', label='train', lw=5, color='seagreen')
-        ax2.plot(x, val_lst[1], '-o', label='val', lw=5, color='brown')
+        ax2.plot(x, train_lst[1], '-o', label='Training', lw=5, color='seagreen')
+        ax2.plot(x, val_lst[1], '-o', label='Validation', lw=5, color='brown')
         ax2.set_ylabel(f'{metrics[1]}', fontsize=24)
         ax2.set_xlabel('Run', fontsize=24)
         ax2.tick_params(axis='both', which='major', labelsize=20)
@@ -293,8 +294,8 @@ class cross_validate:
         # ax2.set_title(f'{metrics[1]}', fontsize=26)
         ax2.grid(True)
         y_ticks = np.arange(0, 1.3, 0.2) if np.amin(val_lst[1]) >= 0 else np.arange(-4, 1.2, 0.4)
-        # ax2.set_yticks(y_ticks)
-        plt.suptitle('Cross Validation', fontsize=26)
+        ax2.set_yticks(y_ticks)
+        # plt.suptitle('Cross Validation', fontsize=26)
         plt.subplots_adjust(top=0.88)
         plt.tight_layout()
     
@@ -753,17 +754,17 @@ class cross_validate:
         mape = mean_absolute_percentage_error(YT, YP) * 100
         mae = mean_absolute_error(YT, YP)
         color1 = ['slateblue', 'orange', 'firebrick', 'steelblue', 'purple', 'green']
-        plt.figure(figsize=(12, 9), dpi=300)
+        plt.figure(figsize=(12, 12), dpi=300)
         plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
         plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
         plt.ylabel("Predicted Value", fontsize=24)
         plt.xlabel("True Value", fontsize=24)
         plt.ylim([bottomValue, topValue])
         plt.xlim([bottomValue, topValue])
-        plt.xticks(fontsize=22)
-        plt.yticks(fontsize=22)
-        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f}% | R^2={r2:.2f} | MAE={mae:.2f}"
-                  , fontsize=26)
+        plt.xticks(fontsize=20)
+        plt.yticks(fontsize=20)
+        # plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f}% | R^2={r2:.2f} | MAE={mae:.2f}"
+        #           , fontsize=26)
         # plt.axhline(y=1, color=color1[0])
         # plt.axhline(y=1.2, color=color1[1])
         # plt.axhline(y=1.5, color=color1[2])
@@ -772,6 +773,9 @@ class cross_validate:
         # plt.axvline(x=1.2, color=color1[1])
         # plt.axvline(x=1.5, color=color1[2])
         # plt.axvline(x=2, color=color1[3])
+        plt.text(bottomValue+abs(bottomValue-topValue)*0.04, topValue-abs(bottomValue-topValue)*0.15,f'MAPE={mape:.2f}%\n$R^2={r2:.2f}$\nMAE={mae:.2f}',
+                 fontsize=24,
+                 bbox={'boxstyle':'square', 'facecolor':'white', 'edgecolor':'black', 'pad':0.3, 'linewidth':1})
         plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
         plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
         plt.axhline(y=0, color='red')
