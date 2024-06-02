@@ -116,7 +116,7 @@ class psokNN:
         
         if plot:
             color1 = ['slateblue', 'orange', 'firebrick', 'steelblue', 'purple', 'green']
-            plt.figure(figsize=(12, 9), dpi=300)
+            plt.figure(figsize=(12, 12), dpi=300)
             plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
             plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
             plt.ylabel("Predicted Value", fontsize=24)
@@ -127,8 +127,11 @@ class psokNN:
             plt.xlim([bottomValue, topValue])
             plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
             plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
-            plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f}% | R^2={r2:.2f} | MAE={mae:.2f}"
-                      , fontsize=26)
+            # plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f}% | R^2={r2:.2f} | MAE={mae:.2f}"
+            #           , fontsize=26)
+            tesxt_box_x = bottomValue
+            plt.text(bottomValue+abs(bottomValue-topValue)*0.04, topValue-abs(bottomValue-topValue)*0.15,f'MAPE={mape:.2f}%\n$R^2={r2:.2f}$\nMAE={mae:.2f}',fontsize=24,
+                     bbox={'boxstyle':'square', 'facecolor':'white', 'edgecolor':'black', 'pad':0.3, 'linewidth':1})
             # plt.axhline(y=1, color=color1[0])
             # plt.axhline(y=1.2, color=color1[1])
             # plt.axhline(y=1.5, color=color1[2])
@@ -167,7 +170,7 @@ class psokNN:
         ax2.grid(True)
         ax2.set_ylim(-0.03, 0.52)
 
-        plt.suptitle(f'fold {fold_idx+1} Train History', fontsize=26)
+        # plt.suptitle(f'fold {fold_idx+1} Train History', fontsize=26)
         plt.tight_layout()
         plt.subplots_adjust(top=0.88)
         plt.show()
@@ -178,8 +181,8 @@ class psokNN:
         x = np.arange(1, self.kfold_num+1, 1)
         plt.figure(figsize=(16, 6), dpi=300)
         ax1 = plt.subplot(121)
-        ax1.plot(x, train_lst[0], '-o', label='train', lw=5, color='seagreen')
-        ax1.plot(x, val_lst[0], '-o', label='val', lw=5, color='brown')
+        ax1.plot(x, train_lst[0], '-o', label='Training', lw=5, color='seagreen')
+        ax1.plot(x, val_lst[0], '-o', label='Validation', lw=5, color='brown')
         ax1.set_ylabel('MAPE (%)', fontsize=24)
         ax1.set_xlabel('Run', fontsize=24)
         ax1.tick_params(axis='both', which='major', labelsize=20)
@@ -192,9 +195,9 @@ class psokNN:
         ax1.set_yticks(y_ticks)
         
         ax2 = plt.subplot(122)
-        ax2.plot(x, train_lst[1], '-o', label='train', lw=5, color='seagreen')
-        ax2.plot(x, val_lst[1], '-o', label='val', lw=5, color='brown')
-        ax2.set_ylabel('R2', fontsize=24)
+        ax2.plot(x, train_lst[1], '-o', label='Training', lw=5, color='seagreen')
+        ax2.plot(x, val_lst[1], '-o', label='Validation', lw=5, color='brown')
+        ax2.set_ylabel('$R^2$', fontsize=24)
         ax2.set_xlabel('Run', fontsize=24)
         ax2.tick_params(axis='both', which='major', labelsize=20)
         # ax2.set_xticks(np.arange(1, self.kfold_num+1, 1), fontsize=22)
@@ -204,7 +207,7 @@ class psokNN:
         y_ticks = np.arange(0, 1.3, 0.2) if np.amin(val_lst[1]) >= 0 else np.arange(-1.3, 1.3, 0.4)
         ax2.set_yticks(y_ticks)
         # ax2.set_ylim((0, 1.1))
-        plt.suptitle(f'Cross Validation of Iteration: {iter_idx} | Particle: {particle_idx}', fontsize=26)
+        # plt.suptitle(f'Cross Validation of Iteration: {iter_idx} | Particle: {particle_idx}', fontsize=26)
         plt.tight_layout()
         plt.subplots_adjust(top=0.88)
         plt.show()
@@ -377,16 +380,26 @@ class psokNN:
     
     def plot_fitness(self, fit_history):
         plt.figure(figsize=(10, 7), dpi=300)
-        x_axis = np.arange(1, fit_history.shape[0]+1, 1)
-        plt.plot(x_axis, fit_history[:, 0], '-o', lw=2)
-        plt.plot(x_axis, fit_history[:, 1], '-o', lw=2)
+        iteration_time = fit_history.shape[0]
+        x_maximum = (iteration_time//5 +1) * 5
+        if fit_history.shape[0] < 10:
+            x_axis = np.arange(1, x_maximum+1, 1).astype(int)
+        elif fit_history.shape[0] < 50:
+            x_axis = np.arange(1, x_maximum+5, 5).astype(int)
+        elif fit_history.shape[0] < 100:
+            x_axis = np.arange(1, x_maximum+10, 10).astype(int)
+        else:
+            x_axis = np.arange(1, x_maximum+10, 10).astype(int)
+            
+        plt.plot(np.arange(1, fit_history.shape[0]+1, 1), fit_history[:, 0], '-o', lw=2)
+        plt.plot(np.arange(1, fit_history.shape[0]+1, 1), fit_history[:, 1], '-o', lw=2)
         plt.grid()
         plt.xlabel('Iteration', fontsize=24)
-        plt.ylabel('Fitness (%)', fontsize=24)
+        plt.ylabel('MAPE (%)', fontsize=24)
         plt.xlim(0, ((x_axis[-1]//5)+1)*5)
-        plt.xticks(fontsize=20)
+        plt.xticks(x_axis, fontsize=20)
         plt.yticks(fontsize=22)
-        plt.legend(['Min. fitness', 'Average fitness'], fontsize=20)
+        plt.legend(['Lowest', 'Average'], fontsize=20)
     
     """
     pso
