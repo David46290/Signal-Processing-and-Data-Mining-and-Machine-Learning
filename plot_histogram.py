@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-def draw_histo(data, kind, color_, bins=None, range_std=2, value_boundary=[]):
+def draw_histo(data, kind, color_, bins=None, range_std=2, value_boundary=[], category='Value'):
     if len(value_boundary) == 0:
         value_boundary = [min(data)-1, max(data)+1]
     else:
@@ -18,7 +18,7 @@ def draw_histo(data, kind, color_, bins=None, range_std=2, value_boundary=[]):
         counts, bins = np.histogram(data, bins=bins)
     plt.hist(bins[:-1], bins, weights=counts, color=color_)
     
-    plt.xlabel('Value', fontsize=24)
+    plt.xlabel(f'{category}', fontsize=24)
     plt.ylabel('Counts', fontsize=24)
     plt.xlim(value_boundary[0], value_boundary[1])
     # plt.ylim(0, ((np.amax(counts)//5)+1)*5)
@@ -39,8 +39,12 @@ def draw_histo(data, kind, color_, bins=None, range_std=2, value_boundary=[]):
     # plt.axvline(x = mean-range_std*std, lw=5, color = 'grey')
     # plt.axvline(x = mean+range_std*std, lw=5, color = 'grey')
     # plt.title(f'mean: {mean:.2f} | median: {median:.2f} | std: {std:.2f} | amount: {data.shape[0]}', fontsize=22)
-    plt.title(f'mean: {mean:.2f} | std: {std:.2f}', fontsize=22)
-    plt.suptitle(f'{kind}', fontsize=26)
+    # plt.title(f'mean: {mean:.2f} | std: {std:.2f}', fontsize=22)
+    # plt.suptitle(f'{kind}', fontsize=26)
+    plt.text(value_boundary[1]-abs(value_boundary[1]-value_boundary[0])*0.25, np.amax(y_tick)*0.9,
+             f'Mean: {mean:.2f}\nStd: {std:.2f}',
+             fontsize=24,
+             bbox={'boxstyle':'square', 'facecolor':'white', 'edgecolor':'black', 'pad':0.3, 'linewidth':1})
     
 def outlier_excile(data, range_):
     # Gid rid of y values exceeding 2 std value
