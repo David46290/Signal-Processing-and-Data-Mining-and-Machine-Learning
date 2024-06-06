@@ -3,6 +3,8 @@ import os, glob
 from matplotlib import pyplot as plt
 import pandas as pd
 from plot_histogram import draw_histo
+from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squared_error, mean_absolute_error
+
 
 def plot_metrics_folds(train_lst, val_lst, iter_idx, particle_idx, model='model'):
     train_lst, val_lst = train_lst.T, val_lst.T
@@ -46,6 +48,7 @@ def plot_metrics_folds(train_lst, val_lst, iter_idx, particle_idx, model='model'
 
 def plot_fitness(fit_history):
     plt.figure(figsize=(10, 7), dpi=300)
+    # fig, ax = plt.subplots()
     iteration_time = fit_history.shape[0]
     x_maximum = (iteration_time//5 +1) * 5
     if fit_history.shape[0] < 10:
@@ -56,7 +59,8 @@ def plot_fitness(fit_history):
         x_axis = np.arange(1, x_maximum+10, 10).astype(int)
     else:
         x_axis = np.arange(1, x_maximum+10, 10).astype(int)
-        
+    y_limit = [np.amin(fit_history)-2,
+               (np.amax(fit_history)//5 + 1)*5]   
     plt.plot(np.arange(1, fit_history.shape[0]+1, 1), fit_history[:, 0], '-o', lw=2)
     plt.plot(np.arange(1, fit_history.shape[0]+1, 1), fit_history[:, 1], '-o', lw=2)
     plt.grid()
@@ -65,10 +69,53 @@ def plot_fitness(fit_history):
     # plt.xlim(0, ((x_axis[-1]//5)+1)*5)
     plt.xticks(x_axis, fontsize=20)
     plt.yticks(fontsize=22)
+    plt.ylim(y_limit)
     plt.legend(['Lowest', 'Average'], fontsize=20)
-
+    plt.text(fit_history.shape[0]*0.2, y_limit[1]-(y_limit[1]-y_limit[0])*0.1,'KNN',fontsize=24,
+             bbox={'boxstyle':'round', 'facecolor':'wheat', 'edgecolor':'black', 'pad':0.3, 'linewidth':1, 'alpha':0.5})
+    
+def plotTrueAndPredicted(x, YT, YP, category, y_boundary):
+    plot = True
+    rmse = np.sqrt(mean_squared_error(YT, YP))
+    r2 = r2_score(YT, YP)
+    mape = mean_absolute_percentage_error(YT, YP) * 100
+    mae = mean_absolute_error(YT, YP)
+    
+    if plot:
+        color1 = ['slateblue', 'orange', 'firebrick', 'steelblue', 'purple', 'green']
+        plt.figure(figsize=(12, 12), dpi=300)
+        plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
+        plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
+        plt.ylabel("Predicted Value", fontsize=24)
+        plt.xlabel("True Value", fontsize=24)
+        bottomValue = y_boundary[0]
+        topValue = y_boundary[1]
+        plt.ylim([bottomValue, topValue])
+        plt.xlim([bottomValue, topValue])
+        plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
+        plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
+        # plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f}% | R^2={r2:.2f} | MAE={mae:.2f}"
+        #           , fontsize=26)
+        tesxt_box_x = bottomValue
+        plt.text(bottomValue+abs(bottomValue-topValue)*0.04, topValue-abs(bottomValue-topValue)*0.15,f'MAPE={mape:.2f}%\n$R^2={r2:.2f}$\nMAE={mae:.2f}',fontsize=24,
+                 bbox={'boxstyle':'square', 'facecolor':'white', 'edgecolor':'black', 'pad':0.3, 'linewidth':1})
+        # plt.axhline(y=1, color=color1[0])
+        # plt.axhline(y=1.2, color=color1[1])
+        # plt.axhline(y=1.5, color=color1[2])
+        # plt.axhline(y=2, color=color1[3])
+        # plt.axvline(x=1, color=color1[0])
+        plt.axhline(y=0, color='red')
+        plt.axvline(x=0, color='red')
+        # plt.axvline(x=1.2, color=color1[1])
+        # plt.axvline(x=1.5, color=color1[2])
+        # plt.axvline(x=2, color=color1[3])
+        plt.grid()
+        plt.show()  
+  
 if __name__ == '__main__':
-    model_idx = 1
+    plot_cv = False
+    plot_fit = True
+    model_idx = 0
     dir_file = ['./pso_histories', './xgb_history']
     model = ['KNN', 'XGBoost']
     name_q = ['TTV', 'Warp', 'Waviness', 'BOW']
@@ -80,6 +127,8 @@ if __name__ == '__main__':
     total_train = []
     total_val = []
     total_name = []
+    total_fitness = []
+    
     for q in name_q:
         for rate in name_rate:
             for recipe in name_recipe:
@@ -96,7 +145,16 @@ if __name__ == '__main__':
                                 cv_val = np.genfromtxt(data, delimiter=',')
                                 total_val.append(cv_val[:5])
                                 
-    for idx_dataset, cv_scores in enumerate(total_train):
-        plot_metrics_folds(total_train[idx_dataset], total_val[idx_dataset],
-                           iter_idx='Final', particle_idx='Best', model=model[model_idx])
+                            if 'fitness' in data:
+                                fit = np.genfromtxt(data, delimiter=',')
+                                total_fitness.append(fit)
+                                
+    if plot_cv:                            
+        for idx_dataset, cv_scores in enumerate(total_train):
+            plot_metrics_folds(total_train[idx_dataset], total_val[idx_dataset],
+                               iter_idx='Final', particle_idx='Best', model=model[model_idx])
+            
+    if plot_fit:
+        for idx_dataset, history in enumerate(total_fitness):
+            plot_fitness(history)
                               
