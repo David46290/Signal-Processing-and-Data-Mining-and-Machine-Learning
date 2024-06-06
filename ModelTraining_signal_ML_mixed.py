@@ -24,6 +24,8 @@ if __name__ == '__main__':
     yB = np.genfromtxt(f'.//X_and_Y//y_B{paramSet_num}.csv', delimiter=',')[:, quality_idx]
     yC = np.genfromtxt(f'.//X_and_Y//y_C{paramSet_num}.csv', delimiter=',')[:, quality_idx]
     
+    x_3 = [fA, fB, fC]
+    y_3 = [yA, yB, yC]
     
     xA, yA = cv.cleanOutlier(fA, yA)
     xB, yB = cv.cleanOutlier(fB, yB)
@@ -31,7 +33,6 @@ if __name__ == '__main__':
     
     x = np.concatenate((xA, xB, xC), axis=0)
     y = np.concatenate((yA, yB, yC), axis=0)
-    
     
     
     xA_train, yA_train, xA_test, yA_test = cv.datasetCreating(xA, yA)
@@ -46,23 +47,38 @@ if __name__ == '__main__':
     """
     KNN PSO
     """
-    psoModel = psokNN(x, y, f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
-                          is_auto_split=False, normalized='xy', y_boundary=y_boundary[quality_idx])
-    model_pso, fitnessHistory, best_particle = psoModel.pso(x_train=x_train, y_train=y_train,
-                                                            particleAmount=20, maxIterTime=100)
-    psoModel.model_testing(model_pso, 'kNN+PSO_A', x_test=xA_test, y_test=yA_test)
-    psoModel.model_testing(model_pso, 'kNN+PSO_B', x_test=xB_test, y_test=yB_test)
-    psoModel.model_testing(model_pso, 'kNN+PSO_C', x_test=xC_test, y_test=yC_test)
-    psoModel.model_testing(model_pso, 'kNN+PSO_Total', x_test=x_test, y_test=y_test)
+    # psoModel = psokNN(x, y, f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
+    #                       is_auto_split=False, normalized='xy', y_boundary=y_boundary[quality_idx])
+    # model_pso, fitnessHistory, best_particle = psoModel.pso(x_train=x_train, y_train=y_train,
+    #                                                         particleAmount=20, maxIterTime=50)
+    # psoModel.model_testing(model_pso, 'kNN+PSO_A', x_test=xA_test, y_test=yA_test)
+    # psoModel.model_testing(model_pso, 'kNN+PSO_B', x_test=xB_test, y_test=yB_test)
+    # psoModel.model_testing(model_pso, 'kNN+PSO_C', x_test=xC_test, y_test=yC_test)
+    # psoModel.model_testing(model_pso, 'kNN+PSO_Total', x_test=x_test, y_test=y_test)
     
     """
     XGB XV
     """
-    # cv_prepare = cv.cross_validate(x, y, f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
-    #                             normalized='xy', y_value_boundary=y_boundary[quality_idx], is_auto_split=False)
-    # param_setting = {'random_state':75}
+    cv_prepare = cv.cross_validate(x, y, f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
+                                normalized='xy', y_value_boundary=y_boundary[quality_idx], is_auto_split=False)
+    param_setting = {'random_state':75}
     # model_cv = cv_prepare.cross_validate_XGB(x_train=x_train, y_train=y_train, param_setting=param_setting)
     # cv_prepare.model_testing(model_cv, 'XGB_A', x_test=xA_test, y_test=yA_test)
     # cv_prepare.model_testing(model_cv, 'XGB_B', x_test=xB_test, y_test=yB_test)
     # cv_prepare.model_testing(model_cv, 'XGB_C', x_test=xC_test, y_test=yC_test)
     # cv_prepare.model_testing(model_cv, 'XGB_Total', x_test=x_test, y_test=y_test)
+    
+    """
+    Individual
+    """
+    dataset_index = 0
+    
+    cv_prepare = cv.cross_validate(fA, y_3[dataset_index], f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
+                                normalized='xy', y_value_boundary=y_boundary[quality_idx])
+    param_setting_K = {'n_neighbors':2}
+    param_setting_X = {'random_state':75}
+    knn = cv_prepare.cross_validate_kNN(param_setting=param_setting_K)
+    xgb = cv_prepare.cross_validate_XGB(param_setting=param_setting_X)
+    cv_prepare.model_testing(knn, 'KNN')
+    cv_prepare.model_testing(xgb, 'XGBoost')
+    
