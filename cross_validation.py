@@ -390,7 +390,7 @@ class cross_validate:
         model_lst = []
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             # metrics = [mean_absolute_percentage_error, r2_score]
-            model = KNeighborsRegressor(n_neighbors=3)
+            model = KNeighborsRegressor(n_neighbors=2)
             x_train = xTrain[train_idx]
             y_train = yTrain[train_idx]
             x_val = xTrain[val_idx]
@@ -745,7 +745,7 @@ class cross_validate:
             yTest = yTest * (self.yMax-self.yMin) + self.yMin
             # print('y denormalized')
         # draw_histo(self.yTest, 'Histogram of Quality Index in Testing Dataset', 'royalblue', 0, value_boundary=self.y_boundary)
-        self.plotTrueAndPredicted(xTest, yTest, yTestPredicted, f"({category}) [Test]")
+        self.plotTrueAndPredicted(xTest, yTest, yTestPredicted, category)
         
     def plotTrueAndPredicted(self, x, YT, YP, category):
         bottomValue, topValue = self.y_boundary[0], self.y_boundary[1]
@@ -773,9 +773,14 @@ class cross_validate:
         # plt.axvline(x=1.2, color=color1[1])
         # plt.axvline(x=1.5, color=color1[2])
         # plt.axvline(x=2, color=color1[3])
-        plt.text(bottomValue+abs(bottomValue-topValue)*0.04, topValue-abs(bottomValue-topValue)*0.15,f'MAPE={mape:.2f}%\n$R^2={r2:.2f}$\nMAE={mae:.2f}',
+        plt.text(bottomValue+abs(bottomValue-topValue)*0.04, topValue-abs(bottomValue-topValue)*0.55,f'MAPE={mape:.2f}%\n$R^2={r2:.2f}$\nMAE={mae:.2f}',
                  fontsize=24,
                  bbox={'boxstyle':'square', 'facecolor':'white', 'edgecolor':'black', 'pad':0.3, 'linewidth':1})
+        
+        plt.text(bottomValue+abs(bottomValue-topValue)*0.04, topValue-abs(bottomValue-topValue)*0.15, category, fontsize=24,
+                 bbox={'boxstyle':'round', 'facecolor':'wheat', 'edgecolor':'black', 'pad':0.3, 'linewidth':1, 'alpha':0.5})
+        
+        
         plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
         plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
         plt.axhline(y=0, color='red')
