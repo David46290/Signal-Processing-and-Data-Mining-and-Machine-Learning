@@ -253,17 +253,19 @@ class cross_validate:
                 plt.plot(history_['validation_1'][category[0]], lw=4, label='Validation')
             else:
                 plt.plot(history_['validation_0'][category[0]], lw=4, label='Training')
-            # plt.ylabel(f'{category[0]}', fontsize=30)
+            
             plt.ylabel(f'MAE', fontsize=26)
             plt.xlabel('Iteration', fontsize=26)
             plt.legend(loc='best', fontsize=24)
-            # if isValidated:
-            #     plt.title(f'Run {fold_idx+1} Train History', fontsize=26)
-            # else:
-            #     plt.title('Fining Tuning Train History', fontsize=26)
+            
             plt.xticks(fontsize=22)
             plt.yticks(fontsize=22)
             plt.grid()
+            y_max = max(np.amax(history_['validation_0'][category[0]]), np.amax(history_['validation_1'][category[0]]))
+            y_min = min(np.amin(history_['validation_0'][category[0]]), 0)
+            plt.text(len(history_['validation_0'][category[0]])*0.1, y_max-(y_max-y_min)*0.1,'XGboost',fontsize=24,
+                     bbox={'boxstyle':'round', 'facecolor':'wheat', 'edgecolor':'black', 'pad':0.3, 'linewidth':1, 'alpha':0.5})
+            
             
         
     def plot_metrics_folds(self, train_lst, val_lst):
@@ -391,6 +393,11 @@ class cross_validate:
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             # metrics = [mean_absolute_percentage_error, r2_score]
             model = KNeighborsRegressor(n_neighbors=2)
+            if param_setting != None:
+                model = KNeighborsRegressor(**param_setting)
+
+            else:
+                model = KNeighborsRegressor(n_neighbors=2)
             x_train = xTrain[train_idx]
             y_train = yTrain[train_idx]
             x_val = xTrain[val_idx]
@@ -773,11 +780,11 @@ class cross_validate:
         # plt.axvline(x=1.2, color=color1[1])
         # plt.axvline(x=1.5, color=color1[2])
         # plt.axvline(x=2, color=color1[3])
-        plt.text(bottomValue+abs(bottomValue-topValue)*0.04, topValue-abs(bottomValue-topValue)*0.55,f'MAPE={mape:.2f}%\n$R^2={r2:.2f}$\nMAE={mae:.2f}',
+        plt.text(bottomValue+abs(bottomValue-topValue)*0.04, topValue-abs(bottomValue-topValue)*0.2,f'MAPE={mape:.2f}%\n$R^2={r2:.2f}$\nMAE={mae:.2f}',
                  fontsize=24,
                  bbox={'boxstyle':'square', 'facecolor':'white', 'edgecolor':'black', 'pad':0.3, 'linewidth':1})
         
-        plt.text(bottomValue+abs(bottomValue-topValue)*0.04, topValue-abs(bottomValue-topValue)*0.15, category, fontsize=24,
+        plt.text(bottomValue+abs(bottomValue-topValue)*0.07, topValue-abs(bottomValue-topValue)*0.05, category, fontsize=24,
                  bbox={'boxstyle':'round', 'facecolor':'wheat', 'edgecolor':'black', 'pad':0.3, 'linewidth':1, 'alpha':0.5})
         
         
