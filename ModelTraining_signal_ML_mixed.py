@@ -33,7 +33,7 @@ def plot_feature_distribution(x_lst, y_lst, lst_inspected_feature=0, feature_nam
                 kind_sig = 'Lower Envelope'
             kind_feature = feature_name_lst[feature_idx%num_kind_fea]
             kind_seg = (feature_idx//5)%num_segment_per_sig + 1
-            feature_name = kind_feature + ' of ' + kind_sig + ' from Segment' + str(kind_seg)
+            feature_name = kind_feature + ' of ' + kind_sig + ' from Segment ' + str(kind_seg)
         
         
         for idx_ds, distri_ds in enumerate(x_lst):
