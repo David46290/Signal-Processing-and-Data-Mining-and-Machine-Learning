@@ -14,7 +14,7 @@ def datasetCreating(x_, y_):
 
     return xTrain, yTrain, xTest, yTest
 
-def plot_feature_distribution(x_lst, y_lst, lst_inspected_feature=0, feature_name=['Mean', 'Kurtosis', 'Skewness', 'Variance', 'Max. P2P'], num_kind_fea=5, num_segment_per_sig=4, num_fea_per_sig=20):
+def plot_feature_distribution(x_lst, y_lst, lst_inspected_feature=0, feature_name_lst=['Mean', 'Kurtosis', 'Skewness', 'Variance', 'Max. P2P'], num_kind_fea=5, num_segment_per_sig=4, num_fea_per_sig=20):
     ds_name = ['A', 'B', 'C']
     
     for feature_idx in lst_inspected_feature:
@@ -31,7 +31,7 @@ def plot_feature_distribution(x_lst, y_lst, lst_inspected_feature=0, feature_nam
                 kind_sig = 'Upper Envelope'
             else:
                 kind_sig = 'Lower Envelope'
-            kind_feature = feature_name[feature_idx%num_kind_fea]
+            kind_feature = feature_name_lst[feature_idx%num_kind_fea]
             kind_seg = (feature_idx//5)%num_segment_per_sig + 1
             feature_name = kind_feature + ' of ' + kind_sig + ' from Segment' + str(kind_seg)
         
