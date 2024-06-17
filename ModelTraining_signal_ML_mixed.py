@@ -15,7 +15,7 @@ def datasetCreating(x_, y_):
     return xTrain, yTrain, xTest, yTest
 
 def plot_feature_distribution(x_lst, y_lst, lst_inspected_feature=0, feature_name_lst=['Mean', 'Kurtosis', 'Skewness', 'Variance', 'Max. P2P'], num_kind_fea=5, num_segment_per_sig=4, num_fea_per_sig=20):
-    ds_name = ['A', 'B', 'C']
+    ds_name = [f'A{paramSet_num}', f'B{paramSet_num}', f'C{paramSet_num}']
     
     for feature_idx in lst_inspected_feature:
         plt.figure(figsize=(10, 10))
