@@ -3,137 +3,133 @@ import featureExtraction as feaext
 import signal_processing as sigpro
 import qualityExtractionLoc as QEL
 from locIntegration import locIntegrate
-from classPSO_kNN import psokNN
-import cross_validate as cv
+from sklearn.model_selection import train_test_split
+# import pandas as pd
+import cross_validation as cv
+from classPSO_kNN import psokNN 
+from matplotlib import pyplot as plt
 
+def datasetCreating(x_, y_):
+    xTrain, xTest, yTrain, yTest = train_test_split(x_, y_, test_size=0.1, random_state=75)
+
+    return xTrain, yTrain, xTest, yTest
+
+def plot_feature_distribution(x_lst, y_lst, lst_inspected_feature=0, feature_name_lst=['Mean', 'Kurtosis', 'Skewness', 'Variance', 'Max. P2P'], num_kind_fea=5, num_segment_per_sig=4, num_fea_per_sig=20):
+    ds_name = [f'A{paramSet_num}', f'B{paramSet_num}', f'C{paramSet_num}']
+    
+    for feature_idx in lst_inspected_feature:
+        plt.figure(figsize=(10, 10))
+        is_wafer_fea = False
+        if feature_idx >= 60: # wafer feature
+            is_wafer_fea = True
+        if is_wafer_fea:
+            feature_name = 'Ingot Length' if feature_idx<61 else 'Wafer Location'
+        else:
+            if feature_idx < num_fea_per_sig:
+                kind_sig = 'Signal'
+            elif feature_idx < num_fea_per_sig*2:
+                kind_sig = 'Upper Envelope'
+            else:
+                kind_sig = 'Lower Envelope'
+            kind_feature = feature_name_lst[feature_idx%num_kind_fea]
+            kind_seg = (feature_idx//5)%num_segment_per_sig + 1
+            feature_name = kind_feature + ' of ' + kind_sig + ' from Segment ' + str(kind_seg)
+        
+        
+        for idx_ds, distri_ds in enumerate(x_lst):
+            plt.plot(distri_ds[:, feature_idx], y_lst[idx_ds], 'o', lw=2, label=ds_name[idx_ds])
+        plt.legend(fontsize=20)
+        plt.title(f'{feature_name} v.s. {quality_lst[quality_idx]}', fontsize=24)
+        plt.xlabel(f'{feature_name}', fontsize=20)
+        plt.ylabel(f'{quality_lst[quality_idx]}', fontsize=20)
+        plt.xticks(fontsize=18)
+        plt.yticks(fontsize=18)
+        plt.grid()
 
 if __name__ == '__main__':
-    dataset_idx = 0 # 0(60s/sample), 1(10s/sample), 2(4s/sample)
-    dataset_dict = {0:'A', 1:'B', 2:'C'}
-
-    isEnveCombined = True
-    # resample_size = 10
+    # paramSet_num = 1 
+    # quality_idx = 2
+    quality_lst = ['TTV', 'Warp', 'Waviness', 'Bow']
+    y_boundary = {0:[5.5, 17], 1:[3, 18], 2:[0, 2.7], 3:[-5, 4]}
     
-    with open(f'.//5th_eqp//dataset_{dataset_dict[dataset_idx]}_indexes.csv', 'r') as file:
-        quality_run_idx = np.genfromtxt(file, delimiter=',').astype(int)
-
-    """
-    Signal
-    """ 
-    signals = sigpro.signals_from_dataset(f'.\\dataset{dataset_dict[dataset_idx]}_5th_eqp', param_idx_lst=[0, 1])
-    og_num_run = len(signals)
-    # signals = time_series_resample(signals, dt_original=4, dt_final=60)
-    progress = sigpro.pick_one_signal(signals, signal_idx=0)
-    valid_run_idx = sigpro.non_discontinuous_runs(progress, 0, 306, 1)
-    signals = sigpro.pick_run_data(signals, valid_run_idx)
-    shortest_length = min([run.shape[1] for run in signals])
-    signals_resize = sigpro.time_series_resize(signals, shortest_length)
-
+    # fA = np.pad(fA, (0, 1), 'constant', constant_values=(0, 1))
+    # fB = np.pad(fB, (0, 1), 'constant', constant_values=(0, 2))
+    # fC = np.pad(fC, (0, 1), 'constant', constant_values=(0, 3))
+    for quality_idx in [2]:
+        for paramSet_num in [1]:
+            fA = np.genfromtxt(f'.//X_and_Y//f_A{paramSet_num}.csv', delimiter=',')
+            fB = np.genfromtxt(f'.//X_and_Y//f_B{paramSet_num}.csv', delimiter=',')
+            fC = np.genfromtxt(f'.//X_and_Y//f_C{paramSet_num}.csv', delimiter=',')
+            
+            yA = np.genfromtxt(f'.//X_and_Y//y_A{paramSet_num}.csv', delimiter=',')[:, quality_idx]
+            yB = np.genfromtxt(f'.//X_and_Y//y_B{paramSet_num}.csv', delimiter=',')[:, quality_idx]
+            yC = np.genfromtxt(f'.//X_and_Y//y_C{paramSet_num}.csv', delimiter=',')[:, quality_idx]
+            
+            x_3 = [fA, fB, fC]
+            y_3 = [yA, yB, yC]
+            
+            xA, yA = cv.cleanOutlier(fA, yA)
+            xB, yB = cv.cleanOutlier(fB, yB)
+            xC, yC = cv.cleanOutlier(fC, yC)
+            
+            x = np.concatenate((xA, xB, xC), axis=0)
+            y = np.concatenate((yA, yB, yC), axis=0)
+            
+            
+            xA_train, yA_train, xA_test, yA_test = cv.datasetCreating(xA, yA)
+            xB_train, yB_train, xB_test, yB_test = cv.datasetCreating(xB, yB)
+            xC_train, yC_train, xC_test, yC_test = cv.datasetCreating(xC, yC)
+            
+            x_train = np.concatenate((xA_train, xB_train, xC_train), axis=0)
+            y_train = np.concatenate((yA_train, yB_train, yC_train), axis=0)
+            x_test = np.concatenate((xA_test, xB_test, xC_test), axis=0)
+            y_test = np.concatenate((yA_test, yB_test, yC_test), axis=0) 
+            
+            # plot_feature_distribution([xA, xB, xC], [yA, yB, yC], lst_inspected_feature=np.arange(0, 62, 1))
+            
+            """
+            Features of same location in different quality level
+            """
+            x_sorted_by_location = x[np.argsort(x[:, -1])]
+            y_sorted_by_location = y[np.argsort(x[:, -1])]
+            location_unique = np.vstack(np.unique(x[:, -1], return_counts=True))
+            
+            
+            """
+            KNN PSO
+            """
+            # psoModel = psokNN(x, y, f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
+            #                         is_auto_split=False, normalized='xy', y_boundary=y_boundary[quality_idx])
+            # model_pso, fitnessHistory, best_particle = psoModel.pso(x_train=x_train, y_train=y_train,
+            #                                                         particleAmount=20, maxIterTime=10)
+            # psoModel.model_testing(model_pso, 'kNN+PSO_A', x_test=xA_test, y_test=yA_test)
+            # psoModel.model_testing(model_pso, 'kNN+PSO_B', x_test=xB_test, y_test=yB_test)
+            # psoModel.model_testing(model_pso, 'kNN+PSO_C', x_test=xC_test, y_test=yC_test)
+            # psoModel.model_testing(model_pso, 'kNN+PSO_Total', x_test=x_test, y_test=y_test)
+            
+            """
+            XGB XV
+            """
+            # cv_prepare = cv.cross_validate(x, y, f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
+            #                             normalized='xy', y_value_boundary=y_boundary[quality_idx], is_auto_split=False)
+            # param_setting = {'random_state':75}
+            # model_cv = cv_prepare.cross_validate_XGB(x_train=x_train, y_train=y_train, param_setting=param_setting)
+            # # cv_prepare.model_testing(model_cv, 'XGB_A', x_test=xA_test, y_test=yA_test)
+            # # cv_prepare.model_testing(model_cv, 'XGB_B', x_test=xB_test, y_test=yB_test)
+            # # cv_prepare.model_testing(model_cv, 'XGB_C', x_test=xC_test, y_test=yC_test)
+            # cv_prepare.model_testing(model_cv, 'XGB_Total', x_test=x_test, y_test=y_test)
     
-    """
-    Quality
-    """
-    ttv = QEL.pick_certain_qualities(".//5th_eqp//quality_determined.csv", ['TTV'], quality_run_idx)
-    warp = QEL.pick_certain_qualities(".//5th_eqp//quality_determined.csv", ['Warp'], quality_run_idx)
-    waviness = QEL.pick_certain_qualities(".//5th_eqp//quality_determined.csv", ['Wav ind'], quality_run_idx)
-    bow = QEL.pick_certain_qualities(".//5th_eqp//quality_determined.csv", ['Bow'], quality_run_idx) 
-    position = QEL.get_wafer_position(".//5th_eqp//quality_determined.csv", quality_run_idx)
-    lot = QEL.get_lot(".//5th_eqp//quality_determined.csv", quality_run_idx)
-    waviness_3 = QEL.pick_certain_qualities(".//5th_eqp//quality_determined.csv", ['Wav ind', 'Entry wav', 'Exit wav'], quality_run_idx)
-    
-
-    ttv = sigpro.pick_run_data(ttv, valid_run_idx)
-    warp = sigpro.pick_run_data(warp, valid_run_idx)
-    waviness = sigpro.pick_run_data(waviness, valid_run_idx)
-    bow = sigpro.pick_run_data(bow, valid_run_idx)
-    position = sigpro.pick_run_data(position, valid_run_idx)
-    lot = sigpro.pick_run_data(lot, valid_run_idx)
-    waviness_3 = sigpro.pick_run_data(waviness_3, valid_run_idx)
-    
-    general_run_idx = QEL.high_similarity_runs(waviness, lot)
-    ttv = sigpro.pick_run_data(ttv, general_run_idx)
-    warp = sigpro.pick_run_data(warp, general_run_idx)
-    waviness = sigpro.pick_run_data(waviness, general_run_idx)
-    bow = sigpro.pick_run_data(bow, general_run_idx)
-    position = sigpro.pick_run_data(position, general_run_idx)
-    lot = sigpro.pick_run_data(lot, general_run_idx)
-    waviness_3 = sigpro.pick_run_data(waviness_3, general_run_idx)
-    
-    """
-    Signal preprocessing
-    """
-    # signals = signals_resize
-    signals = sigpro.pick_run_data(signals, general_run_idx)
-    progress = sigpro.pick_one_signal(signals, signal_idx=0)
-    outlet = sigpro.pick_one_signal(signals, signal_idx=1)
-    outlet_diff = sigpro.subtract_initial_value(outlet)
-    
-    # inspect progress
-    for run_idx, run_pro in enumerate(progress):
-        if np.where(np.diff(run_pro)<0)[0].shape[0] > 0:
-            print(f'Run {valid_run_idx[general_run_idx[run_idx]]} got fucked up progress\nplease try to fix it manually')
-    
-    """
-    Feature
-    """ 
-    ingot_len = QEL.get_ingot_length(".//5th_eqp//quality_determined.csv")
-    ingot_len = np.array(ingot_len).reshape(-1, 1)
-    ingot_len = sigpro.pick_run_data(ingot_len, valid_run_idx)
-    ingot_len = sigpro.pick_run_data(ingot_len, general_run_idx)
-    f_outlet = feaext.features_of_signal(progress, outlet_diff, isEnveCombined, gau_sig=4.5, gau_rad=10, w_size=7)
-    f_combine = np.concatenate((f_outlet, ingot_len), axis=1)
-    # f_combine = np.concatenate((encoded_outlet_diff, ingot_len), axis=1)
-
-    """
-    Feature Analysis 
-    """
-    y_lot1, run_idx_lot1 = QEL.pick_one_lot(waviness, lot, target_lot=1)
-    x_lot1 = f_combine[run_idx_lot1]
-    
-    locPrepare = locIntegrate([ttv, warp, waviness, bow], position)
-    x, y = locPrepare.mixFeatureAndQuality(f_combine)
-    y_ttv = y[:, 0]
-    y_warp = y[:, 0]
-    y_wavi = y[:, 0]
-    y_bow = y[:, 0]
-
-    
-    """
-    PSO
-    """
-    psoModelTTV = psokNN(x, y_ttv, f'TTV (dataset{dataset_dict[dataset_idx]})', normalized='', y_boundary=[5.5, 17])
-    psoModelWarp = psokNN(x, y_warp, f'Warp (dataset{dataset_dict[dataset_idx]})', normalized='', y_boundary=[3, 18])
-    psoModelWavi = psokNN(x, y_wavi, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='', y_boundary=[0, 2.7])
-    psoModelBOW = psokNN(x, y_bow, f'Bow (dataset{dataset_dict[dataset_idx]})', normalized='', y_boundary=[-5, 4])
-
-    model_ttv, fitnessHistory_ttv = psoModelTTV.pso(particleAmount=20, maxIterTime=10)
-    model_warp, fitnessHistory_warp = psoModelWarp.pso(particleAmount=20, maxIterTime=10)
-    model_wavi, fitnessHistory_wavi = psoModelWavi.pso(particleAmount=20, maxIterTime=10)
-    model_bow, fitnessHistory_bow = psoModelBOW.pso(particleAmount=20, maxIterTime=10)
-
-
-    """
-    Cross Validation
-    """
-    cv_ttv = cv.cross_validate(x, y_ttv, f'TTV (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[5.5, 17])
-    cv_warp = cv.cross_validate(x, y_warp, f'Warp (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[3, 18])
-    cv_wavi = cv.cross_validate(x, y_wavi, f'Waviness (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[0, 2.7])
-    cv_bow = cv.cross_validate(x, y_bow, f'BOW (dataset{dataset_dict[dataset_idx]})', normalized='', y_value_boundary=[-5, 4])
-
-    
-    param_setting = {'eta':0.3, 'gamma':0.01, 'max_depth':6, 'subsample':0.8, 'lambda':50, 'random_state':75}
-    model_ttv = cv_ttv.cross_validate_XGB(param_setting)
-    model_warp = cv_warp.cross_validate_XGB(param_setting)
-    model_wavi = cv_wavi.cross_validate_XGB(param_setting)
-    model_bow = cv_bow.cross_validate_XGB(param_setting)
-
-
-    cv_ttv.model_testing(model_ttv, 'XGB')
-    cv_warp.model_testing(model_warp, 'XGB')
-    cv_wavi.model_testing(model_wavi, 'XGB')
-    cv_bow.model_testing(model_bow, 'XGB')
-    
-
-
-
+            """
+            Individual
+            """
+            # dataset_index = 0
+            
+            # cv_prepare = cv.cross_validate(x_3[dataset_index], y_3[dataset_index], f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
+            #                             normalized='xy', y_value_boundary=y_boundary[quality_idx])
+            # param_setting_K = {'n_neighbors':5}
+            # param_setting_X = {'random_state':75}
+            # # knn = cv_prepare.cross_validate_kNN(param_setting=param_setting_K)
+            # xgb = cv_prepare.cross_validate_XGB(param_setting=param_setting_X)
+            # # cv_prepare.model_testing(knn, 'KNN')
+            # cv_prepare.model_testing(xgb, 'XGBoost')
     
