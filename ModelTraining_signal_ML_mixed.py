@@ -46,6 +46,46 @@ def plot_feature_distribution(x_lst, y_lst, lst_inspected_feature=0, feature_nam
         plt.yticks(fontsize=18)
         plt.grid()
 
+def plot_test_different_dataset(x_test_lst, y_test_lst, model, involved_class, label_lst = ['A', 'B', 'C']):
+    plt.figure(figsize=(12, 12), dpi=300)
+    for idx_ds, x_test_ in enumerate(x_test_lst):
+        y_test_ = y_test_lst[idx_ds]
+        if 'x' in involved_class.normalized or 'X' in involved_class.normalized:
+            x_test_ = (x_test_ - involved_class.xMin) / (involved_class.xMax - involved_class.xMin)
+            
+        if 'y' in involved_class.normalized or 'Y' in involved_class.normalized:
+            y_test_ = (y_test_ - involved_class.yMin) / (involved_class.yMax - involved_class.yMin)
+        y_test_pred_ = model.predict(x_test_)
+        if involved_class.yMin != None and involved_class.yMax != None:
+            y_test_pred_ = y_test_pred_ * (involved_class.yMax-involved_class.yMin) + involved_class.yMin
+            y_test_ = y_test_ * (involved_class.yMax-involved_class.yMin) + involved_class.yMin
+        plt.plot(y_test_, y_test_pred_, 'o', label=f'{label_lst[idx_ds]}', lw=5)
+    plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
+    plt.ylabel("Predicted Value", fontsize=24)
+    plt.xlabel("True Value", fontsize=24)
+    bottomValue = involved_class.y_boundary[0]
+    topValue = involved_class.y_boundary[1]
+    plt.ylim([bottomValue, topValue])
+    plt.xlim([bottomValue, topValue])
+    plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
+    plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
+
+    # tesxt_box_x = bottomValue
+    # plt.text(bottomValue+abs(bottomValue-topValue)*0.04, topValue-abs(bottomValue-topValue)*0.2,f'MAPE={mape:.2f}%\n$R^2={r2:.2f}$\nMAE={mae:.2f}',
+    #          fontsize=24,
+    #          bbox={'boxstyle':'square', 'facecolor':'white', 'edgecolor':'black', 'pad':0.3, 'linewidth':1})
+    
+    # plt.text(bottomValue+abs(bottomValue-topValue)*0.14, topValue-abs(bottomValue-topValue)*0.05, 'KNN', fontsize=24,
+    #          bbox={'boxstyle':'round', 'facecolor':'wheat', 'edgecolor':'black', 'pad':0.3, 'linewidth':1, 'alpha':0.5})
+    
+    plt.axhline(y=0, color='red')
+    plt.axvline(x=0, color='red')
+    plt.grid()
+    plt.legend(fontsize=22)
+    plt.show()
+    
+        
+
 if __name__ == '__main__':
     # paramSet_num = 1 
     # quality_idx = 2
@@ -55,8 +95,8 @@ if __name__ == '__main__':
     # fA = np.pad(fA, (0, 1), 'constant', constant_values=(0, 1))
     # fB = np.pad(fB, (0, 1), 'constant', constant_values=(0, 2))
     # fC = np.pad(fC, (0, 1), 'constant', constant_values=(0, 3))
-    for quality_idx in [2]:
-        for paramSet_num in [1]:
+    for quality_idx in [3]:
+        for paramSet_num in [2]:
             fA = np.genfromtxt(f'.//X_and_Y//f_A{paramSet_num}.csv', delimiter=',')
             fB = np.genfromtxt(f'.//X_and_Y//f_B{paramSet_num}.csv', delimiter=',')
             fC = np.genfromtxt(f'.//X_and_Y//f_C{paramSet_num}.csv', delimiter=',')
@@ -85,7 +125,15 @@ if __name__ == '__main__':
             x_test = np.concatenate((xA_test, xB_test, xC_test), axis=0)
             y_test = np.concatenate((yA_test, yB_test, yC_test), axis=0) 
             
-            plot_feature_distribution([xA, xB, xC], [yA, yB, yC], lst_inspected_feature=np.arange(0, 62, 1))
+            # plot_feature_distribution([xA, xB, xC], [yA, yB, yC], lst_inspected_feature=np.arange(0, 62, 1))
+            
+            """
+            Features of same location in different quality level
+            """
+            x_sorted_by_location = x[np.argsort(x[:, -1])]
+            y_sorted_by_location = y[np.argsort(x[:, -1])]
+            location_unique = np.vstack(np.unique(x[:, -1], return_counts=True))
+            
             
             """
             KNN PSO
@@ -102,14 +150,15 @@ if __name__ == '__main__':
             """
             XGB XV
             """
-            # cv_prepare = cv.cross_validate(x, y, f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
-            #                             normalized='xy', y_value_boundary=y_boundary[quality_idx], is_auto_split=False)
-            # param_setting = {'random_state':75}
-            # model_cv = cv_prepare.cross_validate_XGB(x_train=x_train, y_train=y_train, param_setting=param_setting)
-            # # cv_prepare.model_testing(model_cv, 'XGB_A', x_test=xA_test, y_test=yA_test)
-            # # cv_prepare.model_testing(model_cv, 'XGB_B', x_test=xB_test, y_test=yB_test)
-            # # cv_prepare.model_testing(model_cv, 'XGB_C', x_test=xC_test, y_test=yC_test)
-            # cv_prepare.model_testing(model_cv, 'XGB_Total', x_test=x_test, y_test=y_test)
+            cv_prepare = cv.cross_validate(x, y, f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
+                                        normalized='xy', y_value_boundary=y_boundary[quality_idx], is_auto_split=False)
+            param_setting = {'random_state':75}
+            model_cv = cv_prepare.cross_validate_XGB(x_train=x_train, y_train=y_train, param_setting=param_setting)
+            # cv_prepare.model_testing(model_cv, 'XGB_A', x_test=xA_test, y_test=yA_test)
+            # cv_prepare.model_testing(model_cv, 'XGB_B', x_test=xB_test, y_test=yB_test)
+            # cv_prepare.model_testing(model_cv, 'XGB_C', x_test=xC_test, y_test=yC_test)
+            cv_prepare.model_testing(model_cv, 'XGB_Total', x_test=x_test, y_test=y_test)
+            plot_test_different_dataset([xA_test, xB_test, xC_test], [yA_test, yB_test, yC_test], model_cv, cv_prepare)
     
             """
             Individual
@@ -118,10 +167,12 @@ if __name__ == '__main__':
             
             # cv_prepare = cv.cross_validate(x_3[dataset_index], y_3[dataset_index], f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
             #                             normalized='xy', y_value_boundary=y_boundary[quality_idx])
-            # param_setting_K = {'n_neighbors':5}
+            # for k in np.arange(1, 171, 10):
+            #     param_setting_K = {'n_neighbors':k}
+            #     knn = cv_prepare.cross_validate_kNN(param_setting=param_setting_K)
+            #     cv_prepare.model_testing(knn, f'KNN (k={k})')
+                
             # param_setting_X = {'random_state':75}
-            # # knn = cv_prepare.cross_validate_kNN(param_setting=param_setting_K)
             # xgb = cv_prepare.cross_validate_XGB(param_setting=param_setting_X)
-            # # cv_prepare.model_testing(knn, 'KNN')
             # cv_prepare.model_testing(xgb, 'XGBoost')
     
