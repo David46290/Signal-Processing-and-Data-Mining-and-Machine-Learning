@@ -231,7 +231,7 @@ if __name__ == '__main__':
             Features of same location in different quality level (two assigned features)
             """
             dataset_index = 0
-            inspect_level = [1, 2, 3, 4, 5]
+            inspect_level = [1, 2, 3, 4]
             num_inspected_features = np.array([48, 10]).astype(int)
             
             idx_inspected_features = num_inspected_features - 1
@@ -264,13 +264,18 @@ if __name__ == '__main__':
                     y_lvl_chosen[idx] = y_sample       
                 sample_chosen = np.concatenate((x_chosen, y_chosen, y_lvl_chosen), axis=1)
                 sample_chosen = sample_chosen[np.argsort(sample_chosen[:, -1])[::-1]]
-                sample_chosen2 = sample_chosen[:, np.concatenate((idx_inspected_features, np.array([-1])))]
+                sample_chosen = sample_chosen[:, np.concatenate((idx_inspected_features, np.array([-1])))]
                 
                 plt.figure(figsize=(10, 10), dpi=300)
-                
+                lst_color = ['dodgerblue', 'darkgreen', 'olive', 'goldenrod', 'crimson']
+                for idx_lvl, lvl in enumerate(inspect_level):
+                    sample_lvl = sample_chosen[np.where(sample_chosen[:, -1]==lvl)[0]]
+                    plt.plot(sample_lvl.T[0], sample_lvl.T[1], 'o', label=f'Quality Level {lvl}', color=lst_color[idx_lvl])
                 
                 plt.xlabel(f'{num_feature_a}', fontsize=24)
                 plt.ylabel(f'{num_feature_b}', fontsize=24)
                 plt.xticks(fontsize=16)
-                plt.yticks([0, 0.25, 0.5, 0.75, 1], fontsize=16)
+                plt.yticks(fontsize=16)
+                plt.grid()
+                plt.legend(fontsize=23)
             
