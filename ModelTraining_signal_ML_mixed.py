@@ -4,10 +4,12 @@ import signal_processing as sigpro
 import qualityExtractionLoc as QEL
 from locIntegration import locIntegrate
 from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_percentage_error, r2_score, mean_squared_error, mean_absolute_error
 # import pandas as pd
 import cross_validation as cv
 from classPSO_kNN import psokNN 
 from matplotlib import pyplot as plt
+import scipy 
 
 def datasetCreating(x_, y_):
     xTrain, xTest, yTrain, yTest = train_test_split(x_, y_, test_size=0.1, random_state=75)
@@ -48,6 +50,7 @@ def plot_feature_distribution(x_lst, y_lst, lst_inspected_feature=0, feature_nam
 
 def plot_test_different_dataset(x_test_lst, y_test_lst, model, involved_class, label_lst = ['A', 'B', 'C']):
     plt.figure(figsize=(12, 12), dpi=300)
+    color_lst = ['royalblue', 'peru', 'deeppink']
     for idx_ds, x_test_ in enumerate(x_test_lst):
         y_test_ = y_test_lst[idx_ds]
         if 'x' in involved_class.normalized or 'X' in involved_class.normalized:
@@ -59,7 +62,13 @@ def plot_test_different_dataset(x_test_lst, y_test_lst, model, involved_class, l
         if involved_class.yMin != None and involved_class.yMax != None:
             y_test_pred_ = y_test_pred_ * (involved_class.yMax-involved_class.yMin) + involved_class.yMin
             y_test_ = y_test_ * (involved_class.yMax-involved_class.yMin) + involved_class.yMin
-        plt.plot(y_test_, y_test_pred_, 'o', label=f'{label_lst[idx_ds]}', lw=5)
+        r2 = r2_score(y_test_, y_test_pred_)
+        mape = mean_absolute_percentage_error(y_test_, y_test_pred_) * 100
+        mae = mean_absolute_error(y_test_, y_test_pred_)    
+        label_ = f'{label_lst[idx_ds]}: MAPE={mape:.2f}% | $R^2={r2:.2f}$ | MAE={mae:.2f}'
+        plt.plot(y_test_, y_test_pred_, 'o', color=color_lst[idx_ds], label=label_, lw=5)
+        
+        
     plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
     plt.ylabel("Predicted Value", fontsize=24)
     plt.xlabel("True Value", fontsize=24)
@@ -95,7 +104,7 @@ if __name__ == '__main__':
     # fA = np.pad(fA, (0, 1), 'constant', constant_values=(0, 1))
     # fB = np.pad(fB, (0, 1), 'constant', constant_values=(0, 2))
     # fC = np.pad(fC, (0, 1), 'constant', constant_values=(0, 3))
-    for quality_idx in [3]:
+    for quality_idx in [2]:
         for paramSet_num in [2]:
             fA = np.genfromtxt(f'.//X_and_Y//f_A{paramSet_num}.csv', delimiter=',')
             fB = np.genfromtxt(f'.//X_and_Y//f_B{paramSet_num}.csv', delimiter=',')
@@ -134,6 +143,25 @@ if __name__ == '__main__':
             y_sorted_by_location = y[np.argsort(x[:, -1])]
             location_unique = np.vstack(np.unique(x[:, -1], return_counts=True))
             
+            """
+            Feature similarity of train and test
+            Quality z-score of train and test
+            """
+            
+            # ds_inspected = [np.concatenate((xC_train, yC_train.reshape(-1, 1)), axis=1), 
+            #                 np.concatenate((xC_test, yC_test.reshape(-1, 1)), axis=1)]
+            ds_inspected = [xC_train, xC_test]
+            sample_simi_angle_lst = np.zeros((ds_inspected[1].shape[0], ds_inspected[0].shape[0]))
+            sample_simi_angle = np.zeros(ds_inspected[1].shape[0])
+            for idx_test_sample, sample_test in enumerate(ds_inspected[1]):
+                for idx_train_sample, sample_train in enumerate(ds_inspected[0]):
+                    sample_simi = np.dot(sample_test, sample_train)/(np.linalg.norm(sample_test)*np.linalg.norm(sample_train))
+                    sample_simi_angle_lst[idx_test_sample, idx_train_sample] = np.arccos(sample_simi)
+                    sample_simi_angle[idx_test_sample] = np.mean(sample_simi_angle_lst[idx_test_sample])
+            ds_inspected_2 = [yC_train, yC_test]
+            y_inspected_total = np.concatenate(ds_inspected_2)
+            y_inspected_zscore = scipy.stats.zscore(y_inspected_total)
+            sample_zscore = y_inspected_zscore[-ds_inspected_2[1].shape[0]:]
             
             """
             KNN PSO
@@ -146,6 +174,7 @@ if __name__ == '__main__':
             # psoModel.model_testing(model_pso, 'kNN+PSO_B', x_test=xB_test, y_test=yB_test)
             # psoModel.model_testing(model_pso, 'kNN+PSO_C', x_test=xC_test, y_test=yC_test)
             # psoModel.model_testing(model_pso, 'kNN+PSO_Total', x_test=x_test, y_test=y_test)
+            # plot_test_different_dataset([xA_test, xB_test, xC_test], [yA_test, yB_test, yC_test], model_pso, psoModel)
             
             """
             XGB XV
@@ -153,26 +182,26 @@ if __name__ == '__main__':
             cv_prepare = cv.cross_validate(x, y, f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
                                         normalized='xy', y_value_boundary=y_boundary[quality_idx], is_auto_split=False)
             param_setting = {'random_state':75}
-            model_cv = cv_prepare.cross_validate_XGB(x_train=x_train, y_train=y_train, param_setting=param_setting)
+            # model_cv = cv_prepare.cross_validate_XGB(x_train=x_train, y_train=y_train, param_setting=param_setting)
             # cv_prepare.model_testing(model_cv, 'XGB_A', x_test=xA_test, y_test=yA_test)
             # cv_prepare.model_testing(model_cv, 'XGB_B', x_test=xB_test, y_test=yB_test)
             # cv_prepare.model_testing(model_cv, 'XGB_C', x_test=xC_test, y_test=yC_test)
-            cv_prepare.model_testing(model_cv, 'XGB_Total', x_test=x_test, y_test=y_test)
-            plot_test_different_dataset([xA_test, xB_test, xC_test], [yA_test, yB_test, yC_test], model_cv, cv_prepare)
+            # cv_prepare.model_testing(model_cv, 'XGB_Total', x_test=x_test, y_test=y_test)
+            # plot_test_different_dataset([xA_test, xB_test, xC_test], [yA_test, yB_test, yC_test], model_cv, cv_prepare)
     
             """
             Individual
             """
-            # dataset_index = 0
+            dataset_index = 2
             
-            # cv_prepare = cv.cross_validate(x_3[dataset_index], y_3[dataset_index], f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
-            #                             normalized='xy', y_value_boundary=y_boundary[quality_idx])
-            # for k in np.arange(1, 171, 10):
+            cv_prepare = cv.cross_validate(x_3[dataset_index], y_3[dataset_index], f'{quality_lst[quality_idx]} (Recipe_{paramSet_num})',
+                                        normalized='xy', y_value_boundary=y_boundary[quality_idx])
+            # for k in np.arange(1, 51, 1):
             #     param_setting_K = {'n_neighbors':k}
             #     knn = cv_prepare.cross_validate_kNN(param_setting=param_setting_K)
             #     cv_prepare.model_testing(knn, f'KNN (k={k})')
                 
-            # param_setting_X = {'random_state':75}
-            # xgb = cv_prepare.cross_validate_XGB(param_setting=param_setting_X)
-            # cv_prepare.model_testing(xgb, 'XGBoost')
+            param_setting_X = {'random_state':75}
+            xgb = cv_prepare.cross_validate_XGB(param_setting=param_setting_X)
+            cv_prepare.model_testing(xgb, 'XGBoost')
     
