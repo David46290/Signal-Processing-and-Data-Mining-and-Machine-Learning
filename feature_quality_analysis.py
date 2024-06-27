@@ -161,6 +161,53 @@ def feature_in_different_qualityLvl_total(dataset_index=0, inspect_level=[1, 2, 
          plt.ylabel('Normalized Value', fontsize=24)
          plt.xticks(np.arange(1, x_different_lvl.shape[1]+1, 5), fontsize=16)
          plt.yticks([0, 0.25, 0.5, 0.75, 1], fontsize=16)
+         
+def feature_in_different_qualityLvl_two(num_inspected_features, dataset_index=0, inspect_level=[1, 2, 3, 4, 5]):
+    num_inspected_features = np.array(num_inspected_features).astype(int)
+    idx_inspected_features = num_inspected_features - 1
+    num_feature_a = get_feature_name(num_inspected_features[0])
+    num_feature_b = get_feature_name(num_inspected_features[1])
+    x_ = x_3[dataset_index]
+    y_ = y_3[dataset_index]
+    lst_wafer_location = x_[:, -1]
+    location_unique = np.vstack(np.unique(x[:, -1], return_counts=True))
+    location_unique = location_unique[:, np.argsort(location_unique[1])[::-1]]
+    location_inspected = [1, 0.46, 0.27] # %
+    location_inspected = [1]
+    for idx_seg, location in enumerate(location_inspected):
+        idx_chosen_sample = np.where(abs(lst_wafer_location-location)<0.03)[0] # 3% searching range
+        x_chosen = x_[idx_chosen_sample][:, :-1] # get rid off location feature
+        y_chosen = y_[idx_chosen_sample].reshape(-1, 1)
+        y_lvl_chosen = np.copy(y_chosen)
+        for idx, y_sample in enumerate(y_lvl_chosen):
+            # waviness threshold: 1, 1.2, 1.5, 2
+            if y_sample < 1:
+                y_sample = 1
+            elif y_sample < 1.2:
+                y_sample = 2
+            elif y_sample < 1.5:
+                y_sample = 3
+            elif y_sample < 2:
+                y_sample = 4
+            else:
+                y_sample = 5
+            y_lvl_chosen[idx] = y_sample       
+        sample_chosen = np.concatenate((x_chosen, y_chosen, y_lvl_chosen), axis=1)
+        sample_chosen = sample_chosen[np.argsort(sample_chosen[:, -1])[::-1]]
+        sample_chosen = sample_chosen[:, np.concatenate((idx_inspected_features, np.array([-1])))]
+        
+        plt.figure(figsize=(10, 10), dpi=300)
+        lst_color = ['dodgerblue', 'darkgreen', 'olive', 'goldenrod', 'crimson']
+        for idx_lvl, lvl in enumerate(inspect_level):
+            sample_lvl = sample_chosen[np.where(sample_chosen[:, -1]==lvl)[0]]
+            plt.plot(sample_lvl.T[0], sample_lvl.T[1], 'o', label=f'Quality Level {lvl}', color=lst_color[idx_lvl])
+        
+        plt.xlabel(f'{num_feature_a}', fontsize=24)
+        plt.ylabel(f'{num_feature_b}', fontsize=24)
+        plt.xticks(fontsize=16)
+        plt.yticks(fontsize=16)
+        plt.grid()
+        plt.legend(fontsize=23)
 
 if __name__ == '__main__':
     # paramSet_num = 1 
@@ -230,52 +277,7 @@ if __name__ == '__main__':
             """
             Features of same location in different quality level (two assigned features)
             """
-            dataset_index = 0
-            inspect_level = [1, 2, 3, 4]
-            num_inspected_features = np.array([48, 10]).astype(int)
+            feature_in_different_qualityLvl_two(num_inspected_features=[48, 10],inspect_level = [1, 2, 3, 4],dataset_index = 0)
             
-            idx_inspected_features = num_inspected_features - 1
-            num_feature_a = get_feature_name(num_inspected_features[0])
-            num_feature_b = get_feature_name(num_inspected_features[1])
-            x_ = x_3[dataset_index]
-            y_ = y_3[dataset_index]
-            lst_wafer_location = x_[:, -1]
-            location_unique = np.vstack(np.unique(x[:, -1], return_counts=True))
-            location_unique = location_unique[:, np.argsort(location_unique[1])[::-1]]
-            location_inspected = [1, 0.46, 0.27] # %
-            location_inspected = [1]
-            for idx_seg, location in enumerate(location_inspected):
-                idx_chosen_sample = np.where(abs(lst_wafer_location-location)<0.03)[0] # 3% searching range
-                x_chosen = x_[idx_chosen_sample][:, :-1] # get rid off location feature
-                y_chosen = y_[idx_chosen_sample].reshape(-1, 1)
-                y_lvl_chosen = np.copy(y_chosen)
-                for idx, y_sample in enumerate(y_lvl_chosen):
-                    # waviness threshold: 1, 1.2, 1.5, 2
-                    if y_sample < 1:
-                        y_sample = 1
-                    elif y_sample < 1.2:
-                        y_sample = 2
-                    elif y_sample < 1.5:
-                        y_sample = 3
-                    elif y_sample < 2:
-                        y_sample = 4
-                    else:
-                        y_sample = 5
-                    y_lvl_chosen[idx] = y_sample       
-                sample_chosen = np.concatenate((x_chosen, y_chosen, y_lvl_chosen), axis=1)
-                sample_chosen = sample_chosen[np.argsort(sample_chosen[:, -1])[::-1]]
-                sample_chosen = sample_chosen[:, np.concatenate((idx_inspected_features, np.array([-1])))]
-                
-                plt.figure(figsize=(10, 10), dpi=300)
-                lst_color = ['dodgerblue', 'darkgreen', 'olive', 'goldenrod', 'crimson']
-                for idx_lvl, lvl in enumerate(inspect_level):
-                    sample_lvl = sample_chosen[np.where(sample_chosen[:, -1]==lvl)[0]]
-                    plt.plot(sample_lvl.T[0], sample_lvl.T[1], 'o', label=f'Quality Level {lvl}', color=lst_color[idx_lvl])
-                
-                plt.xlabel(f'{num_feature_a}', fontsize=24)
-                plt.ylabel(f'{num_feature_b}', fontsize=24)
-                plt.xticks(fontsize=16)
-                plt.yticks(fontsize=16)
-                plt.grid()
-                plt.legend(fontsize=23)
+            
             
