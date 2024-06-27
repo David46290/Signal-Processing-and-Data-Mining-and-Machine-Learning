@@ -112,14 +112,14 @@ def plot_test_different_dataset(x_test_lst, y_test_lst, model, involved_class, l
     plt.legend(fontsize=22)
     plt.show()
     
-def feature_in_different_qualityLvl_total(dataset_index=0, location_inspected=[1], inspect_level=[1, 2, 3, 4, 5], lst_color = ['dodgerblue', 'darkgreen', 'olive', 'goldenrod', 'crimson']):
+def feature_in_different_qualityLvl_total(dataset_index=0, searching_range=3, location_inspected=[1], inspect_level=[1, 2, 3, 4, 5], lst_color = ['dodgerblue', 'darkgreen', 'olive', 'goldenrod', 'crimson']):
      x_ = x_3[dataset_index]
      y_ = y_3[dataset_index]
      lst_wafer_location = x_[:, -1]
      location_unique = np.vstack(np.unique(x[:, -1], return_counts=True))
      location_unique = location_unique[:, np.argsort(location_unique[1])[::-1]]
      for idx_seg, location in enumerate(location_inspected):
-         idx_chosen_sample = np.where(abs(lst_wafer_location-location)<0.03)[0] # 3% searching range
+         idx_chosen_sample = np.where(abs(lst_wafer_location-location)<(searching_range/100))[0] # 3% searching range
          x_chosen = x_[idx_chosen_sample][:, :-1] # get rid off location feature
          x_chosen_norm, _, __ = cv.normalizationX(x_chosen, left_over_feature=0)
          y_chosen = y_[idx_chosen_sample].reshape(-1, 1)
@@ -153,14 +153,14 @@ def feature_in_different_qualityLvl_total(dataset_index=0, location_inspected=[1
                  # if idx_sample > 10:
                  #     break
                  plt.scatter(np.arange(1, x_different_lvl.shape[1]+1, 1), sample,
-                          lw=5, marker=lst_marker_type[idx_lvl], label=f'{lst_lvl_total[idx_lvl]}', color=lst_color[idx_lvl])
+                          lw=8-idx_lvl, marker=lst_marker_type[idx_lvl], label=f'{lst_lvl_total[idx_lvl]}', color=lst_color[idx_lvl])
          plt.grid()
          plt.xlabel('Feature', fontsize=24)
          plt.ylabel('Normalized Value', fontsize=24)
          plt.xticks(np.arange(1, x_different_lvl.shape[1]+1, 5), fontsize=16)
          plt.yticks([0, 0.25, 0.5, 0.75, 1], fontsize=16)
          
-def feature_in_different_qualityLvl_two(num_inspected_features, location_inspected=[1], dataset_index=0, inspect_level=[1, 2, 3, 4, 5], lst_color = ['dodgerblue', 'goldenrod', 'darkgreen', 'crimson', 'olive']):
+def feature_in_different_qualityLvl_two(num_inspected_features, searching_range=3, location_inspected=[1], dataset_index=0, inspect_level=[1, 2, 3, 4, 5], lst_color = ['dodgerblue', 'goldenrod', 'darkgreen', 'crimson', 'olive']):
     num_inspected_features = np.array(num_inspected_features).astype(int)
     idx_inspected_features = num_inspected_features - 1
     num_feature_a = get_feature_name(num_inspected_features[0])
@@ -171,7 +171,7 @@ def feature_in_different_qualityLvl_two(num_inspected_features, location_inspect
     location_unique = np.vstack(np.unique(x[:, -1], return_counts=True))
     location_unique = location_unique[:, np.argsort(location_unique[1])[::-1]]
     for idx_seg, location in enumerate(location_inspected):
-        idx_chosen_sample = np.where(abs(lst_wafer_location-location)<0.03)[0] # 3% searching range
+        idx_chosen_sample = np.where(abs(lst_wafer_location-location)<(searching_range/100))[0]
         x_chosen = x_[idx_chosen_sample][:, :-1] # get rid off location feature
         y_chosen = y_[idx_chosen_sample].reshape(-1, 1)
         y_lvl_chosen = np.copy(y_chosen)
@@ -196,7 +196,7 @@ def feature_in_different_qualityLvl_two(num_inspected_features, location_inspect
         lst_marker_type = ['o', 'v', 's', 'D', '*']
         for idx_lvl, lvl in enumerate(inspect_level):
             sample_lvl = sample_chosen[np.where(sample_chosen[:, -1]==lvl)[0]]
-            plt.scatter(sample_lvl.T[0], sample_lvl.T[1], lw=12-lvl, marker=lst_marker_type[idx_lvl], label=f'Quality Level {lvl}', color=lst_color[idx_lvl])
+            plt.scatter(sample_lvl.T[0], sample_lvl.T[1], lw=12-idx_lvl, marker=lst_marker_type[idx_lvl], label=f'Quality Level {lvl}', color=lst_color[idx_lvl])
         
         plt.xlabel(f'{num_feature_a}', fontsize=24)
         plt.ylabel(f'{num_feature_b}', fontsize=24)
@@ -268,14 +268,15 @@ if __name__ == '__main__':
             """
             Features of same location in different quality level (total)
             """
-            # feature_in_different_qualityLvl_total(dataset_index=0, inspect_level=[1, 3, 4, 5],
-            #                                       lst_color = ['dodgerblue', 'goldenrod', 'crimson', 'darkviolet', 'darkgreen'])
+            feature_in_different_qualityLvl_total(dataset_index=0, inspect_level=[1, 2, 3, 4, 5],
+                                                  location_inspected=[1, 0.5, 0.25], searching_range=10,
+                                                  lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
             
             """
             Features of same location in different quality level (two assigned features)
             """
             feature_in_different_qualityLvl_two(num_inspected_features=[1, 5],inspect_level=[1, 2, 3, 4, 5],
-                                                dataset_index=0, location_inspected=[1, 0.46, 0.27], 
+                                                dataset_index=0, location_inspected=[1, 0.5, 0.25], searching_range=10,
                                                 lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
             
             
