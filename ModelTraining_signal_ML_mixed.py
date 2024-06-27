@@ -135,14 +135,7 @@ if __name__ == '__main__':
             y_test = np.concatenate((yA_test, yB_test, yC_test), axis=0) 
             
             # plot_feature_distribution([xA, xB, xC], [yA, yB, yC], lst_inspected_feature=np.arange(0, 62, 1))
-            
-            """
-            Features of same location in different quality level
-            """
-            x_sorted_by_location = x[np.argsort(x[:, -1])]
-            y_sorted_by_location = y[np.argsort(x[:, -1])]
-            location_unique = np.vstack(np.unique(x[:, -1], return_counts=True))
-            
+
             """
             Feature similarity of train and test
             Quality z-score of train and test
@@ -150,18 +143,18 @@ if __name__ == '__main__':
             
             # ds_inspected = [np.concatenate((xC_train, yC_train.reshape(-1, 1)), axis=1), 
             #                 np.concatenate((xC_test, yC_test.reshape(-1, 1)), axis=1)]
-            ds_inspected = [xC_train, xC_test]
-            sample_simi_angle_lst = np.zeros((ds_inspected[1].shape[0], ds_inspected[0].shape[0]))
-            sample_simi_angle = np.zeros(ds_inspected[1].shape[0])
-            for idx_test_sample, sample_test in enumerate(ds_inspected[1]):
-                for idx_train_sample, sample_train in enumerate(ds_inspected[0]):
-                    sample_simi = np.dot(sample_test, sample_train)/(np.linalg.norm(sample_test)*np.linalg.norm(sample_train))
-                    sample_simi_angle_lst[idx_test_sample, idx_train_sample] = np.arccos(sample_simi)
-                    sample_simi_angle[idx_test_sample] = np.mean(sample_simi_angle_lst[idx_test_sample])
-            ds_inspected_2 = [yC_train, yC_test]
-            y_inspected_total = np.concatenate(ds_inspected_2)
-            y_inspected_zscore = scipy.stats.zscore(y_inspected_total)
-            sample_zscore = y_inspected_zscore[-ds_inspected_2[1].shape[0]:]
+            # ds_inspected = [xC_train, xC_test]
+            # sample_simi_angle_lst = np.zeros((ds_inspected[1].shape[0], ds_inspected[0].shape[0]))
+            # sample_simi_angle = np.zeros(ds_inspected[1].shape[0])
+            # for idx_test_sample, sample_test in enumerate(ds_inspected[1]):
+            #     for idx_train_sample, sample_train in enumerate(ds_inspected[0]):
+            #         sample_simi = np.dot(sample_test, sample_train)/(np.linalg.norm(sample_test)*np.linalg.norm(sample_train))
+            #         sample_simi_angle_lst[idx_test_sample, idx_train_sample] = np.arccos(sample_simi)
+            #         sample_simi_angle[idx_test_sample] = np.mean(sample_simi_angle_lst[idx_test_sample])
+            # ds_inspected_2 = [yC_train, yC_test]
+            # y_inspected_total = np.concatenate(ds_inspected_2)
+            # y_inspected_zscore = scipy.stats.zscore(y_inspected_total)
+            # sample_zscore = y_inspected_zscore[-ds_inspected_2[1].shape[0]:]
             
             """
             KNN PSO
@@ -201,7 +194,26 @@ if __name__ == '__main__':
             #     knn = cv_prepare.cross_validate_kNN(param_setting=param_setting_K)
             #     cv_prepare.model_testing(knn, f'KNN (k={k})')
                 
-            param_setting_X = {'random_state':75}
-            xgb = cv_prepare.cross_validate_XGB(param_setting=param_setting_X)
-            cv_prepare.model_testing(xgb, 'XGBoost')
+            # param_setting_X = {'random_state':75}
+            # xgb = cv_prepare.cross_validate_XGB(param_setting=param_setting_X)
+            # cv_prepare.model_testing(xgb, 'XGBoost')
+            
+            """
+            Features of same location in different quality level
+            """
+            dataset_index = 0
+            x_ = x_3[dataset_index]
+            y_ = y_3[dataset_index]
+            lst_wafer_location = x_[:, -1]
+            location_unique = np.vstack(np.unique(x[:, -1], return_counts=True))
+            location_unique = location_unique[:, np.argsort(location_unique[1])[::-1]]
+            
+            location_inspected = [1, 0.46, 0.27] # %
+            location_inspected = [1]
+            for idx_seg, location in enumerate(location_inspected):
+                idx_chosen_sample = np.where(abs(lst_wafer_location-location)<0.03)[0] # 3% searching range
+                x_chosen = x_[idx_chosen_sample][:, :-1] # get rid off location feature
+                y_chosen = y_[idx_chosen_sample].reshape(-1, 1)
+                sample_chosen = np.concatenate((x_chosen, y_chosen), axis=1)
+                sample_chosen = sample_chosen[np.argsort(sample_chosen[:, -1])[::-1]]
     
