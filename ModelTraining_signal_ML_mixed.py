@@ -214,6 +214,21 @@ if __name__ == '__main__':
                 idx_chosen_sample = np.where(abs(lst_wafer_location-location)<0.03)[0] # 3% searching range
                 x_chosen = x_[idx_chosen_sample][:, :-1] # get rid off location feature
                 y_chosen = y_[idx_chosen_sample].reshape(-1, 1)
-                sample_chosen = np.concatenate((x_chosen, y_chosen), axis=1)
+                y_lvl_chosen = np.copy(y_chosen)
+                for idx, y_sample in enumerate(y_lvl_chosen):
+                    # waviness threshold: 1, 1.2, 1.5, 2
+                    if y_sample < 1:
+                        y_sample = 1
+                    elif y_sample < 1.2:
+                        y_sample = 2
+                    elif y_sample < 1.5:
+                        y_sample = 3
+                    elif y_sample < 2:
+                        y_sample = 4
+                    else:
+                        y_sample = 5
+                    y_lvl_chosen[idx] = y_sample
+                
+                sample_chosen = np.concatenate((x_chosen, y_chosen, y_lvl_chosen), axis=1)
                 sample_chosen = sample_chosen[np.argsort(sample_chosen[:, -1])[::-1]]
-    
+                
