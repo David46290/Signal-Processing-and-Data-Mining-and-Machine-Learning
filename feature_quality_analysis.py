@@ -277,7 +277,8 @@ if __name__ == '__main__':
             """
             Features of same location in different quality level (two assigned features)
             """
-            feature_in_different_qualityLvl_two(num_inspected_features=[48, 10],inspect_level = [1, 2, 3, 4],dataset_index = 0)
+            feature_in_different_qualityLvl_two(num_inspected_features=[48, 10],inspect_level=[1, 2, 3, 4],
+                                                dataset_index=0)
             
             
             
