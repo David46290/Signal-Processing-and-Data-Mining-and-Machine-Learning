@@ -232,13 +232,11 @@ if __name__ == '__main__':
             """
             dataset_index = 0
             inspect_level = [1, 2, 3, 4, 5]
-            num_feature_a = 48
-            num_feature_b = 10
+            num_inspected_features = np.array([48, 10]).astype(int)
             
-            
-            
-            
-            
+            idx_inspected_features = num_inspected_features - 1
+            num_feature_a = get_feature_name(num_inspected_features[0])
+            num_feature_b = get_feature_name(num_inspected_features[1])
             x_ = x_3[dataset_index]
             y_ = y_3[dataset_index]
             lst_wafer_location = x_[:, -1]
@@ -246,30 +244,33 @@ if __name__ == '__main__':
             location_unique = location_unique[:, np.argsort(location_unique[1])[::-1]]
             location_inspected = [1, 0.46, 0.27] # %
             location_inspected = [1]
-            # for idx_seg, location in enumerate(location_inspected):
-            #     idx_chosen_sample = np.where(abs(lst_wafer_location-location)<0.03)[0] # 3% searching range
-            #     x_chosen = x_[idx_chosen_sample][:, :-1] # get rid off location feature
-            #     y_chosen = y_[idx_chosen_sample].reshape(-1, 1)
-            #     y_lvl_chosen = np.copy(y_chosen)
-            #     for idx, y_sample in enumerate(y_lvl_chosen):
-            #         # waviness threshold: 1, 1.2, 1.5, 2
-            #         if y_sample < 1:
-            #             y_sample = 1
-            #         elif y_sample < 1.2:
-            #             y_sample = 2
-            #         elif y_sample < 1.5:
-            #             y_sample = 3
-            #         elif y_sample < 2:
-            #             y_sample = 4
-            #         else:
-            #             y_sample = 5
-            #         y_lvl_chosen[idx] = y_sample       
-            #     sample_chosen = np.concatenate((x_chosen, y_chosen, y_lvl_chosen), axis=1)
-            #     sample_chosen = sample_chosen[np.argsort(sample_chosen[:, -1])[::-1]]
+            for idx_seg, location in enumerate(location_inspected):
+                idx_chosen_sample = np.where(abs(lst_wafer_location-location)<0.03)[0] # 3% searching range
+                x_chosen = x_[idx_chosen_sample][:, :-1] # get rid off location feature
+                y_chosen = y_[idx_chosen_sample].reshape(-1, 1)
+                y_lvl_chosen = np.copy(y_chosen)
+                for idx, y_sample in enumerate(y_lvl_chosen):
+                    # waviness threshold: 1, 1.2, 1.5, 2
+                    if y_sample < 1:
+                        y_sample = 1
+                    elif y_sample < 1.2:
+                        y_sample = 2
+                    elif y_sample < 1.5:
+                        y_sample = 3
+                    elif y_sample < 2:
+                        y_sample = 4
+                    else:
+                        y_sample = 5
+                    y_lvl_chosen[idx] = y_sample       
+                sample_chosen = np.concatenate((x_chosen, y_chosen, y_lvl_chosen), axis=1)
+                sample_chosen = sample_chosen[np.argsort(sample_chosen[:, -1])[::-1]]
+                sample_chosen2 = sample_chosen[:, np.concatenate((idx_inspected_features, np.array([-1])))]
                 
-            #     plt.figure(figsize=(10, 10), dpi=300)
-            #     plt.xlabel('Feature', fontsize=24)
-            #     plt.ylabel('Normalized Value', fontsize=24)
-            #     plt.xticks(fontsize=16)
-            #     plt.yticks([0, 0.25, 0.5, 0.75, 1], fontsize=16)
+                plt.figure(figsize=(10, 10), dpi=300)
+                
+                
+                plt.xlabel(f'{num_feature_a}', fontsize=24)
+                plt.ylabel(f'{num_feature_b}', fontsize=24)
+                plt.xticks(fontsize=16)
+                plt.yticks([0, 0.25, 0.5, 0.75, 1], fontsize=16)
             
