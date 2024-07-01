@@ -92,7 +92,7 @@ def get_signals(join_path, param_idx_lst=None, first_signal_minus=True):
     signals_all = []
     for data in glob.glob(os.path.join(join_path, '*.csv')):
         with open(data, 'r') as file:
-            signal = np.genfromtxt(file, delimiter=',')
+            signal = np.genfromtxt(file, delimiter=',').T
             if param_idx_lst != None:
                 signalTrimmed = signal[param_idx_lst, :]
             else:
@@ -642,7 +642,7 @@ def time_series_downsample(run_lst, dt_original, dt_final):
         run_lst_new.append(run_signals_new)
     return run_lst_new
 
-def time_series_resize(run_lst, final_length, isPeriodic=False):
+def time_series_resize(run_lst, time_lst, final_length):
     """
     for 3D signal_lst: (num_sample, num_signal, num_length)
     final_length should be the minimum length among signals in signal_lst
@@ -653,8 +653,13 @@ def time_series_resize(run_lst, final_length, isPeriodic=False):
     Parameters:
         run_lst : list
             [signal 1, signal 2, ...]; lenth: amount of runs (samples)
-            run_signals: ndarray
+            signal: ndarray
                 (signal channels, signal_length)
+                
+        time_lst : list
+            [time 1, time 2, ...]; lenth: amount of runs (samples)
+            signal: ndarray
+                (signal_length, )
                 
         final_length : int
             final length of signals
@@ -664,20 +669,22 @@ def time_series_resize(run_lst, final_length, isPeriodic=False):
             
     Returns:
         np.array(run_lst_new) : ndarray
-            (signal channels, final_length)
+            (num_sample, signal channels, final_length)
+        np.array(time_lst_new) : ndarray
+            (num_sample, final_length)
     """
     run_lst_new = []
-    for run_signals in run_lst:
+    time_lst_new = []
+    for idx_sample, run_signals in enumerate(run_lst):
         run_signals_new = []
         for signal in run_signals:
-            if not isPeriodic:
-                run_signals_new.append(signal[:final_length])
-            else:
-                run_signals_new.append(scisig.resample(signal, final_length))
+            signal_resampled, time_resampled = scisig.resample(signal, num=final_length, t=time_lst[idx_sample])
+            run_signals_new.append(signal_resampled)
+        time_lst_new.append(time_resampled)         
         run_lst_new.append(run_signals_new)
-    return np.array(run_lst_new)
+    return np.array(run_lst_new), np.array(time_lst_new)
 
-def signal_resize(signal_lst, final_length, isPeriodic=False):
+def signal_resize(signal_lst, timie_lst, final_length):
     """
     for 2D signal_lst: (num_sample, num_length)
     final_length should be the minimum length among signals in signal_lst
@@ -691,6 +698,11 @@ def signal_resize(signal_lst, final_length, isPeriodic=False):
             signal: ndarray
                 (signal_length, )
                 
+        time_lst : list
+            [time 1, time 2, ...]; lenth: amount of runs (samples)
+            signal: ndarray
+                (signal_length, )
+                
         final_length : int
             final length of signals
             
@@ -698,16 +710,20 @@ def signal_resize(signal_lst, final_length, isPeriodic=False):
             whether the input signals are perfectly periodic
             
     Returns:
-        np.array(run_lst_new) : ndarray
-            (signal channels, final_length)
+        np.array(signalLst_new) : ndarray
+            (num_sample, final_length)
+        np.array(timeLst_new) : ndarray
+            (num_sample, final_length)
     """
     signalLst_new = []
-    for signal in signal_lst:
-        if not isPeriodic:
-            signalLst_new.append(signal[:final_length])
-        else:
-            signalLst_new.append(scisig.resample(signal, final_length))
-    return np.array(signalLst_new)
+    timeLst_new = []
+    for idx_sample, signal in enumerate(signal_lst):
+        signal_resampled, time_resampled = scisig.resample(signal,
+                                                           num=final_length,
+                                                           t=timie_lst[idx_sample])
+        signalLst_new.append(signal_resampled)
+        timeLst_new.append(time_resampled)
+    return np.array(signalLst_new), np.array(timeLst_new)
   
 
 
