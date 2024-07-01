@@ -14,7 +14,7 @@ import autoencoder as ae
 from classPSO_kNN import psokNN
 from classPSO_XGB import psoXGB
 from classPSO_RF import psoRF
-from stackingModel import stackingModel
+# from stackingModel import stackingModel
 
 def signal_processing_demo(plot_run_signals=False, plot_resize=False, plot_fft=False, plot_enve=False, plot_band_pass=False, plot_difference=False, plot_cwt=False, plot_gaf=False):   
     if plot_run_signals: 
@@ -58,8 +58,8 @@ def signal_processing_demo(plot_run_signals=False, plot_resize=False, plot_fft=F
         sigplot.draw_signal(sig_difference_runs[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo+1} - Signal {siganl_idx_demo}', color_='peru')
 
     if plot_resize:
-        signals_resize = sigpro.signal_resize(signal_runs, 5000, isPeriodic=True)
-        time_resize = sigpro.signal_resize(time_runs, 5000)
+        signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, 5000)
+        
         sigplot.draw_signal(signal_runs[run_idx_demo], time_runs[run_idx_demo], color_='royalblue', title='OG Signal')
         sigplot.draw_signal(signals_resize[run_idx_demo], time_resize[run_idx_demo], color_='seagreen', title='Resized Signal')
 
@@ -126,11 +126,15 @@ def cross_validate_DNN_demo():
     
 
 def cross_validate_1DCNN_demo():
+    signal_resize_coeff = 1000
+    signals_resize = sigpro.signal_resize(signal_runs, signal_resize_coeff, isPeriodic=True)
     cv_prepare = cv.cross_validate_signal(signals_resize, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
     trained_model = cv_prepare.cross_validate_1DCNN(dense_coeff=4)
     cv_prepare.model_testing(trained_model, '1DCNN')
 
 def cross_validate_2DCNN_demo():
+    signal_resize_coeff = 1000
+    signals_resize = sigpro.signal_resize(signal_runs, signal_resize_coeff, isPeriodic=True)
     signals_imgs = sigpro.signals_to_images(signals_resize, method='bresebham')
     signals_imgs = sigpro.images_resize_lst(signals_imgs, size=img_resize_coeff)
     sigplot.draw_signal_2d(signals_imgs[run_idx_demo])
@@ -145,31 +149,34 @@ if __name__ == '__main__':
     sample_rate = int(20000/10)
     y = np.genfromtxt('demo_y.csv', delimiter=',')
     time_runs = sigpro.pick_one_signal(signals_runs, signal_idx=0)
-    run_idx_demo = 4
+    run_idx_demo = 10
     siganl_idx_demo = 3
     y_idx_demo = 1
-    signal_resize_coeff = 1000
     img_resize_coeff = (800, 800)
     
     run_signals = signals_runs[run_idx_demo]
     signal_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
-    signals_resize = sigpro.signal_resize(signal_runs, signal_resize_coeff, isPeriodic=True)
+    # time_resize = sigpro.signal_resize(time_runs, signal_resize_coeff)
+    signal_processing_demo(plot_run_signals=False, plot_resize=True,
+                           plot_fft=False, plot_enve=False, plot_band_pass=False,
+                           plot_difference=False, plot_cwt=False, plot_gaf=False)
+    test_signal, test_time = sigpro.time_series_resize(signals_runs, time_runs, final_length=5000)
+    sigplot.draw_signal(signals_runs[run_idx_demo][siganl_idx_demo], time_runs[run_idx_demo], color_='royalblue', title='OG Signal')
+    sigplot.draw_signal(test_signal[run_idx_demo][siganl_idx_demo], test_time[run_idx_demo], color_='seagreen', title='Resized Signal')
     
-    time_resize = sigpro.signal_resize(time_runs, signal_resize_coeff)
-    # signal_processing_demo()
     # feature_extract_demo()
     # cross_validate_DNN_demo()
     # cross_validate_1DCNN_demo()
-    features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
-    domain_energy = features_freq.domain_energy
+    # features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
+    # domain_energy = features_freq.domain_energy
     # pso_prepare = psoRF(domain_energy, y[:, y_idx_demo], f'Y{y_idx_demo}', y_boundary=[22, 39])
     # model, history = pso_prepare.pso(particleAmount=2, maxIterTime=3)
     # stack = stackingModel([linear_model.LinearRegression(), linear_model.Ridge(), linear_model.Lasso()],
     #               ['LeastSquares', 'Ridge', 'Lasso'], final_estimator=svm.SVR(), final_estimator_name='SVR')
     # stack.fit(domain_energy, y[:, y_idx_demo])
-    cv_prepare = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
-    trained_stack = cv_prepare.cross_validate_stacking(model_name_lst=['least_squares', 'ridge', 'lasso', 'svr'])
-    cv_prepare.model_testing(trained_stack, 'Stacking')
+    # cv_prepare = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+    # trained_stack = cv_prepare.cross_validate_stacking(model_name_lst=['least_squares', 'ridge', 'lasso', 'svr'])
+    # cv_prepare.model_testing(trained_stack, 'Stacking')
     
     print()
     
