@@ -5,7 +5,7 @@ from scipy import signal as scisig
 import scipy
 from signal_processing import envelope_extract, image_resize, variation_erase
 from PIL import Image 
-from qualityExtractionLoc import get_mean_each_run, quality_labeling, high_similarity_runs, pick_one_lot, get_lot, get_ingot_length, qualities_from_dataset, qualities_from_dataset_edge, get_worst_value_each_run
+# from qualityExtractionLoc import get_mean_each_run, quality_labeling, high_similarity_runs, pick_one_lot, get_lot, get_ingot_length, qualities_from_dataset, qualities_from_dataset_edge, get_worst_value_each_run
 # from scipy.interpolate import LinearNDInterpolator
 
 def draw_signals(signal_lst, t, legend_lst=None, color_lst=None, title=None):
@@ -82,5 +82,6 @@ def plot_envelope(signal, time, enve_up, enve_low, title=None):
 def draw_signal_2d(signal_2darray):
     plt.figure(figsize=(16, 16))
     plt.imshow(signal_2darray, cmap='PRGn', aspect='auto')
+    plt.colorbar()
     plt.show()
     
