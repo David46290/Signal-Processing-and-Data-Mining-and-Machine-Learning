@@ -153,7 +153,7 @@ def feature_in_different_qualityLvl_total(dataset_index=0, searching_range=3, lo
              for idx_sample, sample in enumerate(x_different_lvl):
                  # if idx_sample > 10:
                  #     break
-                 plt.scatter(np.arange(1, x_different_lvl.shape[1]+1, 1), sample,
+                 plt.scatter(np.arange(1, x_different_lvl.shape[1]+1, 1), sample, alpha=0.5,
                           lw=8-idx_lvl, marker=lst_marker_type[idx_lvl], label=f'{lst_lvl_total[idx_lvl]}', color=lst_color[idx_lvl])
          plt.grid()
          plt.xlabel('Feature', fontsize=24)
@@ -198,7 +198,7 @@ def feature_in_different_qualityLvl_two(num_inspected_features, searching_range=
         lst_marker_type = ['o', 'v', 's', 'D', '*']
         for idx_lvl, lvl in enumerate(inspect_level):
             sample_lvl = sample_chosen[np.where(sample_chosen[:, -1]==lvl)[0]]
-            plt.scatter(sample_lvl.T[0], sample_lvl.T[1], lw=12-idx_lvl, marker=lst_marker_type[idx_lvl], label=f'Quality Level {lvl}', color=lst_color[idx_lvl])
+            plt.scatter(sample_lvl.T[0], sample_lvl.T[1], lw=12-idx_lvl, alpha=0.75, marker=lst_marker_type[idx_lvl], label=f'Quality Level {lvl}', color=lst_color[idx_lvl])
         
         plt.xlabel(f'{num_feature_a}', fontsize=24)
         plt.ylabel(f'{num_feature_b}', fontsize=24)
@@ -318,20 +318,20 @@ if __name__ == '__main__':
             """
             Features of same location in different quality level (total)
             """
-            # sample_chosen = feature_in_different_qualityLvl_total(dataset_index=0, inspect_level=[1, 2, 3, 4, 5],
-            #                                       location_inspected=[1, 0.5, 0.25], searching_range=10,
-            #                                       lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
+            sample_chosen = feature_in_different_qualityLvl_total(dataset_index=0, inspect_level=[1, 2, 3, 4, 5],
+                                                  location_inspected=[1, 0.5, 0.25], searching_range=10,
+                                                  lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
             
             """
             Features of same location in different quality level (two assigned features)
             """
-            # sample_chosen = feature_in_different_qualityLvl_two(num_inspected_features=[1, 5],inspect_level=[1,5],
-            #                                     dataset_index=0, location_inspected=[1, 0.5, 0.25], searching_range=10,
-            #                                     lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
+            sample_chosen = feature_in_different_qualityLvl_two(num_inspected_features=[1, 5],inspect_level=[1, 2, 3, 4, 5],
+                                                dataset_index=0, location_inspected=[1, 0.5, 0.25], searching_range=10,
+                                                lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
             
-            # sample_chosen = feature_in_different_qualityLvl_two(num_inspected_features=[19, 20],inspect_level=[1,5],
-            #                                     dataset_index=0, location_inspected=[1, 0.5, 0.25], searching_range=10,
-            #                                     lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
+            sample_chosen = feature_in_different_qualityLvl_two(num_inspected_features=[19, 20],inspect_level=[1, 2, 3, 4, 5],
+                                                dataset_index=0, location_inspected=[1, 0.5, 0.25], searching_range=10,
+                                                lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
             
             """
             Density distribution of features in different quality level
@@ -339,6 +339,6 @@ if __name__ == '__main__':
             feature_density_distribution(num_inspected_feature=1, inspect_level=[1, 2, 3, 4, 5],
                                          dataset_index=0, location_inspected=[1, 0.5, 0.25],
                                          searching_range=10,
-                                         lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen', 'crimson','darkviolet'])
+                                         lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen', 'darkviolet', 'crimson',])
             
             
