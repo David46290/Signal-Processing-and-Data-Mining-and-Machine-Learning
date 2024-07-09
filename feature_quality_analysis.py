@@ -238,12 +238,21 @@ def feature_density_distribution(num_inspected_feature, searching_range=3, locat
         sample_chosen = np.concatenate((x_chosen, y_chosen, y_lvl_chosen), axis=1)
         sample_chosen = sample_chosen[np.argsort(sample_chosen[:, -1])[::-1]]
         sample_chosen = sample_chosen[:, np.array([idx_inspected_features, -1])]
+        
+        plt.figure(figsize=(8, 6), dpi=300)
+        feature_density_total, feature_bins_total = np.histogram(sample_chosen[:, 0], bins=50, density=True)
         for idx_lvl, lvl in enumerate(inspect_level):
             feature_of_level = sample_chosen[np.where(sample_chosen[:, -1]==lvl)[0]][:, 0]
-            feature_counts, feature_bins = np.histogram(feature_of_level, density=True)
-            # np.sum(feature_counts * np.diff(feature_bins)) = 1
+            # np.sum(feature_density * np.diff(feature_bins)) = 1
             # the integral of density to d(bins) = 1
-            pdf = feature_counts/sum(feature_counts)
+            # plt.hist(feature_of_level, bins=feature_bins, density=True, label=f'level {lvl}')
+            plt.hist(feature_of_level, bins=feature_bins_total, alpha=0.5, density=True, label=f'Quality Level {lvl}', ec='k')
+            plt.xlabel(f'{num_feature}', fontsize=20)
+            plt.ylabel('Probability Density', fontsize=20)
+            plt.xticks(fontsize=16)
+            plt.yticks(fontsize=16)
+            plt.grid()
+        plt.legend(fontsize=16)
         
 
 if __name__ == '__main__':
@@ -327,9 +336,9 @@ if __name__ == '__main__':
             """
             Density distribution of features in different quality level
             """
-            feature_density_distribution(num_inspected_feature=1, inspect_level=[1,5],
+            feature_density_distribution(num_inspected_feature=1, inspect_level=[1, 2, 3, 4, 5],
                                          dataset_index=0, location_inspected=[1, 0.5, 0.25],
                                          searching_range=10,
-                                         lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
+                                         lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen', 'crimson','darkviolet'])
             
             
