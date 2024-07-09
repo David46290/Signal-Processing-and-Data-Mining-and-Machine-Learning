@@ -10,6 +10,7 @@ import cross_validation as cv
 from classPSO_kNN import psokNN 
 from matplotlib import pyplot as plt
 import scipy 
+import scipy.stats as stats
 
 def datasetCreating(x_, y_):
     xTrain, xTest, yTrain, yTest = train_test_split(x_, y_, test_size=0.1, random_state=75)
@@ -159,6 +160,7 @@ def feature_in_different_qualityLvl_total(dataset_index=0, searching_range=3, lo
          plt.ylabel('Normalized Value', fontsize=24)
          plt.xticks(np.arange(1, x_different_lvl.shape[1]+1, 5), fontsize=16)
          plt.yticks([0, 0.25, 0.5, 0.75, 1], fontsize=16)
+     return sample_chosen
          
 def feature_in_different_qualityLvl_two(num_inspected_features, searching_range=3, location_inspected=[1], dataset_index=0, inspect_level=[1, 2, 3, 4, 5], lst_color = ['dodgerblue', 'goldenrod', 'darkgreen', 'crimson', 'olive']):
     num_inspected_features = np.array(num_inspected_features).astype(int)
@@ -204,6 +206,45 @@ def feature_in_different_qualityLvl_two(num_inspected_features, searching_range=
         plt.yticks(fontsize=20)
         plt.grid()
         plt.legend(fontsize=23)
+    return sample_chosen
+
+def feature_density_distribution(num_inspected_feature, searching_range=3, location_inspected=[1], dataset_index=0, inspect_level=[1, 2, 3, 4, 5], lst_color = ['dodgerblue', 'goldenrod', 'darkgreen', 'crimson', 'olive']):
+    num_inspected_features = np.array(num_inspected_feature).astype(int)
+    idx_inspected_features = num_inspected_features - 1
+    num_feature = get_feature_name(num_inspected_features)
+    x_ = x_3[dataset_index]
+    y_ = y_3[dataset_index]
+    lst_wafer_location = x_[:, -1]
+    location_unique = np.vstack(np.unique(x[:, -1], return_counts=True))
+    location_unique = location_unique[:, np.argsort(location_unique[1])[::-1]]
+    for idx_seg, location in enumerate(location_inspected):
+        idx_chosen_sample = np.where(abs(lst_wafer_location-location)<(searching_range/100))[0]
+        x_chosen = x_[idx_chosen_sample][:, :-1] # get rid off location feature
+        y_chosen = y_[idx_chosen_sample].reshape(-1, 1)
+        y_lvl_chosen = np.copy(y_chosen)
+        for idx, y_sample in enumerate(y_lvl_chosen):
+            # waviness threshold: 1, 1.2, 1.5, 2
+            if y_sample < 1:
+                y_sample = 1
+            elif y_sample < 1.2:
+                y_sample = 2
+            elif y_sample < 1.5:
+                y_sample = 3
+            elif y_sample < 2:
+                y_sample = 4
+            else:
+                y_sample = 5
+            y_lvl_chosen[idx] = y_sample       
+        sample_chosen = np.concatenate((x_chosen, y_chosen, y_lvl_chosen), axis=1)
+        sample_chosen = sample_chosen[np.argsort(sample_chosen[:, -1])[::-1]]
+        sample_chosen = sample_chosen[:, np.array([idx_inspected_features, -1])]
+        for idx_lvl, lvl in enumerate(inspect_level):
+            feature_of_level = sample_chosen[np.where(sample_chosen[:, -1]==lvl)[0]][:, 0]
+            feature_counts, feature_bins = np.histogram(feature_of_level, density=True)
+            # np.sum(feature_counts * np.diff(feature_bins)) = 1
+            # the integral of density to d(bins) = 1
+            pdf = feature_counts/sum(feature_counts)
+        
 
 if __name__ == '__main__':
     # paramSet_num = 1 
@@ -268,16 +309,27 @@ if __name__ == '__main__':
             """
             Features of same location in different quality level (total)
             """
-            feature_in_different_qualityLvl_total(dataset_index=0, inspect_level=[1, 2, 3, 4, 5],
-                                                  location_inspected=[1, 0.5, 0.25], searching_range=10,
-                                                  lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
+            # sample_chosen = feature_in_different_qualityLvl_total(dataset_index=0, inspect_level=[1, 2, 3, 4, 5],
+            #                                       location_inspected=[1, 0.5, 0.25], searching_range=10,
+            #                                       lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
             
             """
             Features of same location in different quality level (two assigned features)
             """
-            feature_in_different_qualityLvl_two(num_inspected_features=[1, 5],inspect_level=[1, 2, 3, 4, 5],
-                                                dataset_index=0, location_inspected=[1, 0.5, 0.25], searching_range=10,
-                                                lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
+            # sample_chosen = feature_in_different_qualityLvl_two(num_inspected_features=[1, 5],inspect_level=[1,5],
+            #                                     dataset_index=0, location_inspected=[1, 0.5, 0.25], searching_range=10,
+            #                                     lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
             
+            # sample_chosen = feature_in_different_qualityLvl_two(num_inspected_features=[19, 20],inspect_level=[1,5],
+            #                                     dataset_index=0, location_inspected=[1, 0.5, 0.25], searching_range=10,
+            #                                     lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
+            
+            """
+            Density distribution of features in different quality level
+            """
+            feature_density_distribution(num_inspected_feature=1, inspect_level=[1,5],
+                                         dataset_index=0, location_inspected=[1, 0.5, 0.25],
+                                         searching_range=10,
+                                         lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
             
             
