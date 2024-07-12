@@ -153,8 +153,9 @@ def feature_in_different_qualityLvl_total(dataset_index=0, searching_range=3, lo
              for idx_sample, sample in enumerate(x_different_lvl):
                  # if idx_sample > 10:
                  #     break
-                 plt.scatter(np.arange(1, x_different_lvl.shape[1]+1, 1), sample, alpha=0.5,
-                          lw=8-idx_lvl, marker=lst_marker_type[idx_lvl], label=f'{lst_lvl_total[idx_lvl]}', color=lst_color[idx_lvl])
+                 plt.plot(np.arange(1, x_different_lvl.shape[1]+1, 1), sample, alpha=0.5,
+                          lw=8-idx_lvl, marker=lst_marker_type[idx_lvl], 
+                          label=f'{lst_lvl_total[idx_lvl]}', color=lst_color[idx_lvl])
          plt.grid()
          plt.xlabel('Feature', fontsize=24)
          plt.ylabel('Normalized Value', fontsize=24)
@@ -241,18 +242,30 @@ def feature_density_distribution(num_inspected_feature, searching_range=3, locat
         
         plt.figure(figsize=(8, 6), dpi=300)
         feature_density_total, feature_bins_total = np.histogram(sample_chosen[:, 0], bins=50, density=True)
+        density_all_levels = []
         for idx_lvl, lvl in enumerate(inspect_level):
             feature_of_level = sample_chosen[np.where(sample_chosen[:, -1]==lvl)[0]][:, 0]
             # np.sum(feature_density * np.diff(feature_bins)) = 1
             # the integral of density to d(bins) = 1
             # plt.hist(feature_of_level, bins=feature_bins, density=True, label=f'level {lvl}')
-            plt.hist(feature_of_level, bins=feature_bins_total, alpha=0.5, density=True, label=f'Quality Level {lvl}', ec='k')
+            hist_feature, _, __ = plt.hist(feature_of_level, bins=feature_bins_total, alpha=0.5, density=True, label=f'Quality Level {lvl}', ec='k')
             plt.xlabel(f'{num_feature}', fontsize=20)
             plt.ylabel('Probability Density', fontsize=20)
             plt.xticks(fontsize=16)
             plt.yticks(fontsize=16)
             plt.grid()
+            density_all_levels.append(hist_feature)
+        
+        density_all_levels = np.array(density_all_levels)
+        density_all_levels = density_all_levels.T
+        feature_bins_diff = np.diff(feature_bins_total)
+        area_overlap = 0
+        for idx_dx, dx in enumerate(feature_bins_diff):
+            area_minimum_density = np.amin(density_all_levels[idx_dx]) * dx
+            area_overlap += area_minimum_density
         plt.legend(fontsize=16)
+        plt.title(f'Density Overlap Rate: {area_overlap}', fontsize=20)
+        return area_overlap
         
 
 if __name__ == '__main__':
@@ -318,27 +331,27 @@ if __name__ == '__main__':
             """
             Features of same location in different quality level (total)
             """
-            sample_chosen = feature_in_different_qualityLvl_total(dataset_index=0, inspect_level=[1, 2, 3, 4, 5],
-                                                  location_inspected=[1, 0.5, 0.25], searching_range=10,
-                                                  lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
+            # sample_chosen = feature_in_different_qualityLvl_total(dataset_index=0, inspect_level=[1, 2, 3, 4, 5],
+            #                                       location_inspected=[1, 0.5, 0.25], searching_range=10,
+            #                                       lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
             
             """
             Features of same location in different quality level (two assigned features)
             """
-            sample_chosen = feature_in_different_qualityLvl_two(num_inspected_features=[1, 5],inspect_level=[1, 2, 3, 4, 5],
-                                                dataset_index=0, location_inspected=[1, 0.5, 0.25], searching_range=10,
-                                                lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
+            # sample_chosen = feature_in_different_qualityLvl_two(num_inspected_features=[1, 5],inspect_level=[1, 2, 3, 4, 5],
+            #                                     dataset_index=0, location_inspected=[1, 0.5, 0.25], searching_range=10,
+            #                                     lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
             
-            sample_chosen = feature_in_different_qualityLvl_two(num_inspected_features=[19, 20],inspect_level=[1, 2, 3, 4, 5],
-                                                dataset_index=0, location_inspected=[1, 0.5, 0.25], searching_range=10,
-                                                lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
+            # sample_chosen = feature_in_different_qualityLvl_two(num_inspected_features=[19, 20],inspect_level=[1, 2, 3, 4, 5],
+            #                                     dataset_index=0, location_inspected=[1, 0.5, 0.25], searching_range=10,
+            #                                     lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen','darkviolet', 'crimson'])
             
             """
             Density distribution of features in different quality level
             """
             feature_density_distribution(num_inspected_feature=1, inspect_level=[1, 2, 3, 4, 5],
-                                         dataset_index=0, location_inspected=[1, 0.5, 0.25],
-                                         searching_range=10,
-                                         lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen', 'darkviolet', 'crimson',])
+                                          dataset_index=0, location_inspected=[1, 0.5, 0.25],
+                                          searching_range=10,
+                                          lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen', 'darkviolet', 'crimson',])
             
             
