@@ -209,7 +209,7 @@ def feature_in_different_qualityLvl_two(num_inspected_features, searching_range=
         plt.legend(fontsize=23)
     return sample_chosen
 
-def feature_density_distribution(num_inspected_feature, searching_range=3, location_inspected=[1], dataset_index=0, inspect_level=[1, 2, 3, 4, 5], lst_color = ['dodgerblue', 'goldenrod', 'darkgreen', 'crimson', 'olive']):
+def feature_density_distribution(num_inspected_feature, searching_range=3, num_bins=50, location_inspected=[1], dataset_index=0, inspect_level=[1, 2, 3, 4, 5], lst_color = ['dodgerblue', 'goldenrod', 'darkgreen', 'crimson', 'olive']):
     num_inspected_features = np.array(num_inspected_feature).astype(int)
     idx_inspected_features = num_inspected_features - 1
     num_feature = get_feature_name(num_inspected_features)
@@ -241,7 +241,7 @@ def feature_density_distribution(num_inspected_feature, searching_range=3, locat
         sample_chosen = sample_chosen[:, np.array([idx_inspected_features, -1])]
         
         plt.figure(figsize=(8, 6), dpi=300)
-        feature_density_total, feature_bins_total = np.histogram(sample_chosen[:, 0], bins=50, density=True)
+        feature_density_total, feature_bins_total = np.histogram(sample_chosen[:, 0], bins=num_bins, density=True)
         density_all_levels = []
         for idx_lvl, lvl in enumerate(inspect_level):
             feature_of_level = sample_chosen[np.where(sample_chosen[:, -1]==lvl)[0]][:, 0]
@@ -264,7 +264,7 @@ def feature_density_distribution(num_inspected_feature, searching_range=3, locat
             area_minimum_density = np.amin(density_all_levels[idx_dx]) * dx
             area_overlap += area_minimum_density
         plt.legend(fontsize=16)
-        plt.title(f'Density Overlap Rate: {area_overlap}', fontsize=20)
+        plt.title(f'Density Overlap Rate: {area_overlap:.2f}', fontsize=20)
         return area_overlap
         
 
@@ -351,7 +351,7 @@ if __name__ == '__main__':
             """
             feature_density_distribution(num_inspected_feature=1, inspect_level=[1, 2, 3, 4, 5],
                                           dataset_index=0, location_inspected=[1, 0.5, 0.25],
-                                          searching_range=10,
+                                          searching_range=10, num_bins=30,
                                           lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen', 'darkviolet', 'crimson',])
             
             
