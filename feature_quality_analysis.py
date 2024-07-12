@@ -209,7 +209,7 @@ def feature_in_different_qualityLvl_two(num_inspected_features, searching_range=
         plt.legend(fontsize=23)
     return sample_chosen
 
-def feature_density_distribution(num_inspected_feature, searching_range=3, num_bins=50, location_inspected=[1], dataset_index=0, inspect_level=[1, 2, 3, 4, 5], lst_color = ['dodgerblue', 'goldenrod', 'darkgreen', 'crimson', 'olive']):
+def feature_density_distribution(num_inspected_feature, searching_range=3, num_bins=50, location_inspected=[1], dataset_index=0, inspect_level=[1, 2, 3, 4, 5], lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen', 'darkviolet', 'crimson']):
     num_inspected_features = np.array(num_inspected_feature).astype(int)
     idx_inspected_features = num_inspected_features - 1
     num_feature = get_feature_name(num_inspected_features)
@@ -248,7 +248,7 @@ def feature_density_distribution(num_inspected_feature, searching_range=3, num_b
             # np.sum(feature_density * np.diff(feature_bins)) = 1
             # the integral of density to d(bins) = 1
             # plt.hist(feature_of_level, bins=feature_bins, density=True, label=f'level {lvl}')
-            hist_feature, _, __ = plt.hist(feature_of_level, bins=feature_bins_total, alpha=0.5, density=True, label=f'Quality Level {lvl}', ec='k')
+            hist_feature, _, __ = plt.hist(feature_of_level, color=lst_color[idx_lvl], bins=feature_bins_total, alpha=0.5, density=True, label=f'Quality Level {lvl}', ec='k')
             plt.xlabel(f'{num_feature}', fontsize=20)
             plt.ylabel('Probability Density', fontsize=20)
             plt.xticks(fontsize=16)
@@ -349,9 +349,11 @@ if __name__ == '__main__':
             """
             Density distribution of features in different quality level
             """
-            feature_density_distribution(num_inspected_feature=1, inspect_level=[1, 2, 3, 4, 5],
-                                          dataset_index=0, location_inspected=[1, 0.5, 0.25],
-                                          searching_range=10, num_bins=30,
-                                          lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen', 'darkviolet', 'crimson',])
-            
-            
+            features_density_similarity = []
+            for num_feature in np.arange(1, 61, 1):
+                density_overlap_rates = feature_density_distribution(num_inspected_feature=num_feature, inspect_level=[1, 2, 3, 4, 5],
+                                              dataset_index=0, location_inspected=[1, 0.5, 0.25],
+                                              searching_range=10, num_bins=20,
+                                              lst_color = ['dodgerblue', 'goldenrod', 'darkolivegreen', 'darkviolet', 'crimson'])
+                features_density_similarity.append(density_overlap_rates)
+            features_density_similarity = np.array(features_density_similarity)
