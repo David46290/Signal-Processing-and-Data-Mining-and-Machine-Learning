@@ -700,8 +700,8 @@ def signal_resize(signal_lst, timie_lst, final_length):
                 
         time_lst : list
             [time 1, time 2, ...]; lenth: amount of runs (samples)
-            signal: ndarray
-                (signal_length, )
+            time: ndarray
+                (time_length, )
                 
         final_length : int
             final length of signals
