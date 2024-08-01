@@ -72,7 +72,7 @@ def plot_correlation_matrix(matrix):
             else:
                 text_color = 'darkred'
                 
-            text = ax.text(j, i, '{0:.2f}'.format(matrix[i, j]),
+            text = ax.text(j, i, '{0:.3f}'.format(matrix[i, j]),
                            ha="center", va="center", color=text_color)
     ax.set_xticks(np.arange(0, matrix.shape[1], 1))   
     ax.set_yticks(np.arange(0, matrix.shape[0], 1))   
