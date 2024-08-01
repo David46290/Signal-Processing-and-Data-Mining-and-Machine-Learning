@@ -11,7 +11,7 @@ from plot_histogram import draw_histo
 
 # edit the part below when model is changed
 class psoXGB:
-    def __init__(self, x, y, qualityKind, normalized=None, y_boundary=[]):
+    def __init__(self, x, y, qualityKind, normalized='  ', y_boundary=[]):
         self.qualityKind = qualityKind
         # self.isMultiStacking = True
         self.normalized = normalized
@@ -106,7 +106,7 @@ class psoXGB:
         mape = mean_absolute_percentage_error(YT, YP) * 100
         mae = mean_absolute_error(YT, YP)
         if plot:
-            plt.figure(figsize=(12, 9))
+            plt.figure(figsize=(8, 8))
             plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
             plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
             plt.ylabel("Predicted Value", fontsize=24)
@@ -117,7 +117,7 @@ class psoXGB:
             plt.xlim([bottomValue, topValue])
             plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
             plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
-            plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
+            plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | $R^2$={r2:.2f} | MAE={mae:.2f}"
                       , fontsize=26)
             plt.grid()
             plt.show()
