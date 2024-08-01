@@ -121,17 +121,38 @@ def cross_validate_ML_demo():
     trained_model = cv_prepare.cross_validate_XGB(param_setting=param_setting)
     cv_prepare.model_testing(trained_model, 'XGB')
     
-def cross_validate_DNN_demo():
+def cross_validate_stacking_demo():
     features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
     domain_energy = features_freq.domain_energy
     cv_prepare = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
-    trained_model = cv_prepare.cross_validate_DNN(dense_coeff=20)
+    trained_stack = cv_prepare.cross_validate_stacking(model_name_lst=['least_squares',
+                                                                       'ridge', 'lasso', 'svr'])
+    cv_prepare.model_testing(trained_stack, 'Stacking')
+    
+def pso_demo():
+    features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
+    domain_energy = features_freq.domain_energy
+    pso_prepare = psoRF(domain_energy, y[:, y_idx_demo], f'Y{y_idx_demo}', y_boundary=[22, 39])
+    model, history, hyper_param_set = pso_prepare.pso(particleAmount=5, maxIterTime=10)
+    return hyper_param_set
+
+    
+def cross_validate_DNN_demo():
+    features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
+    domain_energy = features_freq.domain_energy
+    domain_fre = features_freq.domain_frequency
+    features_time = feaext.TimeFeatures(signal_runs,
+                                        target_lst=['rms', 'kurtosis', 
+                                                    'skewness', 'variance', 'p2p'])
+    features = features_time.features_all_signals
+    cv_prepare = cv.cross_validate(features, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+    trained_model = cv_prepare.cross_validate_DNN(dense_coeff=10)
     cv_prepare.model_testing(trained_model, 'DNN')
     
 
 def cross_validate_1DCNN_demo():
     signal_resize_coeff = 1000
-    signals_resize = sigpro.signal_resize(signal_runs, signal_resize_coeff, isPeriodic=True)
+    signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, signal_resize_coeff)
     cv_prepare = cv.cross_validate_signal(signals_resize, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
     trained_model = cv_prepare.cross_validate_1DCNN(dense_coeff=4)
     cv_prepare.model_testing(trained_model, '1DCNN')
@@ -162,22 +183,16 @@ if __name__ == '__main__':
     signal_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
     # time_resize = sigpro.signal_resize(time_runs, signal_resize_coeff)
     # signal_processing_demo(plot_run_signals=False, plot_resize=False,
-    #                        plot_fft=False, plot_enve=False, plot_band_pass=False,
-    #                        plot_difference=False, plot_cwt=False, plot_gaf=False)
+    #                         plot_fft=False, plot_enve=False, plot_band_pass=False,
+    #                         plot_difference=False, plot_cwt=False, plot_gaf=False)
 
-    feature_extract_demo(plot_corr=True, plot_matrix=True)
+    # feature_extract_demo(plot_corr=True, plot_matrix=True)
+
+    # cross_validate_ML_demo()
+    # cross_validate_stacking_demo()
+    hyper_param = pso_demo()
     # cross_validate_DNN_demo()
     # cross_validate_1DCNN_demo()
-    # features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
-    # domain_energy = features_freq.domain_energy
-    # pso_prepare = psoRF(domain_energy, y[:, y_idx_demo], f'Y{y_idx_demo}', y_boundary=[22, 39])
-    # model, history = pso_prepare.pso(particleAmount=2, maxIterTime=3)
-    # stack = stackingModel([linear_model.LinearRegression(), linear_model.Ridge(), linear_model.Lasso()],
-    #               ['LeastSquares', 'Ridge', 'Lasso'], final_estimator=svm.SVR(), final_estimator_name='SVR')
-    # stack.fit(domain_energy, y[:, y_idx_demo])
-    # cv_prepare = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
-    # trained_stack = cv_prepare.cross_validate_stacking(model_name_lst=['least_squares', 'ridge', 'lasso', 'svr'])
-    # cv_prepare.model_testing(trained_stack, 'Stacking')
     
     print()
     
