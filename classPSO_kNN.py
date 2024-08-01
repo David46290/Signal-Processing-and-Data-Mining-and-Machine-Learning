@@ -11,7 +11,7 @@ from plot_histogram import draw_histo
 
 # edit the part below when model is changed
 class psokNN:
-    def __init__(self, x, y, qualityKind, normalized=None, y_boundary=[]):
+    def __init__(self, x, y, qualityKind, normalized='  ', y_boundary=[]):
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.dna_amount = 2  # hyper_parameter num. + random seed
