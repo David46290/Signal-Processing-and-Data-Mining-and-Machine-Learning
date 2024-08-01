@@ -246,7 +246,7 @@ class cross_validate:
         ax1.plot(x, train_lst[0], '-o', label='train', lw=5, color='seagreen')
         ax1.plot(x, val_lst[0], '-o', label='val', lw=5, color='brown')
         ax1.set_ylabel(f'{metrics[0]}', fontsize=24)
-        ax1.set_xlabel('Fold', fontsize=24)
+        ax1.set_xlabel('Run', fontsize=24)
         ax1.tick_params(axis='both', which='major', labelsize=20)
         ax1.legend(loc='best', fontsize=20)
         # ax1.set_title(f'{metrics[0]}', fontsize=26)
@@ -257,7 +257,7 @@ class cross_validate:
         ax2.plot(x, train_lst[1], '-o', label='train', lw=5, color='seagreen')
         ax2.plot(x, val_lst[1], '-o', label='val', lw=5, color='brown')
         ax2.set_ylabel(f'{metrics[1]}', fontsize=24)
-        ax2.set_xlabel('Fold', fontsize=24)
+        ax2.set_xlabel('Run', fontsize=24)
         ax2.tick_params(axis='both', which='major', labelsize=20)
         ax2.legend(loc='best', fontsize=20)
         # ax2.set_title(f'{metrics[1]}', fontsize=26)
@@ -691,7 +691,7 @@ class cross_validate:
         mape = mean_absolute_percentage_error(YT, YP) * 100
         mae = mean_absolute_error(YT, YP)
         color1 = ['slateblue', 'orange', 'firebrick', 'steelblue', 'purple', 'green']
-        plt.figure(figsize=(12, 9))
+        plt.figure(figsize=(8, 8))
         plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
         plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
         plt.ylabel("Predicted Value", fontsize=24)
@@ -700,7 +700,7 @@ class cross_validate:
         plt.xlim([bottomValue, topValue])
         plt.xticks(fontsize=22)
         plt.yticks(fontsize=22)
-        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
+        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | $R^2$={r2:.2f} | MAE={mae:.2f}"
                   , fontsize=26)
         plt.axhline(y=1, color=color1[0])
         plt.axhline(y=1.2, color=color1[1])
@@ -886,7 +886,7 @@ class cross_validate_signal:
         ax1.plot(x, train_lst[0], '-o', label='train', lw=5, color='seagreen')
         ax1.plot(x, val_lst[0], '-o', label='val', lw=5, color='brown')
         ax1.set_ylabel(f'{metrics[0]}', fontsize=24)
-        ax1.set_xlabel('Fold', fontsize=24)
+        ax1.set_xlabel('Run', fontsize=24)
         ax1.tick_params(axis='both', which='major', labelsize=20)
         ax1.legend(loc='best', fontsize=20)
         ax1.grid(True)
@@ -896,7 +896,7 @@ class cross_validate_signal:
         ax2.plot(x, train_lst[1], '-o', label='train', lw=5, color='seagreen')
         ax2.plot(x, val_lst[1], '-o', label='val', lw=5, color='brown')
         ax2.set_ylabel(f'{metrics[1]}', fontsize=24)
-        ax2.set_xlabel('Fold', fontsize=24)
+        ax2.set_xlabel('Run', fontsize=24)
         ax2.tick_params(axis='both', which='major', labelsize=20)
         ax2.legend(loc='best', fontsize=20)
         ax2.grid(True)
@@ -910,7 +910,7 @@ class cross_validate_signal:
         mape = mean_absolute_percentage_error(YT, YP) * 100
         mae = mean_absolute_error(YT, YP)
         color1 = ['slateblue', 'orange', 'firebrick', 'steelblue', 'purple', 'green']
-        plt.figure(figsize=(12, 9))
+        plt.figure(figsize=(8, 8))
         plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
         plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
         topValue = (max(YT) if max(YT) > max(YP) else max(YP))
@@ -921,7 +921,7 @@ class cross_validate_signal:
         plt.xlim([bottomValue, topValue])
         plt.xticks(fontsize=22)
         plt.yticks(fontsize=22)
-        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
+        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | $R^2$={r2:.2f} | MAE={mae:.2f}"
                   , fontsize=26)
         plt.axhline(y=1, color=color1[0])
         plt.axhline(y=1.2, color=color1[1])
@@ -1080,7 +1080,7 @@ class cross_validate_image:
         plt.xlim([bottomValue, topValue])
         plt.xticks(fontsize=22)
         plt.yticks(fontsize=22)
-        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
+        plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | $R^2$={r2:.2f} | MAE={mae:.2f}"
                   , fontsize=26)
         # plt.axhline(y=1, color=color1[0])
         # plt.axhline(y=1.2, color=color1[1])
