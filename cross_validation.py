@@ -125,7 +125,7 @@ def show_train_history_NN(history_, loss, metric_name_tr, metric_name_val, fold_
     ax2.grid(True)
     ax2.legend(loc='best', fontsize=20)
     # ax2.set_ylim((0, 10))
-    plt.suptitle(f'fold {fold_idx+1} Train History', fontsize=26)
+    plt.suptitle(f'Run {fold_idx+1} Train History', fontsize=26)
     plt.tight_layout()
     plt.subplots_adjust(top=0.88)
     plt.show()
@@ -153,7 +153,7 @@ def show_train_history_NN_onlyTrain(history_, loss, metric_name_tr, fold_idx):
     ax2.grid(True)
     ax2.legend(loc='best', fontsize=20)
     # ax2.set_ylim((0, 10))
-    plt.suptitle(f'fold {fold_idx+1} Train History', fontsize=26)
+    plt.suptitle(f'Run {fold_idx+1} Train History', fontsize=26)
     plt.tight_layout()
     plt.subplots_adjust(top=0.88)
     plt.show()
@@ -208,7 +208,7 @@ class cross_validate:
             ax2.legend(loc='best', fontsize=20)
             ax2.grid(True)
             # ax2.set_ylim(-0.03, 0.52)
-            plt.suptitle(f'Fold {fold_idx+1} Train History', fontsize=26)
+            plt.suptitle(f'Run {fold_idx+1} Train History', fontsize=26)
 
         
         else: # result of fine tune
