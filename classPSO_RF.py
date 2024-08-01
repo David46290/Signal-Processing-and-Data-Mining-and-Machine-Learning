@@ -10,7 +10,7 @@ from sklearn.utils import shuffle
 
 # edit the part below when model is changed
 class psoRF:
-    def __init__(self, x, y, qualityKind, normalized=None, y_boundary=[]):
+    def __init__(self, x, y, qualityKind, normalized=' ', y_boundary=[]):
         self.qualityKind = qualityKind
         self.isMultiStacking = True
         self.normalized = normalized
@@ -271,7 +271,7 @@ class psoRF:
     def particleBoundary(self, population_curent):
         # edit the part below when model is changed
         n_esti_min = 100
-        n_esti_max = 1000
+        n_esti_max = 200
         leaf_min = 2
         leaf_max = 10
         split_min = 4
@@ -371,7 +371,7 @@ class psoRF:
     pso
     use this function only when performing pso
     """
-    def pso(self, particleAmount, maxIterTime):
+    def pso(self, particleAmount, maxIterTime=10):
         DNA_amount = self.dna_amount
         fitnessHistory0 = []
         fitnessHistory1 = []
@@ -416,7 +416,7 @@ class psoRF:
             fitnessHistory0.append(min(fitness_best_population))
             fitnessHistory1.append(np.mean(fitness_best_population))
     
-            if abs(np.mean(fitness_best_population)-min(fitness_best_population)) < 1: #convergent criterion
+            if abs(np.mean(fitness_best_population)-min(fitness_best_population)) < 0.5 and IterTime>=3 : #convergent criterion
                 print('PSO is ended because of convergence')
                 break
             
