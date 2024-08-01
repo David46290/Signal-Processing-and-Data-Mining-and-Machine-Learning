@@ -107,7 +107,7 @@ class psokNN:
         
         if plot:
             color1 = ['slateblue', 'orange', 'firebrick', 'steelblue', 'purple', 'green']
-            plt.figure(figsize=(12, 9))
+            plt.figure(figsize=(8, 8))
             plt.plot(YT, YP, 'o', color='forestgreen', lw=5)
             plt.axline((0, 0), slope=1, color='black', linestyle = '--', transform=plt.gca().transAxes)
             plt.ylabel("Predicted Value", fontsize=24)
@@ -118,7 +118,7 @@ class psokNN:
             plt.xlim([bottomValue, topValue])
             plt.xticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
             plt.yticks(np.linspace(bottomValue, topValue, 5), fontsize=22)
-            plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | R^2={r2:.2f} | MAE={mae:.2f}"
+            plt.title(f"{self.qualityKind} {category} \n MAPE={mape:.2f} | $R^2$={r2:.2f} | MAE={mae:.2f}"
                       , fontsize=26)
             # plt.axhline(y=1, color=color1[0])
             # plt.axhline(y=1.2, color=color1[1])
@@ -170,7 +170,7 @@ class psokNN:
         ax1.plot(x, train_lst[0], '-o', label='train', lw=5, color='seagreen')
         ax1.plot(x, val_lst[0], '-o', label='val', lw=5, color='brown')
         ax1.set_ylabel('MAPE (%)', fontsize=24)
-        ax1.set_xlabel('Fold', fontsize=24)
+        ax1.set_xlabel('Run', fontsize=24)
         ax1.tick_params(axis='both', which='major', labelsize=20)
         # ax1.set_xticks(np.arange(1, self.kfold_num+1, 1), fontsize=22)
         # ax1.set_title(f'Iter. time: {iter_idx} of Particle {particle_idx}', fontsize=26)
@@ -182,7 +182,7 @@ class psokNN:
         ax2.plot(x, train_lst[1], '-o', label='train', lw=5, color='seagreen')
         ax2.plot(x, val_lst[1], '-o', label='val', lw=5, color='brown')
         ax2.set_ylabel('R2', fontsize=24)
-        ax2.set_xlabel('Fold', fontsize=24)
+        ax2.set_xlabel('Run', fontsize=24)
         ax2.tick_params(axis='both', which='major', labelsize=20)
         # ax2.set_xticks(np.arange(1, self.kfold_num+1, 1), fontsize=22)
         # ax2.set_title(f'Iter. time: {iter_idx} of Particle {particle_idx}', fontsize=26)
