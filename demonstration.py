@@ -24,7 +24,7 @@ def signal_processing_demo(plot_run_signals=False, plot_resize=False, plot_fft=F
     if plot_fft:
         sig_fft_runs = sigpro.get_frequency_spectra(signal_runs, sample_rate)
         # plot signal of one run (a kind of signal & its frequency spectrum)
-        sigplot.draw_signal(signals_runs[run_idx_demo][1], time_runs[run_idx_demo])
+        sigplot.draw_signal(signals_runs[run_idx_demo][siganl_idx_demo], time_runs[run_idx_demo])
         band_demo = sig_fft_runs[run_idx_demo][0]
         spectrum_demo = sig_fft_runs[run_idx_demo][1]
         sigplot.frequency_spectrum(band_demo, spectrum_demo)
@@ -51,11 +51,12 @@ def signal_processing_demo(plot_run_signals=False, plot_resize=False, plot_fft=F
         sigplot.frequency_spectrum(band_demo, spectrum_demo, title='Filtered')
         
     if plot_difference:
-        signal_runs_2 = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo+1)
+        idx_difference_target_signal = signal_idx=siganl_idx_demo-1
+        signal_runs_2 = sigpro.pick_one_signal(signals_runs, signal_idx=idx_difference_target_signal)
         sig_difference_runs = sigpro.subtraction_2signals(list(zip(signal_runs, signal_runs_2)))
         sigplot.draw_signal(signal_runs[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo}', color_='royalblue')
-        sigplot.draw_signal(signal_runs_2[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo+1}', color_='seagreen')
-        sigplot.draw_signal(sig_difference_runs[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo+1} - Signal {siganl_idx_demo}', color_='peru')
+        sigplot.draw_signal(signal_runs_2[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {idx_difference_target_signal}', color_='seagreen')
+        sigplot.draw_signal(sig_difference_runs[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {idx_difference_target_signal} - Signal {siganl_idx_demo}', color_='peru')
 
     if plot_resize:
         signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, 5000)
@@ -78,7 +79,9 @@ def signal_processing_demo(plot_run_signals=False, plot_resize=False, plot_fft=F
     
         
 def feature_extract_demo(plot_corr=False, plot_matrix=False):
-    features_time = feaext.TimeFeatures(signal_runs, target_lst=['rms', 'kurtosis', 'skewness', 'variance', 'p2p'])
+    features_time = feaext.TimeFeatures(signal_runs,
+                                        target_lst=['rms', 'kurtosis', 
+                                                    'skewness', 'variance', 'p2p'])
     features = features_time.features_all_signals
     features_name = features_time.feature_names
     
@@ -87,12 +90,13 @@ def feature_extract_demo(plot_corr=False, plot_matrix=False):
     domain_energy = features_freq.domain_energy
     domain_fre_name = features_freq.feature_name_freq
     domain_energy_name = features_freq.feature_name_energy
-    feature_idx = 3
+
     if plot_corr:
-        corr.get_corr_value_2variables(features[:, feature_idx], y[:, 2], title_='Pearson Correlation', content_=[f'{features_name[0, feature_idx]} of signal {siganl_idx_demo}', 'Y3'])
+        feature_idx = 3
+        corr.get_corr_value_2variables(features[:, feature_idx], y[:, y_idx_demo], title_='Pearson Correlation', content_=[f'{features_name[0, feature_idx]} of signal {siganl_idx_demo+1}', f'Y{y_idx_demo+1}'])
     
-    features_time_y_corr = corr.features_vs_quality(domain_energy, y)
     if plot_matrix:
+        features_time_y_corr = corr.features_vs_quality(features, y)
         corr.plot_correlation_matrix(features_time_y_corr)
 
 
@@ -157,14 +161,11 @@ if __name__ == '__main__':
     run_signals = signals_runs[run_idx_demo]
     signal_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
     # time_resize = sigpro.signal_resize(time_runs, signal_resize_coeff)
-    signal_processing_demo(plot_run_signals=False, plot_resize=True,
-                           plot_fft=False, plot_enve=False, plot_band_pass=False,
-                           plot_difference=False, plot_cwt=False, plot_gaf=False)
-    test_signal, test_time = sigpro.time_series_resize(signals_runs, time_runs, final_length=5000)
-    sigplot.draw_signal(signals_runs[run_idx_demo][siganl_idx_demo], time_runs[run_idx_demo], color_='royalblue', title='OG Signal')
-    sigplot.draw_signal(test_signal[run_idx_demo][siganl_idx_demo], test_time[run_idx_demo], color_='seagreen', title='Resized Signal')
-    
-    # feature_extract_demo()
+    # signal_processing_demo(plot_run_signals=False, plot_resize=False,
+    #                        plot_fft=False, plot_enve=False, plot_band_pass=False,
+    #                        plot_difference=False, plot_cwt=False, plot_gaf=False)
+
+    feature_extract_demo(plot_corr=True, plot_matrix=True)
     # cross_validate_DNN_demo()
     # cross_validate_1DCNN_demo()
     # features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
