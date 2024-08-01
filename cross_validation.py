@@ -6,11 +6,11 @@ from sklearn.svm import SVR
 from sklearn import linear_model
 from xgboost import XGBRegressor
 import sklearn as sk
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor
 from sklearn.utils import shuffle
 from sklearn.model_selection import KFold
-# from plot_histogram import draw_histo
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.ensemble import RandomForestRegressor, AdaBoostRegressor
 from tensorflow import keras
 from keras import optimizers as opti
 from keras.models import Sequential
@@ -338,7 +338,10 @@ class cross_validate:
         model_lst = []
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             # metrics = [mean_absolute_percentage_error, r2_score]
-            model = KNeighborsRegressor(n_neighbors=3)
+            if param_setting != None:
+                model = KNeighborsRegressor(**param_setting)
+            else:
+                model = KNeighborsRegressor(n_neighbors=3)
             x_train = xTrain[train_idx]
             y_train = yTrain[train_idx]
             x_val = xTrain[val_idx]
@@ -641,7 +644,7 @@ class cross_validate:
         model = self.build_DNN(loss, metric, dense_coeff)
         model.save_weights('./modelWeights/DNN_initial.h5') 
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)): 
-            callback = EarlyStopping(monitor="loss", patience=10, verbose=1, mode="auto")
+            callback = EarlyStopping(monitor="loss", patience=30, verbose=1, mode="auto")
             x_train = xTrain[train_idx]
             y_train = yTrain[train_idx]
             x_val = xTrain[val_idx]
@@ -712,7 +715,7 @@ class cross_validate:
         print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
 
 class cross_validate_signal:
-    def __init__(self, x, y, qualityKind='Y', normalized=None, y_value_boundary=[]):
+    def __init__(self, x, y, qualityKind='Y', normalized='  ', y_value_boundary=[]):
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
@@ -933,7 +936,7 @@ class cross_validate_signal:
         print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
         
 class cross_validate_image:
-    def __init__(self, x, y, qualityKind='Y', normalized=None, y_value_boundary=[]):
+    def __init__(self, x, y, qualityKind='Y', normalized='  ', y_value_boundary=[]):
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
