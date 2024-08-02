@@ -13,7 +13,7 @@ I originally made this repo. to deal with a cooperative education program I part
 
 In this repo., one data and a folder are examples of how to use the .py files contained. For a better understanding, I am gonna make an imaginary scenario in which these example files originate.
 
-<h3 align="center">Imaging a machining process that can be monitored by working conditions such as vibrations, temperature, or any other signals. The goal is to predict the resultant surface quality of the process with the captured signals.</h3>
+<h2 align="center">Imaging a machining process that can be monitored by working conditions such as vibrations, temperature, or any other signals. The goal is to predict the resultant surface quality of the process with the captured signals.</h2>
 
 First, the **empirical data** (I made it up) are created, which are **'demo_y.csv'** and **folder 'demonstration_signal_dataset'**. The former is the **recorded quality values of several machining processes**, and the latter contains their corresponding **signals (.csv) captured during processes**.
 
@@ -128,9 +128,14 @@ ${Data-Mining-w-Time-Series-For_demonstration}
 
 Okay, so that is the end of the construction of the imaginary datasets. In **real situations**, you obtain the datasets **WITHOUT knowing how they are constructed**.
 
-So let's just forget how we build ours signals and surface qualities, and assuming
+<h2 align="center">So let's just forget how we build our datasets, and assuming we gathered those thing from machining processes (such as milling) in real world.</h2>
 
-With signals and quality records gathered from processes, we want to examine their relations, as it is helpful for us to understand the mechanisms underlying the machining process. The major functionalities of the repo. can be divided into three topics, which are related to different .py files below:
-### signal_processing.py: Processing the captured signals using time-domain, frequency-domain, or time-frequency-domain analyses.
-### featureExtraction.py & autoencoder.py: Extracting features from the signals.
-### cross-validation.py, correlation_analysis.py, and any .py with 'classPSO' as prefix: Analyzing the relations between extracted features and qualities, or constructing machine-learning models to predict the qualities based on input signals.
+**Signals** can be assumed as ***vibration in 3 axes*** (X, Y, Z), and we can see **y values** as ***surface roughness***, ***width of milled grooves***, or any other thing you come out with. It's time for your imagination.
+
+Now, with signals and quality records gathered from machining processes, we want to **examine their relations**, as it is helpful for us to **understand the mechanisms underlying the machining process**. The major functionalities of the repo. can be divided into three topics, which are related to different .py files below:
+
+<h3 align="left">signal_processing.py: Processing the captured signals using time-domain, frequency-domain, or time-frequency-domain analyses.</h3>
+
+<h3 align="left">featureExtraction.py & autoencoder.py: Extracting features from the signals.</h3>
+
+<h3 align="left">cross-validation.py, correlation_analysis.py, and any .py with 'classPSO' as prefix: Analyzing the relations between extracted features and qualities, or constructing machine-learning models to predict the qualities based on input signals.</h3>
