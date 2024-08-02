@@ -110,9 +110,25 @@ def save_files(folder, data_sig, data_y):
         else:
             np.savetxt(f'.\\{folder}\\demo_signals_{run_idx}.csv', run.T, delimiter=',')
     np.savetxt(f'.\\demo_y.csv', data_y, delimiter=',')
-    
+
 save_files('demonstration_signal_dataset', dataset_sig, dataset_y)
 ```
+
+The csv files should be located like this:
+```
+${Data-Mining-w-Time-Series-For_demonstration}
+├── demo_y.csv
+├── demonstration_signal_dataset
+    ├── demo_signals_00.csv
+    ├── demo_signals_01.csv
+    ├── demo_signals_02.csv
+    ...
+    ...
+```
+
+Okay, so that is the end of the construction of the imaginary datasets. In **real situations**, you obtain the datasets **WITHOUT knowing how they are constructed**.
+
+So let's just forget how we build ours signals and surface qualities, and assuming
 
 With signals and quality records gathered from processes, we want to examine their relations, as it is helpful for us to understand the mechanisms underlying the machining process. The major functionalities of the repo. can be divided into three topics, which are related to different .py files below:
 ### signal_processing.py: Processing the captured signals using time-domain, frequency-domain, or time-frequency-domain analyses.
