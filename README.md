@@ -27,11 +27,17 @@ time_total = 5 # the recording duration
 num_run = 50 # the total amount of machining process conducted.
 ```
 
-After that, the empirical data (containing sigals & quality values) is created in a loop.
+After that, the empirical data (containing **sigals & quality values**) is created in a loop.
 
-In the loop, I use 'random_seed' variable to create numerical fluctuations on signals' attributes (such as frequency, time, amplitude, etc.) and the 'y' values, which resembles a noised recordings in real applicaitons. 
+In the loop, I use ***'random_seed'*** variable to create **numerical fluctuations** on signals' attributes (such as frequency, time, amplitude, etc.) and the 'y' values, which **resembles a noised recordings in real applicaitons**. 
 
-In my experience, the real-world datasets from manufacturers tends to be messy and DIRTY AS HECK, so such a processing is necessary to simulate the real situation.
+*In my experience, the real-world datasets from manufacturers tends to be MESSY and DIRTY AS HECK, so such a processing is necessary to simulate the real situation.*
+
+Any variable named after ***'amplidtude'*** controll the **amplitudes of signals**.
+
+Any variable named after ***'sig'*** are **signals recorded** during the machining process (in this imaginary scenario).
+
+Any variable named after ***'y'*** are **resultant quality** of the current machining process (in this imaginary scenario).
 ```
 dataset_sig = []
 dataset_y = []
