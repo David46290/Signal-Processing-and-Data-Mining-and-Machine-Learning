@@ -98,3 +98,24 @@ envelopes_up_runs, envelopes_low_runs = sigpro.get_envelope_lst(signal_runs, tim
 sigplot.plot_envelope(signal_runs[run_idx_demo], time_runs[run_idx_demo], envelopes_up_runs[run_idx_demo], envelopes_low_runs[run_idx_demo])
 ```
 ![Envelopes](image/envelope.png) 
+
+If the signals reocrded are not vibrations from milling process but a **elastic rod vibrating horizontally**, and its **deformation in length** is the result we wanna get, there is a special method we can exploit.
+
+Attaching **two displacement sensors** on its edges, and the **difference between the two recorded signals** is the change of its length. 
+ 
+Let's assume the **2nd** and **3rd signal** in the datasets are **two displacement signals**, and we can get their **1st order difference** like this:
+
+```
+idx_difference_target_signal = signal_idx=siganl_idx_demo-1
+signal_runs_2 = sigpro.pick_one_signal(signals_runs, signal_idx=idx_difference_target_signal)
+sig_difference_runs = sigpro.subtraction_2signals(list(zip(signal_runs, signal_runs_2)))
+sigplot.draw_signal(signal_runs[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {siganl_idx_demo}', color_='royalblue')
+sigplot.draw_signal(signal_runs_2[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {idx_difference_target_signal}', color_='seagreen')
+sigplot.draw_signal(sig_difference_runs[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {idx_difference_target_signal} - Signal {siganl_idx_demo}', color_='peru')
+```
+
+![Signal3](image/sig_diff_2.png) 
+![Signal3](image/sig_diff_1.png) 
+![Difference](image/sig_diff_3.png) 
+
+Ok, now
