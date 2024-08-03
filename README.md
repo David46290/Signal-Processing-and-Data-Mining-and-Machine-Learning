@@ -188,7 +188,7 @@ sigplot.draw_signal(signals_resize[run_idx_demo], time_resize[run_idx_demo], col
 ![OG Signals](image/Fsignal_resized_og.png) 
 ![Resized Signals](image/Fsignal_resized_resampled.png) 
 
-This function use **resample()** function from **scipy.signal**, which exploit *FFT transformations*. You can see there are some differences between two signals, but the overall trends are very similar.
+This function use **resample()** function from **scipy.signal** ([Reference](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.resample.html "link" )), which exploit *FFT transformations*. You can see there are some differences between two signals, but the overall trends are very similar.
 
 
 Speaking of *FFT*, **let's look at the frequency spectrum of this signal**.
