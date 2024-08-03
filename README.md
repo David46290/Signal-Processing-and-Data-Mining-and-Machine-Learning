@@ -63,7 +63,7 @@ Extracting features from the signals.
 
 [Detail of featureExtraction.py](featureExtraction.md "link" )
 
-[Detail of featureExtraction.py](autoencoder.md "link" )
+[Detail of autoencoder.py](autoencoder.md "link" )
 </br>
 
 <br>
