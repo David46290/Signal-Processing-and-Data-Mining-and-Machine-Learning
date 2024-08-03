@@ -19,7 +19,7 @@ from classPSO_RF import psoRF
 def signal_processing_demo(plot_run_signals=False, plot_resize=False, plot_fft=False, plot_enve=False, plot_band_pass=False, plot_difference=False, plot_cwt=False, plot_gaf=False):   
     if plot_run_signals: 
         # plot all signals of one run
-        sigplot.draw_signals(run_signals[1:], run_signals[0])
+        sigplot.draw_signals(run_signals[1:], run_signals[0], legend_lst=['X', 'Y', 'Z'], color_lst=['royalblue', 'peru', 'seagreen'], title='All vibration signals')
 
     if plot_fft:
         sig_fft_runs = sigpro.get_frequency_spectra(signal_runs, sample_rate)
@@ -59,7 +59,7 @@ def signal_processing_demo(plot_run_signals=False, plot_resize=False, plot_fft=F
         sigplot.draw_signal(sig_difference_runs[run_idx_demo], time_runs[run_idx_demo], title=f'Signal {idx_difference_target_signal} - Signal {siganl_idx_demo}', color_='peru')
 
     if plot_resize:
-        signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, 5000)
+        signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, final_length=5000)
         
         sigplot.draw_signal(signal_runs[run_idx_demo], time_runs[run_idx_demo], color_='royalblue', title='OG Signal')
         sigplot.draw_signal(signals_resize[run_idx_demo], time_resize[run_idx_demo], color_='seagreen', title='Resized Signal')
@@ -101,8 +101,7 @@ def feature_extract_demo(plot_corr=False, plot_matrix=False):
 
 
 def autoencoder_demo(plot_coding=False):
-    signals_resize = sigpro.signal_resize(signal_runs, min([run.shape[0] for run in signal_runs]), isPeriodic=True)
-    time_resize = sigpro.signal_resize(time_runs, min([run.shape[0] for run in time_runs]))
+    signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, final_length=min([run.shape[0] for run in signal_runs]))
     ae_model, ae_train_history = ae.train_AE(signals_resize)
     encoded_signal = ae_model.encoder(signals_resize).numpy()
     decoded_signal = ae_model.decoder(encoded_signal).numpy()
@@ -185,12 +184,12 @@ if __name__ == '__main__':
     # signal_processing_demo(plot_run_signals=False, plot_resize=False,
     #                         plot_fft=False, plot_enve=False, plot_band_pass=False,
     #                         plot_difference=False, plot_cwt=False, plot_gaf=False)
-
+    autoencoder_demo(plot_coding=True)
     # feature_extract_demo(plot_corr=True, plot_matrix=True)
 
     # cross_validate_ML_demo()
     # cross_validate_stacking_demo()
-    hyper_param = pso_demo()
+    # hyper_param = pso_demo()
     # cross_validate_DNN_demo()
     # cross_validate_1DCNN_demo()
     
