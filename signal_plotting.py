@@ -22,9 +22,9 @@ def draw_signals(signal_lst, t, legend_lst=None, color_lst=None, title=None):
     plt.xticks(fontsize=18)
     plt.yticks(fontsize=18)
     plt.grid()
-    plt.show()
     if title != None:
         plt.title(f'{title}', fontsize=28)
+    plt.show()
 
 def draw_signal(signal, time=[], color_=None, title=None):
     plt.figure(figsize=(10, 8))
