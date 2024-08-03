@@ -102,7 +102,7 @@ def feature_extract_demo(plot_corr=False, plot_matrix=False):
 
 def autoencoder_demo(plot_coding=False):
     signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, final_length=min([run.shape[0] for run in signal_runs]))
-    ae_model, ae_train_history = ae.train_AE(signals_resize)
+    ae_model, ae_train_history = ae.train_AE(signals_resize, shrink_rate=100)
     encoded_signal = ae_model.encoder(signals_resize).numpy()
     decoded_signal = ae_model.decoder(encoded_signal).numpy()
     if plot_coding:
