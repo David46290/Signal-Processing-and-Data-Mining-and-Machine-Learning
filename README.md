@@ -17,9 +17,9 @@ In this repo., one data and a folder are examples of how to use the .py files co
 
 First, the **empirical data** (I made it up) are created, which are **'demo_y.csv'** and **folder 'demonstration_signal_dataset'**. The former is the **recorded quality values of several machining processes**, and the latter contains their corresponding **signals (.csv) captured during processes**.
 
-### **'WaveMaker.py'** describes the details of determining created signals and quality values. Please execute it first before moving on to other .py files.
+### **'waveMaker.py'** describes the details of determining created signals and quality values. Please execute it first before moving on to other .py files.
 <h1 align="center">
-WaveMaker.py
+waveMaker.py
 </h1>
 The created data have multiple attribute to be manipulated. Starting with sampling rate, recording duration, and the total amount of machining process conducted. The number can be changed at will.
 
@@ -128,14 +128,62 @@ ${Data-Mining-w-Time-Series-For_demonstration}
 
 Okay, so that is the end of the construction of the imaginary datasets. In **real situations**, you obtain the datasets **WITHOUT knowing how they are constructed**.
 
-<h2 align="center">So let's just forget how we build our datasets, and assuming we gathered those thing from machining processes (such as milling) in real world.</h2>
+<h2 align="center">
+So let's just forget how we build our datasets, and assuming we gathered those thing from machining processes (such as milling) in real world.
+</h2>
 
 **Signals** can be assumed as ***vibration in 3 axes*** (X, Y, Z), and we can see **y values** as ***surface roughness***, ***width of milled grooves***, or any other thing you come out with. It's time for your imagination.
 
 Now, with signals and quality records gathered from machining processes, we want to **examine their relations**, as it is helpful for us to **understand the mechanisms underlying the machining process**. The major functionalities of the repo. can be divided into three topics, which are related to different .py files below:
 
-<h3 align="left">signal_processing.py: Processing the captured signals using time-domain, frequency-domain, or time-frequency-domain analyses.</h3>
+<h1 align="center">
+signal_processing.py
+</h1>
+<h2 align="center">
+Processing the captured signals using time-domain, frequency-domain, or time-frequency-domain analyses.
+</h2>
+<h3 align="center">
+I am gonna demonstrate how signal processing can be done with this file.
+</h3>
 
-<h3 align="left">featureExtraction.py & autoencoder.py: Extracting features from the signals.</h3>
+First, we have to load our signal datasets & quality datasets. 
 
-<h3 align="left">cross-validation.py, correlation_analysis.py, and any .py with 'classPSO' as prefix: Analyzing the relations between extracted features and qualities, or constructing machine-learning models to predict the qualities based on input signals.</h3>
+After that, let's look at signals in one arbitrary run.
+
+```
+signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset', first_signal_minus=False)
+sample_rate = int(20000/10) # you have to know your signal sampling rate before analyzing signals.
+time_runs = sigpro.pick_one_signal(signals_runs, signal_idx=0)
+run_idx_demo = 10 # the designate index of process run, this number can be changed at will.
+run_signals = signals_runs[run_idx_demo] # run_signals.shape = (4, 10296)
+```
+
+Importing signal_processing.py and see what signals does the run have.
+```
+import signal_processing as sigpro
+sigplot.draw_signals(run_signals[1:], run_signals[0], legend_lst=['X', 'Y', 'Z'], color_lst=['royalblue', 'peru', 'seagreen'], title='All vibration signals')
+# run_signals[0] are time stamps, while run_signals[1:] are all 3 signals of the run
+```
+![Signals](image/signals_of_demo_run.png) 
+
+As you can see, all 3 signals are plotted. 
+
+***sigplot.draw_signals()*** doesn't care how many signals are in the run_signals. As long as **first row** stands for **time** and **the rest rows** are **signals**, every signal can be shown with this function.
+
+You can designate the **names of signals** and the **presented color of signals** in form of **list**.
+
+Then use those list as **arguments** for ***legend_lst*** and ***color_lst*** respectively.
+
+<h1 align="center">
+featureExtraction.py & autoencoder.py
+</h1>
+<h2 align="center">
+Extracting features from the signals.
+</h2>
+
+<h1 align="center">
+cross-validation.py, correlation_analysis.py, and any .py with 'classPSO' as prefix
+</h1>
+<h2 align="center">
+Analyzing the relations between extracted features and qualities, or constructing machine-learning models to predict the qualities based on input signals.
+</h2>
