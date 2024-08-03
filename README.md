@@ -148,7 +148,7 @@ I am gonna demonstrate how signal processing can be done with this file.
 
 First, we have to load our signal datasets & quality datasets. 
 
-After that, let's look at signals in one arbitrary run.
+After that, **let's look at signals in one arbitrary run**.
 
 ```
 signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset', first_signal_minus=False)
@@ -173,6 +173,55 @@ As you can see, all 3 signals are plotted.
 You can designate the **names of signals** and the **presented color of signals** in form of **list**.
 
 Then use those list as **arguments** for ***legend_lst*** and ***color_lst*** respectively.
+
+Now, **if you want to shrink the size of signals, sigpro.signal_resize() can help**.
+
+Let's specify that we want to see **the last signal**, and we want to see the **resized version** of the last signal of the 10th run.
+
+```
+siganl_idx_demo = 3
+signal_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
+signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, final_length=5000) # shrink it to length=5000
+sigplot.draw_signal(signal_runs[run_idx_demo], time_runs[run_idx_demo], color_='royalblue', title='OG Signal')
+sigplot.draw_signal(signals_resize[run_idx_demo], time_resize[run_idx_demo], color_='seagreen', title='Resized Signal')
+```
+![OG Signals](image/Fsignal_resized_og.png) 
+![Resized Signals](image/Fsignal_resized_resampled.png) 
+
+This function use **resample()** function from **scipy.signal**, which exploit *FFT transformations*. You can see there are some differences between two signals, but the overall trends are very similar.
+
+
+Speaking of *FFT*, **let's look at the frequency spectrum of this signal**.
+
+```
+sig_fft_runs = sigpro.get_frequency_spectra(signal_runs, sample_rate)
+band_demo = sig_fft_runs[run_idx_demo][0]
+spectrum_demo = sig_fft_runs[run_idx_demo][1]
+sigplot.frequency_spectrum(band_demo, spectrum_demo)
+```
+
+![FFT](image/freq_spectrum.png) 
+
+Frequencies around **120** & **1 Hz** are very prominent, which can be justified because ***sig3*** in ***waveMaker.py*** are constructed by signals components with those frequencies.
+
+Now that we have the frequency specttrum, let's **band-pass it to change the signal**, shall we?
+
+I am gonna **keep** the information within **frequency range 50~600**, and discard the rest
+
+```
+signals_filtered = sigpro.freq_pass(signal_runs, order_=2, assigned_freq=[50, 600], btype='bandpass', fs=sample_rate)
+sig_fft_runs_filtered = sigpro.get_frequency_spectra(signals_filtered, sample_rate)
+sigplot.draw_signal(signals_filtered [run_idx_demo], time_runs[run_idx_demo], title='Filtered')
+band_demo = sig_fft_runs_filtered[run_idx_demo][0]
+spectrum_demo = sig_fft_runs_filtered[run_idx_demo][1]
+sigplot.frequency_spectrum(band_demo, spectrum_demo, title='Filtered')
+```
+![Filtered Signals](image/band_pass.png) 
+![Frequency Spectrum of Filtered Signals](image/band_pass_spectrum.png) 
+
+As you can see, **no more low-frequency trending** inside the signal, and the frequency spectrum contains **120 Hz as the main component**.
+
+I use ***butterworth filter*** (from *scipy.signal*) to do the band-passing, **arguments setting** of ***order_*** and ***btype*** can be change based on [scipy's website](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html "link" )
 
 <h1 align="center">
 featureExtraction.py & autoencoder.py
