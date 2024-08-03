@@ -118,4 +118,23 @@ sigplot.draw_signal(sig_difference_runs[run_idx_demo], time_runs[run_idx_demo], 
 ![Signal3](image/sig_diff_1.png) 
 ![Difference](image/sig_diff_3.png) 
 
-Ok, now
+**Ok, now back to the *vibration signal* of milling process.**
+
+**Vibration sensor** for machining process monitoring tends to be a **accelerometer**, and the **recorded signal** can be **pretty messy**.
+
+There are other methods to **dissect a messy signal**, and I am gonna show two of them, which are ***Wavelet Transform*** and ***Gramian Angular Field***.
+
+Again, using the *3rd signal* of the *10th process*, we can the **2D presentation** of the signal with these methods.
+
+```
+cwt = sigpro.cwt(signal_runs[run_idx_demo], widths=np.arange(1, 60), wavelet=scisig.morlet2)
+sigplot.draw_signal_2d(cwt)
+gasf = sigpro.gasf(signal_runs[run_idx_demo])
+sigplot.draw_signal_2d(gasf)
+```
+![CWT](image/cwt.png) 
+![GASF](image/gasf.png) 
+
+The **above** and the **below** are the results of ***Continuous Wavelet Transform*** *(CWT)* and ***Gramian Angular Summation Field*** *(GASF)*, respectively.
+
+The reference of [CWT](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.cwt.html "link" ) and [GASF](https://medium.com/analytics-vidhya/encoding-time-series-as-images-b043becbdbf3 "link" ) can be seen here.
