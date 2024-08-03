@@ -51,7 +51,7 @@ signal_processing.py
 Processing the captured signals using time-domain, frequency-domain, or time-frequency-domain analyses.
 </h2>
 
-[Detail of waveMaker.py](signal_processing.md "link" )
+[Detail of signal_processing.py](signal_processing.md "link" )
 <br>
 
 <h1 align="center">
