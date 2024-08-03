@@ -138,3 +138,5 @@ sigplot.draw_signal_2d(gasf)
 The **above** and the **below** are the results of ***Continuous Wavelet Transform*** *(CWT)* and ***Gramian Angular Summation Field*** *(GASF)*, respectively.
 
 The reference of [CWT](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.cwt.html "link" ) and [GASF](https://medium.com/analytics-vidhya/encoding-time-series-as-images-b043becbdbf3 "link" ) can be seen here.
+
+### Besides functions mentioned above, there are other funciton may be exploited for further signal analysis. Look them up and choose the one that looks helpful for you.
