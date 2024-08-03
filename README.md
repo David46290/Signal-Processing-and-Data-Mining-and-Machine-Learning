@@ -221,7 +221,21 @@ sigplot.frequency_spectrum(band_demo, spectrum_demo, title='Filtered')
 
 As you can see, **no more low-frequency trending** inside the signal, and the frequency spectrum contains **120 Hz as the main component**.
 
-I use ***butterworth filter*** (from *scipy.signal*) to do the band-passing, **arguments setting** of ***order_*** and ***btype*** can be change based on [scipy's website](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html "link" )
+I use ***butterworth filter*** (from ***scipy.signal***) to do the band-passing, **arguments setting** of ***order_*** and ***btype*** can be change based on [scipy's website](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html "link" )
+
+In some case, it's helpful to **inspect the envelopes of one signal**, as the **amplitude modulation** phenomenon can be dissected.
+
+I find signal's **upper/lower envelopes** based on **local extrema**. But before doing that, I **smooth** the signal with a ***deformable Gaussian filter*** in advance. Such a process can **decrease the impact of noise** within the signal.
+
+The Gaussian filter is exploited base on ***gaussian_filter1d()*** from ***scipy.ndimage*** ([Reference Here](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.gaussian_filter1d.html "link" ))
+
+```
+envelopes_up_runs, envelopes_low_runs = sigpro.get_envelope_lst(signal_runs, time_runs, gau_sig=10, gau_rad=20, w_size=30)
+# arguments gau_sig, gau_rad, and w_size decide the shape of the Gaussian filter
+sigplot.plot_envelope(signal_runs[run_idx_demo], time_runs[run_idx_demo], envelopes_up_runs[run_idx_demo], envelopes_low_runs[run_idx_demo])
+```
+![Envelopes](image/envelope.png) 
+
 
 <h1 align="center">
 featureExtraction.py & autoencoder.py
