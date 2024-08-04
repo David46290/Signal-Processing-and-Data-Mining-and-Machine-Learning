@@ -56,8 +56,8 @@ class FreqFeatures():
             band_spectrum = band_spectrum[:, np.argsort(band_spectrum[1, :])[::-1]]
             main_freqs.append(band_spectrum[0, :self.num_wanted_freq])
             main_energy.append(band_spectrum[1, :self.num_wanted_freq])
-            freq_name.append(f'Top {self.num_wanted_freq} Frequencies of Signal {signal_idx}')
-            energy_name.append(f'Top {self.num_wanted_freq} Energies of Signal {signal_idx}')
+            freq_name.append(f'Top {self.num_wanted_freq} Frequencies of Signal')
+            energy_name.append(f'Top {self.num_wanted_freq} Energies of Signal')
             
             main_freqs_total.append(np.array(main_freqs).reshape(-1))
             main_energy_total.append(np.array(main_energy).reshape(-1))
