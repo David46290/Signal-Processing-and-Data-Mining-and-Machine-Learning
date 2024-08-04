@@ -84,16 +84,23 @@ def feature_extract_demo(plot_corr=False, plot_matrix=False):
                                                     'skewness', 'variance', 'p2p'])
     features = features_time.features_all_signals
     features_name = features_time.feature_names
+    print(features.shape)
+    print(features_name.shape)
     
     features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
     domain_fre = features_freq.domain_frequency
     domain_energy = features_freq.domain_energy
     domain_fre_name = features_freq.feature_name_freq
     domain_energy_name = features_freq.feature_name_energy
+    print(domain_fre.shape)
+    print(domain_fre_name)
+    
+    print(domain_energy.shape)
+    print(domain_energy_name)
 
     if plot_corr:
         feature_idx = 3
-        corr.get_corr_value_2variables(features[:, feature_idx], y[:, y_idx_demo], title_='Pearson Correlation', content_=[f'{features_name[0, feature_idx]} of signal {siganl_idx_demo+1}', f'Y{y_idx_demo+1}'])
+        corr.get_corr_value_2variables(features[:, feature_idx], y[:, y_idx_demo], title_='Pearson Correlation', content_=[f'{features_name[0, feature_idx]} of signal', f'Y{y_idx_demo+1}'])
     
     if plot_matrix:
         features_time_y_corr = corr.features_vs_quality(features, y)
@@ -184,8 +191,8 @@ if __name__ == '__main__':
     # signal_processing_demo(plot_run_signals=False, plot_resize=False,
     #                         plot_fft=False, plot_enve=False, plot_band_pass=False,
     #                         plot_difference=False, plot_cwt=False, plot_gaf=False)
-    autoencoder_demo(plot_coding=True)
-    # feature_extract_demo(plot_corr=True, plot_matrix=True)
+    # autoencoder_demo(plot_coding=True)
+    feature_extract_demo(plot_corr=True, plot_matrix=True)
 
     # cross_validate_ML_demo()
     # cross_validate_stacking_demo()
