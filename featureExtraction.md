@@ -70,7 +70,7 @@ First, we find the *PCC* between **the Variance of signal** and **the 2nd qualit
 
 Then, we see the PCC between **all signal features** and **all quality value**. 
 
-I am gonna use correlation_analysis.py for demonstration.
+I am gonna use ***correlation_analysis.py*** for demonstration.
 
 ```
 import correlation_analysis as corr
