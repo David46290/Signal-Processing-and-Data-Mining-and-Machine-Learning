@@ -25,7 +25,7 @@ After obtaining the signal, we can extract it's **statistical characteristic** u
 
 Go check ***featureExtraction.TimeFeatures.getTimeFeatures()*** to see what kind of statistical feature can we get with the argument ***target_lst*** of ***featureExtraction.TimeFeatures()***.
 
-I am gonna focus on the 5 features I use the most, which are ***Root Mean Square**, **Kurtosis**, **Skewness**, **Variance**, and **Maximum Peak-To-Peak value**. ([Reference of Kurtosis and Skewness](https://docs.scipy.org/doc/scipy/reference/stats.html "link" ))
+I am gonna focus on the 5 features I use the most, which are **Root Mean Square** *(RMS)*, **Kurtosis**, **Skewness**, **Variance**, and **Maximum Peak-To-Peak value** *(P2P)*. ([Reference of Kurtosis and Skewness](https://docs.scipy.org/doc/scipy/reference/stats.html "link" ))
 
 ```
 import featureExtraction as feaext
@@ -64,11 +64,13 @@ In this imaginary scenario, we wanna find the signal feature related to the surf
 
 With those prominent features, we can **predict the machining results**, and this prediction is very beneficial to **monitoring the machining process**, as we don't need to waste time on measruing the surface quality of machined workpiece.
 
-One way to check the **relevances between signal features and the resultant quality of process** is ***Pearson Correlation Coefficient*** *(PCC)*. ([Reference](https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html "link" ))
+One way to check the **relevances between signal features and the resultant quality of process** is ***Pearson Correlation Coefficient*** *(PCC)*. ([Reference](https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html "link" )) 
 
 First, we find the *PCC* between **the Variance of signal** and **the 2nd quality value**.
 
-Then, we see the PCC between **all signal features** and **all quality value**.
+Then, we see the PCC between **all signal features** and **all quality value**. 
+
+I am gonna use correlation_analysis.py for demonstration.
 
 ```
 import correlation_analysis as corr
@@ -85,3 +87,15 @@ if plot_matrix:
 ![PCC](image/pearson_corr_single_x_y.png)
 
 ![PCC_ALL](image/pearson_corr_multi_x_y.png) 
+
+Based on the 1st figure, we can tell variance of signals is highly related to the 2nd quality value. They have a **highly positive correlation**.
+
+Base on the 2nd figure, we can see signals' ***RMS***, ***Variance***, and ***P2P*** all have **highly positive correlation** to ***all quality values***.
+
+And signals' ***Kurtosis*** have **highly negative correlation** to ***all quality values***.
+
+As for signals' ***Skewness***, there's **no obvious correlation** between all quality values.
+
+As a result, we can use ***RMS***, ***Kurtosis***, ***Variance***, and ***P2P*** to **predict the quality values** of the machining process. 
+
+But that would be a extremely long story, so I am gonna leave this topic to [cross-validation.md](cross-validation.md "link" ) amd [PSO.md](PSO.md "link" )
