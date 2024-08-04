@@ -7,7 +7,7 @@ Extracting features from the signals.
 
 ### To dissect captured signals, it's beneficial to get signals' characteristics with statistical method.
 
-Before we go further, let's load our datasets made by ****waveMaker.py***.
+Before we go further, let's load our datasets made by [waveMaker.py](waveMaker.md "link" ).
 
 To focus on the topic, we only deal with the **3rd signals** recorded from all process runs.
 
@@ -56,9 +56,19 @@ print(domain_energy.shape) # (50, 3), signals from 50 runs, and each one of them
 print(domain_energy_name.shape) # (50, 1), each signal from 50 runs give the feature called 'Top 3 Energies of Signal'.
 ```
 
+We can now do whatever we want to analyze signals base on their features. So let's start doing something.
+
 The purpose of feature extraction is to **find features highly related to the result of the machining process**. 
 
 In this imaginary scenario, we wanna find the signal feature related to the surface quality of the machined workpiece.
+
+With those prominent features, we can **predict the machining results**, and this prediction is very beneficial to **monitoring the machining process**, as we don't need to waste time on measruing the surface quality of machined workpiece.
+
+One way to check the **relevances between signal features and the resultant quality of process** is ***Pearson Correlation Coefficient*** *(PCC)*. ([Reference](https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html "link" ))
+
+First, we find the *PCC* between **the Variance of signal** and **the 2nd quality value**.
+
+Then, we see the PCC between **all signal features** and **all quality value**.
 
 ```
 import correlation_analysis as corr
