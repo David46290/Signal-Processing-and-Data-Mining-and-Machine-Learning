@@ -98,4 +98,4 @@ As for signals' ***Skewness***, there's **no obvious correlation** between all q
 
 As a result, we can use ***RMS***, ***Kurtosis***, ***Variance***, and ***P2P*** to **predict the quality values** of the machining process. 
 
-But that would be a extremely long story, so I am gonna leave this topic to [cross-validation.md](cross-validation.md "link" ) amd [PSO.md](PSO.md "link" )
+But that would be a extremely long story, so I am gonna leave this topic to [cross_validation.md](cross_validation.md "link" ) amd [PSO.md](PSO.md "link" )
