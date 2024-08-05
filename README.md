@@ -68,14 +68,14 @@ Extracting features from the signals.
 
 <br>
 <h1 align="center">
-cross-validation.py, correlation_analysis.py, and any .py with 'classPSO' as prefix
+cross_validation.py and any .py with 'classPSO' as prefix
 </h1>
 <h2 align="center">
 Constructing machine-learning models to predict the qualities based on input signals.
 </h2>
 
 
-[Detail of cross-validation.py](cross-validation.md "link" )
+[Detail of cross_validation.py](cross_validation.md "link" )
 
 [Detail of PSO files](PSO.md "link" )
 
