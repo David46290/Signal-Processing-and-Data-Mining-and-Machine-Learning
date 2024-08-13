@@ -50,3 +50,29 @@ cv_prepare.model_testing(trained_model, 'DNN')
 ![CV_history](image/cv_run1_dnn.png)
 ![CV](image/cv_dnn.png)
 ![CV_test](image/cv_dnn_test.png)
+
+```
+signal_resize_coeff = 1000
+signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, signal_resize_coeff)
+cv_prepare = cv.cross_validate_signal(signals_resize, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+trained_model = cv_prepare.cross_validate_1DCNN(dense_coeff=4)
+cv_prepare.model_testing(trained_model, '1DCNN')
+```
+![CV_history](image/cv_run1_1dcnn.png)
+![CV](image/cv_1dcnn.png)
+![CV_test](image/cv_1dcnn_test.png)
+
+```
+signal_resize_coeff = 500
+signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, signal_resize_coeff)
+signals_imgs = sigpro.signals_to_images(signals_resize, method='cwt')
+signals_imgs = sigpro.images_resize_lst(signals_imgs, size=img_resize_coeff)
+sigplot.draw_signal_2d(signals_imgs[run_idx_demo])
+
+cv_prepare = cv.cross_validate_image(signals_imgs, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+trained_model = cv_prepare.cross_validate_2DCNN(dense_coeff=10)
+cv_prepare.model_testing(trained_model, '2DCNN')
+```
+![CV_history](image/cv_run1_2dcnn.png)
+![CV](image/cv_2dcnn.png)
+![CV_test](image/cv_2dcnn_test.png)
