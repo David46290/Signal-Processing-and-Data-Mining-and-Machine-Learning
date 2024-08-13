@@ -20,6 +20,8 @@ To focus on the topic, we only deal with the **3rd signals** recorded from all p
 If you want to see what this signal looks like, go check [detail of signal_processing.py](signal_processing.md "link" )
 
 ```
+import signal_processing as sigpro
+
 signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset', first_signal_minus=False)
 sample_rate = int(20000/10)
 y = np.genfromtxt('demo_y.csv', delimiter=',')
