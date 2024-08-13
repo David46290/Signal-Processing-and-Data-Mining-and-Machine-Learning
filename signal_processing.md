@@ -13,6 +13,7 @@ First, we have to load our signal datasets & quality datasets.
 After that, **let's look at signals in one arbitrary run**.
 
 ```
+import signal_processing as sigpro
 signals_runs = sigpro.get_signals('.\\demonstration_signal_dataset', first_signal_minus=False)
 sample_rate = int(20000/10) # you have to know your signal sampling rate before analyzing signals.
 time_runs = sigpro.pick_one_signal(signals_runs, signal_idx=0)
@@ -22,7 +23,7 @@ run_signals = signals_runs[run_idx_demo] # run_signals.shape = (4, 10296)
 
 Importing signal_processing.py and see what signals does the run have.
 ```
-import signal_processing as sigpro
+
 import signal_plotting as sigplot
 sigplot.draw_signals(run_signals[1:], run_signals[0], legend_lst=['X', 'Y', 'Z'], color_lst=['royalblue', 'peru', 'seagreen'], title='All vibration signals')
 # run_signals[0] are time stamps, while run_signals[1:] are all 3 signals of the run
