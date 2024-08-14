@@ -10,7 +10,7 @@ Constructing machine learning models to predict the qualities based on input sig
 
 **[Review of the imaginary machining scenario](README.md "link" )**
 
-**[Review of the extraction of signal features](featureExtraciton.md "link" )**
+**[Review of the extraction of signal features](featureExtraction.md "link" )**
 
 ```
 import signal_processing as sigpro
@@ -28,7 +28,7 @@ This page will show you how to train a **machine learning model** using **PSO**.
 
 ### [What is PSO?](https://towardsdatascience.com/particle-swarm-optimization-visually-explained-46289eeb2e14 "link" )
 
-Let's extracted **frequency features** using ***[featureExtraciton.md](featureExtraciton.md "link" )***.
+Let's extracted **frequency features** using ***featureExtraction.py***.
 
 Then try training a  ***[Random Forest model](https://www.youtube.com/watch?v=J4Wdy0Wc_xQ "link")***, while using **domain frequency energies** as ***inputs***, and **surface quality value 2** *(y2)* as the ***output***.
 
