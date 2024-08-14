@@ -1,0 +1,2 @@
+This file is here for the sake of creating folder "demonstration_signal_dataset".
+Before executing any .py, be sure to remove this file first.
