@@ -93,9 +93,12 @@ cv_prepare.model_testing(trained_model, '1DCNN')
 ![CV_test](image/cv_1dcnn_test.png)
 
 
-Start with **1D-CNN** first, which accepts **strings of signal** as its **input**.
+Now we go with **2D-CNN**, which accepts **layers of images** as its **input**.
 
-But before that, we need to **unify the signal length** of samples, or else 1D-CNN won't bother trying to eat it.
+Therefore, we need to **unify the signal length** and **transform signals into images**. 
+
+The **order** may **affect the training result**, so be sure to try **"unify length first then make images"**, and **the other way around**, then see of which the result is better for you.
+
 
 ```
 signal_resize_coeff = 500
