@@ -1,7 +1,11 @@
 <h1 align="center">
 waveMaker.py
 </h1>
+
+### Please delete ***be_sure_to_delete_this_file.txt*** in the folder ***demonstration_signal_dataset*** first.
+
 The created data have multiple attribute to be manipulated. Starting with sampling rate, recording duration, and the total amount of machining process conducted. The number can be changed at will.
+
 
 
 ```
