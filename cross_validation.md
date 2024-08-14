@@ -30,7 +30,7 @@ This page will show you how to train a **machine learning model** using **cross 
 
 Let's extracted **frequency features** using ***[featureExtraciton.md](featureExtraciton.md "link" )***.
 
-Then try training a  ***[XGBoost model](https://www.youtube.com/watch?v=OtD8wVaFm6E"link")***, while using **domain frequency energies** as ***inputs***, and **surface quality value 2** *(y2)* as the ***output***.
+Then try training a  ***[XGBoost model](https://www.youtube.com/watch?v=OtD8wVaFm6E "link")***, while using **domain frequency energies** as ***inputs***, and **surface quality value 2** *(y2)* as the ***output***.
 
 You can change the **hyperparameters of the model** using a **dictionary argument** of . In this case, that is ***param_setting***.
 
