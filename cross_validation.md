@@ -10,7 +10,7 @@ Constructing machine learning models to predict the qualities based on input sig
 
 **[Review of the imaginary machining scenario](README.md "link" )**
 
-**[Review of the extraction of signal features](featureExtraciton.md "link" )**
+**[Review of the extraction of signal features](featureExtraction.md "link" )**
 
 ```
 import signal_processing as sigpro
@@ -28,7 +28,7 @@ This page will show you how to train a **machine learning model** using **cross 
 
 ### [What is cross validaiton?](https://scikit-learn.org/stable/modules/cross_validation.html"link" )
 
-Let's extracted **frequency features** using ***[featureExtraciton.md](featureExtraciton.md "link" )***.
+Let's extracted **frequency features** using ***featureExtraction.py***.
 
 Then try training a  ***[XGBoost model](https://www.youtube.com/watch?v=OtD8wVaFm6E "link")***, while using **domain frequency energies** as ***inputs***, and **surface quality value 2** *(Y2)* as the ***output***.
 
@@ -48,7 +48,7 @@ import cross_validation as cv
 
 features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
 domain_energy = features_freq.domain_energy
-cv_prepare = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}', fold_num=5)
+cv_prepare = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo+1}', fold_num=5)
 param_setting = {'eta':0.3, 'gamma':0.01, 'max_depth':6, 'subsample':0.8, 'lambda':50, 'random_state':75}
 trained_model = cv_prepare.cross_validate_XGB(param_setting=param_setting)
 cv_prepare.model_testing(trained_model, 'XGB')
@@ -67,7 +67,7 @@ The argument ***dense_coeff*** controls the **number of neurons** in the hidden 
 ```
 features_time = feaext.TimeFeatures(signal_runs,target_lst=['rms', 'kurtosis', 'skewness', 'variance', 'p2p'])
 features = features_time.features_all_signals
-cv_prepare = cv.cross_validate(features, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}', fold_num=5)
+cv_prepare = cv.cross_validate(features, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo+1}', fold_num=5)
 trained_model = cv_prepare.cross_validate_DNN(dense_coeff=10)
 cv_prepare.model_testing(trained_model, 'DNN')
 ```
@@ -84,7 +84,7 @@ But before that, we need to **unify the signal length** of samples, or else 1D-C
 ```
 signal_resize_coeff = 1000
 signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, signal_resize_coeff)
-cv_prepare = cv.cross_validate_signal(signals_resize, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}', fold_num=5)
+cv_prepare = cv.cross_validate_signal(signals_resize, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo+1}', fold_num=5)
 trained_model = cv_prepare.cross_validate_1DCNN(dense_coeff=4)
 cv_prepare.model_testing(trained_model, '1DCNN')
 ```
@@ -107,7 +107,7 @@ signals_imgs = sigpro.signals_to_images(signals_resize, method='cwt')
 signals_imgs = sigpro.images_resize_lst(signals_imgs, size=img_resize_coeff)
 sigplot.draw_signal_2d(signals_imgs[run_idx_demo])
 
-cv_prepare = cv.cross_validate_image(signals_imgs, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}', fold_num=5)
+cv_prepare = cv.cross_validate_image(signals_imgs, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo+1}', fold_num=5)
 trained_model = cv_prepare.cross_validate_2DCNN(dense_coeff=10)
 cv_prepare.model_testing(trained_model, '2DCNN')
 ```
