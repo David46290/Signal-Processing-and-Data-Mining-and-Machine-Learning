@@ -3,7 +3,7 @@
 cross-validation.py
 </h1>
 <h2 align="center">
-Constructing machine-learning models to predict the qualities based on input signals.
+Constructing machine learning models to predict the qualities based on input signals.
 </h2>
 
 ### Time to **predict the resultant quality** of machining process with ***working parameters*** or ***extracted signal features***.
@@ -21,8 +21,24 @@ y = np.genfromtxt('demo_y.csv', delimiter=',')
 siganl_idx_demo = 3
 signal_runs = sigpro.pick_one_signal(signals_runs, signal_idx=siganl_idx_demo)
 time_runs = sigpro.pick_one_signal(signals_runs, signal_idx=0)
+y_idx_demo = 1
 ```
 
+This page will show you how to train a **machine learning model** using **cross validaiton**.
+
+### [What is cross validaiton?](https://scikit-learn.org/stable/modules/cross_validation.html"link" )
+
+Let's extracted **frequency features** using ***[featureExtraciton.md](featureExtraciton.md "link" )***.
+
+Then try training a  ***[XGBoost model](https://www.youtube.com/watch?v=OtD8wVaFm6E"link")***, while using **domain frequency energies** as ***inputs***, and **surface quality value 2** *(y2)* as the ***output***.
+
+You can change the **hyperparameters of the model** using a **dictionary argument** of . In this case, that is ***param_setting***.
+
+Besides that, you can see a **trained model** is established **after** calling ***cross_validate_XGB()***. Not cross_validate().
+
+There are many **other machine learning model** that can be trained using function resembling ***cross_validate_XXX()***, such as SVR, Random Forest, KNN, etc.
+
+Now, the **example** focusse on the **cross validation** and **testing results** of the **XGBoost** model.
 
 ```
 import featureExtraction as feaext
@@ -39,6 +55,12 @@ cv_prepare.model_testing(trained_model, 'XGB')
 ![CV_history](image/cv_run1_xgb.png)
 ![CV](image/cv_xgb.png)
 ![CV_test](image/cv_xgb_test.png)
+
+Now let's see the **cross validaiton** and **testing results** of a **DNN** model.
+
+This time, I want to use the **statistical feature** of the signal as ***inputs***.
+
+The argument ***dense_coeff*** controls the **number of neurons** in the hidden layers.
 
 ```
 features_time = feaext.TimeFeatures(signal_runs,target_lst=['rms', 'kurtosis', 'skewness', 'variance', 'p2p'])
