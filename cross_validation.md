@@ -36,7 +36,7 @@ You can change the **hyperparameters of the model** using a **dictionary argumen
 
 Besides that, you can see a **trained model** is established **after** calling ***cross_validate_XGB()***. Not cross_validate().
 
-There are many **other machine learning model** that can be trained using function resembling ***cross_validate_XXX()***, such as SVR, Random Forest, KNN, etc.
+There are many **other machine learning model** that can be trained using function resembling ***cross_validate_XXX()***, such as *SVR*, *Random Forest*, *KNN*, etc.
 
 Now, the **example** focusse on the **cross validation** and **testing results** of the **XGBoost** model.
 
