@@ -109,7 +109,7 @@ def feature_extract_demo(plot_corr=False, plot_matrix=False):
 
 def autoencoder_demo(plot_coding=False):
     signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, final_length=min([run.shape[0] for run in signal_runs]))
-    ae_model, ae_train_history = ae.train_AE(signals_resize, shrink_rate=100)
+    ae_model, ae_train_history = ae.train_AE(signals_resize, loss='mean_squared_error', metric='mean_absolute_error', shrink_rate=100)
     encoded_signal = ae_model.encoder(signals_resize).numpy()
     decoded_signal = ae_model.decoder(encoded_signal).numpy()
     if plot_coding:
@@ -122,7 +122,7 @@ def autoencoder_demo(plot_coding=False):
 def cross_validate_ML_demo():
     features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
     domain_energy = features_freq.domain_energy
-    cv_prepare = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+    cv_prepare = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo+1}', fold_num=5)
     param_setting = {'eta':0.3, 'gamma':0.01, 'max_depth':6, 'subsample':0.8, 'lambda':50, 'random_state':75}
     trained_model = cv_prepare.cross_validate_XGB(param_setting=param_setting)
     cv_prepare.model_testing(trained_model, 'XGB')
@@ -130,7 +130,7 @@ def cross_validate_ML_demo():
 def cross_validate_stacking_demo():
     features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
     domain_energy = features_freq.domain_energy
-    cv_prepare = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+    cv_prepare = cv.cross_validate(domain_energy, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo+1}', fold_num=5)
     trained_stack = cv_prepare.cross_validate_stacking(model_name_lst=['least_squares',
                                                                        'ridge', 'lasso', 'svr'])
     cv_prepare.model_testing(trained_stack, 'Stacking')
@@ -138,20 +138,20 @@ def cross_validate_stacking_demo():
 def pso_demo():
     features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
     domain_energy = features_freq.domain_energy
-    pso_prepare = psoRF(domain_energy, y[:, y_idx_demo], f'Y{y_idx_demo}', y_boundary=[22, 39])
+    pso_prepare = psoRF(domain_energy, y[:, y_idx_demo], f'Y{y_idx_demo+1}', y_boundary=[22, 39])
     model, history, hyper_param_set = pso_prepare.pso(particleAmount=5, maxIterTime=10)
     return hyper_param_set
 
     
 def cross_validate_DNN_demo():
-    features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
-    domain_energy = features_freq.domain_energy
-    domain_fre = features_freq.domain_frequency
+    # features_freq = feaext.FreqFeatures(signal_runs, sample_rate, num_wanted_freq=3)
+    # domain_energy = features_freq.domain_energy
+    # domain_fre = features_freq.domain_frequency
     features_time = feaext.TimeFeatures(signal_runs,
                                         target_lst=['rms', 'kurtosis', 
                                                     'skewness', 'variance', 'p2p'])
     features = features_time.features_all_signals
-    cv_prepare = cv.cross_validate(features, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+    cv_prepare = cv.cross_validate(features, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo+1}', fold_num=5)
     trained_model = cv_prepare.cross_validate_DNN(dense_coeff=10)
     cv_prepare.model_testing(trained_model, 'DNN')
     
@@ -159,19 +159,19 @@ def cross_validate_DNN_demo():
 def cross_validate_1DCNN_demo():
     signal_resize_coeff = 1000
     signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, signal_resize_coeff)
-    cv_prepare = cv.cross_validate_signal(signals_resize, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
+    cv_prepare = cv.cross_validate_signal(signals_resize, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo+1}', fold_num=5)
     trained_model = cv_prepare.cross_validate_1DCNN(dense_coeff=4)
     cv_prepare.model_testing(trained_model, '1DCNN')
 
 def cross_validate_2DCNN_demo():
-    signal_resize_coeff = 1000
-    signals_resize = sigpro.signal_resize(signal_runs, signal_resize_coeff, isPeriodic=True)
-    signals_imgs = sigpro.signals_to_images(signals_resize, method='bresebham')
+    signal_resize_coeff = 500
+    signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, signal_resize_coeff)
+    signals_imgs = sigpro.signals_to_images(signals_resize, method='cwt')
     signals_imgs = sigpro.images_resize_lst(signals_imgs, size=img_resize_coeff)
     sigplot.draw_signal_2d(signals_imgs[run_idx_demo])
     
-    cv_prepare = cv.cross_validate_image(signals_imgs, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo}')
-    trained_model = cv_prepare.cross_validate_2DCNN(dense_coeff=4)
+    cv_prepare = cv.cross_validate_image(signals_imgs, y[:, y_idx_demo], qualityKind=f'Y{y_idx_demo+1}', fold_num=5)
+    trained_model = cv_prepare.cross_validate_2DCNN(dense_coeff=10)
     cv_prepare.model_testing(trained_model, '2DCNN')
     
 
@@ -192,13 +192,14 @@ if __name__ == '__main__':
     #                         plot_fft=False, plot_enve=False, plot_band_pass=False,
     #                         plot_difference=False, plot_cwt=False, plot_gaf=False)
     # autoencoder_demo(plot_coding=True)
-    feature_extract_demo(plot_corr=True, plot_matrix=True)
+    # feature_extract_demo(plot_corr=True, plot_matrix=True)
 
-    # cross_validate_ML_demo()
+    cross_validate_ML_demo()
     # cross_validate_stacking_demo()
-    # hyper_param = pso_demo()
-    # cross_validate_DNN_demo()
-    # cross_validate_1DCNN_demo()
+    hyper_param = pso_demo()
+    cross_validate_DNN_demo()
+    cross_validate_1DCNN_demo()
+    cross_validate_2DCNN_demo()
     
     print()
     
