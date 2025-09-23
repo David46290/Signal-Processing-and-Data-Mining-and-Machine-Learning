@@ -58,26 +58,34 @@ def plot_corr_distribution(corr_array, amount):
     plt.title('| Feature Correlation |', fontsize=30)
     return new_array
 
-def plot_correlation_matrix(matrix):
+def plot_correlation_matrix(matrix, content_f=None, content_y=None):
     fig, ax = plt.subplots()
-    im = ax.imshow(matrix)
+    im = ax.imshow(matrix, cmap='viridis', vmin=-1, vmax=1)
     fig.colorbar(im, ax=ax)
     for i in range(matrix.shape[0]):
         for j in range(matrix.shape[1]):
-            value_percentage = (matrix[i, j] - np.amin(matrix)) / (np.amax(matrix) - np.amin(matrix)) 
-            if value_percentage < 0.3:
-                text_color = 'cyan'
-            elif value_percentage >= 0.3 and value_percentage < 0.7:
+            # value_percentage = (matrix[i, j] - np.amin(matrix)) / (np.amax(matrix) - np.amin(matrix)) 
+            # if value_percentage < 0.3:
+            #     text_color = 'cyan'
+            # elif value_percentage >= 0.3 and value_percentage < 0.7:
+            #     text_color = 'gold'
+            # else:
+            #     text_color = 'darkred'
+            if matrix[i, j] <= -0.5:
                 text_color = 'gold'
+            elif matrix[i, j] > -0.5 and matrix[i, j] < 0.5:
+                text_color = 'white'
             else:
                 text_color = 'darkred'
                 
             text = ax.text(j, i, '{0:.3f}'.format(matrix[i, j]),
                            ha="center", va="center", color=text_color)
-    ax.set_xticks(np.arange(0, matrix.shape[1], 1))   
-    ax.set_yticks(np.arange(0, matrix.shape[0], 1))   
-    ax.set_xlabel('Features')
-    ax.set_ylabel('Y')
+    ax.set_xticks(np.arange(0, matrix.shape[1], 1), labels=content_f)  
+    ax.set_yticks(np.arange(0, matrix.shape[0], 1), labels=content_y)   
+    if not content_f: 
+        ax.set_xlabel('Features')
+    if not content_y: 
+        ax.set_ylabel('Y')
     ax.set_title('Pearson Correlation Matrix', fontsize=14)
     fig.tight_layout()
 
