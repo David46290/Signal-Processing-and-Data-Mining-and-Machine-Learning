@@ -19,10 +19,13 @@ def plot_scatter(variable_a, variable_b, corr_, title_='Pearson Correlation', co
     plt.grid()
 
 
-def get_corr_value_2variables(variable1, variable2, isPlot=True, title_='Pearson Correlation', content_=['Variable 1', 'Variable2']):
+def get_corr_value_2variables(variable1, variable2, isPlot=True, title_='Pearson Correlation', content_f=None, content_y=None):
     corr = np.corrcoef(variable1, variable2, rowvar=True)[0][1]
     if isPlot:
-        plot_scatter(variable1, variable2, corr, title_, content_)
+        if not content_f and content_y:
+            plot_scatter(variable1, variable2, corr, title_)
+        else:
+            plot_scatter(variable1, variable2, corr, title_, content_=[content_f, content_y])
     return corr
 
 def features_vs_quality(x_, y_):
