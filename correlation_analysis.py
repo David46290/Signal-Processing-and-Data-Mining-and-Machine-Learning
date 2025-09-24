@@ -1,11 +1,19 @@
 import numpy as np
 from matplotlib import pyplot as plt
 # from sklearn.metrics import r2_score
+from scipy.stats import linregress
 
 
-def plot_scatter(variable_a, variable_b, corr_, title_='Pearson Correlation', content_=['Variable 1', 'Variable2']):
+def plot_scatter(variable_a, variable_b, corr_, title_='Pearson Correlation', scale_x=None, scale_y=None, content_=['Variable 1', 'Variable2']):
+    result = linregress(variable_a, variable_b)
+    # print(result.slope, result.intercept, result.rvalue, result.pvalue)
+    # coeffs = np.polyfit(variable_a, variable_b, 1)
+    # result.slope, result.intercept = coeffs
+    b_fit = result.slope * variable_a + result.intercept
+    
     plt.figure(figsize=(12, 9))
     plt.plot(variable_a, variable_b, 'o', color='purple', lw=5)
+    plt.plot(variable_a, b_fit, '-', color='black', lw=2)
     topValue = (max(variable_a) if max(variable_a) > max(variable_b) else max(variable_b))
     topValue = topValue * 1.1 if topValue > 0 else topValue * 0.9
     bottomValue = (min(variable_a) if min(variable_a) < min(variable_b) else min(variable_b))
@@ -14,18 +22,21 @@ def plot_scatter(variable_a, variable_b, corr_, title_='Pearson Correlation', co
     plt.ylabel(f'{content_[1]}', fontsize=24)
     plt.xticks(fontsize=22)
     plt.yticks(fontsize=22)
+    if (scale_x and scale_y):
+        plt.xlim((scale_x[0], scale_x[1]))
+        plt.ylim((scale_y[0], scale_y[1]))
     plt.title(f"{title_} \n Correlation={corr_:.2f}"
               , fontsize=26)
     plt.grid()
 
 
-def get_corr_value_2variables(variable1, variable2, isPlot=True, title_='Pearson Correlation', content_f=None, content_y=None):
+def get_corr_value_2variables(variable1, variable2, isPlot=True, title_='Pearson Correlation', scale_x=None, scale_y=None, content_f=None, content_y=None):
     corr = np.corrcoef(variable1, variable2, rowvar=True)[0][1]
     if isPlot:
-        if not content_f and content_y:
-            plot_scatter(variable1, variable2, corr, title_)
+        if not (content_f and content_y):
+            plot_scatter(variable1, variable2, corr, title_, scale_x, scale_y)
         else:
-            plot_scatter(variable1, variable2, corr, title_, content_=[content_f, content_y])
+            plot_scatter(variable1, variable2, corr, title_, scale_x, scale_y, content_=[content_f, content_y])
     return corr
 
 def features_vs_quality(x_, y_):
