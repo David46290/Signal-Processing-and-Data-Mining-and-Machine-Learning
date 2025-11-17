@@ -160,7 +160,7 @@ def show_train_history_NN_onlyTrain(history_, loss, metric_name_tr, fold_idx):
     plt.close()
 
 class cross_validate:
-    def __init__(self, x, y, qualityKind='Y', normalized='', y_value_boundary=[]):
+    def __init__(self, x, y, qualityKind='Y', normalized='', y_value_boundary=[], fold_num=5):
         y = y.ravel()
         self.qualityKind = qualityKind
         self.normalized = normalized
@@ -182,7 +182,7 @@ class cross_validate:
         self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
 
         
-        self.kfold_num = 5
+        self.kfold_num = fold_num
     
     def show_train_history(self, history_, category, fold_idx=0, isValidated=True):
         plt.figure(figsize=(16, 6))
@@ -642,7 +642,7 @@ class cross_validate:
         loss = "mean_squared_error"
         metric = "mean_absolute_error"
         model = self.build_DNN(loss, metric, dense_coeff)
-        model.save_weights('./modelWeights/DNN_initial.h5') 
+        model.save_weights('./modelWeights/DNN_initial.weights.h5') 
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)): 
             callback = EarlyStopping(monitor="loss", patience=30, verbose=1, mode="auto")
             x_train = xTrain[train_idx]
@@ -651,7 +651,7 @@ class cross_validate:
             y_val = yTrain[val_idx]
             history = model.fit(x_train, y_train, validation_data = (x_val, y_val),
                                 epochs=120, batch_size=30, verbose=0, callbacks=[callback])
-            model.save_weights(f'./modelWeights/DNN{idx}.h5')  
+            model.save_weights(f'./modelWeights/DNN{idx}.weights.h5')  
             show_train_history_NN(history, loss, metric, 'val_'+metric, idx)
             yTrainPredicted = model.predict(x_train)
             yValPredicted = model.predict(x_val)
@@ -715,7 +715,7 @@ class cross_validate:
         print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
 
 class cross_validate_signal:
-    def __init__(self, x, y, qualityKind='Y', normalized='  ', y_value_boundary=[]):
+    def __init__(self, x, y, qualityKind='Y', normalized='  ', y_value_boundary=[], fold_num=5):
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
@@ -735,7 +735,7 @@ class cross_validate_signal:
         self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
     
         
-        self.kfold_num = 5      
+        self.kfold_num = fold_num      
 
     def build_1DCNN(self, loss, metric, dense_coeff=4):
         optimizer = opti.Adam(learning_rate=0.001)
@@ -767,7 +767,7 @@ class cross_validate_signal:
         loss = "mean_squared_error"
         metric = "mean_absolute_error"
         model = self.build_1DCNN(loss, metric, dense_coeff)
-        model.save_weights('./modelWeights/1DCNN_initial.h5') 
+        model.save_weights('./modelWeights/1DCNN_initial.weights.h5') 
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             
             #  model.summary()
@@ -778,7 +778,7 @@ class cross_validate_signal:
             y_val = yTrain[val_idx]
             history = model.fit(x_train, y_train, validation_data = (x_val, y_val),
                                 epochs=30, batch_size=5, verbose=1, callbacks=[callback])
-            model.save_weights(f'./modelWeights/1DCNN{idx}.h5')  
+            model.save_weights(f'./modelWeights/1DCNN{idx}.weights.h5')  
             yTrainPredicted = model.predict(x_train)
             yValPredicted = model.predict(x_val)
             if self.yMin != None and self.yMax != None:
@@ -796,12 +796,12 @@ class cross_validate_signal:
             val_metric_lst[idx] = np.array([mape_val, r2_val])
             fitness_lst.append(mape_val)
             show_train_history_NN(history, loss, metric, 'val_'+metric, idx)
-            model.load_weights('./modelWeights/1DCNN_initial.h5')
+            model.load_weights('./modelWeights/1DCNN_initial.weights.h5')
 
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
         highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        model.load_weights(f'./modelWeights/1DCNN{highest_r2_idx}.h5')
+        model.load_weights(f'./modelWeights/1DCNN{highest_r2_idx}.weights.h5')
         return model
     
     def build_LSTM(self, loss, metrics, cell_num=1):
@@ -830,7 +830,7 @@ class cross_validate_signal:
         metric = "mean_absolute_error"
         
         model = self.build_LSTM(loss, metric, cell_num)
-        model.save_weights('./modelWeights/LSTM_initial.h5') 
+        model.save_weights('./modelWeights/LSTM_initial.weights.h5') 
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             
             #  model.summary()
@@ -841,7 +841,7 @@ class cross_validate_signal:
             y_val = yTrain[val_idx]
             history = model.fit(x_train, y_train, validation_data = (x_val, y_val),
                                 epochs=30, batch_size=10, verbose=0, callbacks=[callback])
-            model.save_weights(f'./modelWeights/LSTM{idx}.h5')  
+            model.save_weights(f'./modelWeights/LSTM{idx}.weights.h5')  
             yTrainPredicted = model.predict(x_train)
             yValPredicted = model.predict(x_val)
             if self.yMin != None and self.yMax != None:
@@ -860,12 +860,12 @@ class cross_validate_signal:
             mape_val = mean_absolute_percentage_error(y_val, yValPredicted) * 100
             val_metric_lst[idx] = np.array([mape_val, r2_val])
             show_train_history_NN(history, loss, metric, 'val_'+metric, idx)
-            model.load_weights('./modelWeights/LSTM_initial.h5')
+            model.load_weights('./modelWeights/LSTM_initial.weights.h5')
 
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
         highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        model.load_weights(f'./modelWeights/LSTM{highest_r2_idx}.h5')
+        model.load_weights(f'./modelWeights/LSTM{highest_r2_idx}.weights.h5')
         return model
     
     def model_testing(self, model_, category):
@@ -936,7 +936,7 @@ class cross_validate_signal:
         print(f"{self.qualityKind} {category} {mape:.2f} {r2:.2f} {mae:.2f}")
         
 class cross_validate_image:
-    def __init__(self, x, y, qualityKind='Y', normalized='  ', y_value_boundary=[]):
+    def __init__(self, x, y, qualityKind='Y', normalized='  ', y_value_boundary=[], fold_num=5):
         self.qualityKind = qualityKind
         self.normalized = normalized
         self.x, self.y = cleanOutlier(x, y)
@@ -956,7 +956,7 @@ class cross_validate_image:
         self.xTrain, self.yTrain, self.xTest, self.yTest = datasetCreating(self.x, self.y)
     
         
-        self.kfold_num = 5      
+        self.kfold_num = fold_num      
     
     def build_2DCNN(self, loss, metric, dense_coeff):
         optimizer = opti.Adam(learning_rate=0.0035)
@@ -993,7 +993,7 @@ class cross_validate_image:
         loss = "mean_squared_error"
         metric = "mean_absolute_error"
         model = self.build_2DCNN(loss, metric, dense_coeff)
-        model.save_weights('./modelWeights/2DCNN_initial.h5') 
+        model.save_weights('./modelWeights/2DCNN_initial.weights.h5') 
         for idx, (train_idx, val_idx) in enumerate(kf.split(xTrain)):
             callback = EarlyStopping(monitor="loss", patience=10, verbose=0, mode="auto")
             x_train = xTrain[train_idx]
@@ -1002,7 +1002,7 @@ class cross_validate_image:
             y_val = yTrain[val_idx]
             history = model.fit(x_train, y_train, validation_data = (x_val, y_val),
                                 epochs=120, batch_size=5, verbose=1, callbacks=[callback])
-            model.save_weights(f'./modelWeights/2DCNN{idx}.h5')           
+            model.save_weights(f'./modelWeights/2DCNN{idx}.weights.h5')           
             yTrainPredicted = model.predict(x_train)
             yValPredicted = model.predict(x_val)
             if self.yMin != None and self.yMax != None:
@@ -1020,11 +1020,11 @@ class cross_validate_image:
             val_metric_lst[idx] = np.array([mape_val, r2_val])
             fitness_lst.append(mape_val)
             show_train_history_NN(history, loss, metric, 'val_'+metric, idx)
-            model.load_weights('./modelWeights/2DCNN_initial.h5')
+            model.load_weights('./modelWeights/2DCNN_initial.weights.h5')
             
         self.plot_metrics_folds(train_metric_lst, val_metric_lst)
         highest_r2_idx = np.where(val_metric_lst[:, 1] == np.max(val_metric_lst[:, 1]))[0][0]
-        model.load_weights(f'./modelWeights/2DCNN{highest_r2_idx}.h5')
+        model.load_weights(f'./modelWeights/2DCNN{highest_r2_idx}.weights.h5')
         return model
     
     
