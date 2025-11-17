@@ -166,7 +166,7 @@ def cross_validate_1DCNN_demo():
 def cross_validate_2DCNN_demo():
     signal_resize_coeff = 500
     signals_resize, time_resize = sigpro.signal_resize(signal_runs, time_runs, signal_resize_coeff)
-    signals_imgs = sigpro.signals_to_images(signals_resize, method='cwt')
+    signals_imgs = sigpro.signals_to_images(signals_resize, method='gasf', wavelet=None)
     signals_imgs = sigpro.images_resize_lst(signals_imgs, size=img_resize_coeff)
     sigplot.draw_signal_2d(signals_imgs[run_idx_demo])
     
@@ -194,11 +194,11 @@ if __name__ == '__main__':
     # autoencoder_demo(plot_coding=True)
     # feature_extract_demo(plot_corr=True, plot_matrix=True)
 
-    cross_validate_ML_demo()
+    # cross_validate_ML_demo()
     # cross_validate_stacking_demo()
-    hyper_param = pso_demo()
-    cross_validate_DNN_demo()
-    cross_validate_1DCNN_demo()
+    # hyper_param = pso_demo()
+    # cross_validate_DNN_demo()
+    # cross_validate_1DCNN_demo()
     cross_validate_2DCNN_demo()
     
     print()
